@@ -2,7 +2,7 @@
 
 This public project provides a Snowflake SQL grammar for editors, source-analysis tools,
 linters, and parser test harnesses. The companion
-[`snowflake-bodies`](../snowflake-bodies/README.md) crate provides foreign-language body
+[`snowflake-handlers`](../snowflake-handlers/README.md) crate provides foreign-language body
 extraction, position mapping, parsing, and advisory restriction checks. Consumers implement
 their own dialect selection, structural profiles, masking, and metric attribution.
 
@@ -52,6 +52,31 @@ This approach does not require using tree-sitter as the tool's runtime parser. A
 can retain its own lossless syntax tree, comment handling, and recovery rules while using
 this grammar to expand its regression coverage.
 
+To compare outputs without integrating tree-sitter into the external tool's harness, use
+`tools/parse-summary.mjs`:
+
+```bash
+node tools/parse-summary.mjs <corpus-root-or-file> [--grammar <dir>] [--out <file>]
+```
+
+The script outputs JSON Lines where each line represents one `.sql` file:
+
+```json
+{
+  "file": "path/to/script.sql",
+  "statements": [
+    { "kind": "create_table", "start": 0, "end": 45 }
+  ],
+  "errors": [
+    { "start": 50, "end": 52 }
+  ]
+}
+```
+
+- `file`: the file path, formatted with forward slashes (relative to the corpus directory when a directory path was provided).
+- `statements`: top-level statement entries with node `kind` and half-open byte range `[start, end)`.
+- `errors`: byte ranges of outermost `ERROR` and `MISSING` nodes.
+
 ## Dialect selection
 
 The `.sql` extension does not distinguish Snowflake from other SQL dialects. Use explicit
@@ -64,8 +89,8 @@ parser selection, structural analysis, and masking all use the same resolved dia
 
 ## Foreign-language bodies
 
-Use `snowflake_bodies::Analyzer` to obtain reconstructed source and embedded trees. Reuse the
-analyzer across files, and inspect both `Analysis::sql_errors` and each `Body::status`:
+Use `snowflake_handlers::Analyzer` to obtain reconstructed source and embedded trees. Reuse the
+analyzer across files, and inspect both `Analysis::sql_errors` and each `Handler::status`:
 
 - `Parsed` means the embedded syntax parsed successfully.
 - `UnavailableLanguage` retains decoded source but has no embedded tree.
@@ -96,8 +121,8 @@ The two delimiter forms require different handling:
   reconstructs the text and records its mapping back to the original SQL source.
 
 Embedded tree ranges refer to decoded UTF-8 text. Translate them through
-`BodySource::source_range`, then use `source_point` on the original SQL text to obtain a
-zero-based row and byte column. `Body::findings` already contains absolute SQL ranges.
+`HandlerSource::source_range`, then use `source_point` on the original SQL text to obtain a
+zero-based row and byte column. `Handler::findings` already contains absolute SQL ranges.
 Tree-sitter injection queries alone cannot decode the single-quoted form.
 
 ### Measurement attribution

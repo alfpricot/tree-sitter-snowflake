@@ -58,7 +58,10 @@ export function decode(buf) {
   let zerosEven = 0;
   let zerosOdd = 0;
   for (let i = 0; i < n; i++) {
-    if (buf[i] === 0) i % 2 === 0 ? zerosEven++ : zerosOdd++;
+    if (buf[i] === 0) {
+      if (i % 2 === 0) zerosEven++;
+      else zerosOdd++;
+    }
   }
   if (n >= 64 && zerosOdd > n / 3) {
     return ['utf-16le', buf.toString('utf16le')];
@@ -128,7 +131,7 @@ function errorRangesFromXml(xml, starts) {
         byteOffset(starts, node.erow, node.ecol),
       ]);
     }
-    if (!/\/>$/.test(m[0])) stack.push(node);
+    if (!m[0].endsWith('/>')) stack.push(node);
   }
   return ranges;
 }

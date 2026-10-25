@@ -55,6 +55,12 @@ declare const binding: {
 
   /** The structural analysis query for this grammar. */
   STRUCTURE_QUERY?: string;
+
+  /** The tags query for this grammar. */
+  TAGS_QUERY?: string;
+
+  /** The locals query for this grammar. */
+  LOCALS_QUERY?: string;
 };
 
 export default binding;

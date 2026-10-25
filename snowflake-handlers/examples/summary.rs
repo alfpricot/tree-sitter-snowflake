@@ -1,5 +1,5 @@
 //! Summarize local SQL files without printing source text or identifiers.
-use snowflake_bodies::{Analyzer, BodyStatus};
+use snowflake_handlers::{Analyzer, HandlerStatus};
 use std::{collections::BTreeMap, error::Error, fs, path::PathBuf};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -34,11 +34,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let result = analyzer.analyze(&sql)?;
         files += 1;
         sql_failures += usize::from(!result.sql_errors.is_empty());
-        for body in result.bodies {
+        for body in result.handlers {
             *statuses
                 .entry(format!("{:?}: {:?}", body.language, body.status))
                 .or_default() += 1;
-            if body.status == BodyStatus::Parsed {
+            if body.status == HandlerStatus::Parsed {
                 let source = body.source.as_ref().unwrap();
                 for finding in &body.findings {
                     assert!(sql.get(finding.range.clone()).is_some());
