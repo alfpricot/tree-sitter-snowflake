@@ -222,6 +222,19 @@ jobs:
             exit 1
           fi
 
+          if [ -f "snowflake-handlers/Cargo.toml" ]; then
+            handlers_version=$(sed -n 's/^version = "\(.*\)"/\1/p' snowflake-handlers/Cargo.toml)
+            handlers_status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (${GITHUB_REPOSITORY})" "https://crates.io/api/v1/crates/snowflake-handlers/${handlers_version}")
+            if [ "$handlers_status" = "200" ]; then
+              echo "snowflake-handlers@${handlers_version} is already published, skipping"
+            elif [ "$handlers_status" = "404" ]; then
+              cargo publish -p snowflake-handlers
+            else
+              echo "crates.io lookup for snowflake-handlers failed with HTTP ${handlers_status}" >&2
+              exit 1
+            fi
+          fi
+
   publish-npm:
     name: Publish to npm
     needs: [verify, prebuild]
