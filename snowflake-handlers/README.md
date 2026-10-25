@@ -1,24 +1,24 @@
-# snowflake-bodies
+# snowflake-handlers
 
 Extract and parse JavaScript, Python, Java, and Scala handlers embedded in Snowflake SQL.
 The grammar package remains independent: installing `tree-sitter-snowflake` does not link any
 embedded-language grammar. This companion crate is not yet published.
 
 ```rust
-use snowflake_bodies::{Analyzer, BodyStatus};
+use snowflake_handlers::{Analyzer, HandlerStatus};
 
 let mut analyzer = Analyzer::new()?;
 let sql = "CREATE PROCEDURE p() RETURNS STRING LANGUAGE JAVASCRIPT AS 'eval(''1'');';";
 let analysis = analyzer.analyze(sql)?;
 assert!(analysis.sql_errors.is_empty());
-let body = &analysis.bodies[0];
-assert_eq!(body.status, BodyStatus::Parsed);
+let body = &analysis.handlers[0];
+assert_eq!(body.status, HandlerStatus::Parsed);
 let source = body.source.as_ref().unwrap();
 assert_eq!(source.text(), "eval('1');");
 for finding in &body.findings {
     println!("{}: {}", finding.rule_id, &sql[finding.range.clone()]);
 }
-# Ok::<(), snowflake_bodies::Error>(())
+# Ok::<(), snowflake_handlers::Error>(())
 ```
 
 JavaScript and Python are always available. Enable `java` and/or `scala` Cargo features for
@@ -27,7 +27,7 @@ body reports `UnavailableLanguage`, with no tree or findings. Queries for all la
 regardless of features and are exposed by `Language::query()`.
 
 This crate requires Rust 1.90 and supports tree-sitter 0.26 and 0.27. Consumers that exchange
-trees must resolve the same tree-sitter version; `snowflake_bodies::tree_sitter` re-exports this
+trees must resolve the same tree-sitter version; `snowflake_handlers::tree_sitter` re-exports this
 crate's resolved API. The grammar package retains its separate Rust 1.85 library floor.
 
 ## Source and measurement contract
@@ -38,7 +38,7 @@ Each body includes its name, routine kind, execution rights, SQL ranges, decoded
 status, optional embedded tree, and mapped syntax errors. SQL-language bodies remain in the SQL
 tree and are not returned a second time. No handler code is executed.
 
-`BodySource::text()` excludes delimiters. Dollar bodies preserve every byte. Single-quoted
+`HandlerSource::text()` excludes delimiters. Dollar bodies preserve every byte. Single-quoted
 bodies decode doubled quotes and Snowflake backslash escapes, including three-digit ASCII octal,
 two-digit ASCII hexadecimal, and four-digit Unicode escapes. Numeric escapes can cross the SQL grammar's child-node
 boundaries, so the decoder consumes the complete content of the validated body node.
@@ -109,8 +109,8 @@ references (checked 2026-09-11).
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
-cargo test -p snowflake-bodies --all-features
-cargo run -p snowflake-bodies --example summary -- /path/to/local/sql
+cargo test -p snowflake-handlers --all-features
+cargo run -p snowflake-handlers --example summary -- /path/to/local/sql
 ```
 
 CI also builds and tests both workspace members with tree-sitter pinned to 0.26. Synthetic

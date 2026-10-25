@@ -24,7 +24,7 @@ function check(paths, required, prefix = '', generated = []) {
 
 for (const [name, prefix, required] of [
   ['tree-sitter-snowflake', '', [...common, 'bindings/rust/lib.rs', 'bindings/rust/build.rs']],
-  ['snowflake-bodies', 'snowflake-bodies/', ['LICENSE', 'README.md', 'src/lib.rs']],
+  ['snowflake-handlers', 'snowflake-handlers/', ['LICENSE', 'README.md', 'src/lib.rs']],
 ]) {
   const files = execFileSync('cargo', ['package', '-p', name, '--list', '--allow-dirty'], {
     encoding: 'utf8',

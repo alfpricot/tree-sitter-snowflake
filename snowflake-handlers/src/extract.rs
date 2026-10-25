@@ -1,7 +1,9 @@
-use crate::{Body, BodySource, BodyStatus, ExecutionRights, Language, RoutineKind, descendants};
+use crate::{
+    ExecutionRights, Handler, HandlerSource, HandlerStatus, Language, RoutineKind, descendants,
+};
 use tree_sitter::Tree;
 
-pub(crate) fn bodies(sql: &str, tree: &Tree) -> Vec<Body> {
+pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
     let mut result = Vec::new();
     for routine in descendants(tree.root_node()) {
         let kind = match routine.kind() {
@@ -53,7 +55,7 @@ pub(crate) fn bodies(sql: &str, tree: &Tree) -> Vec<Body> {
                 };
             }
         }
-        let mut body = Body {
+        let mut body = Handler {
             name: routine
                 .child_by_field_name("name")
                 .map(|n| sql[n.byte_range()].to_owned())
@@ -65,7 +67,7 @@ pub(crate) fn bodies(sql: &str, tree: &Tree) -> Vec<Body> {
             body_range: wrapper.byte_range(),
             source: None,
             tree: None,
-            status: BodyStatus::InvalidSql,
+            status: HandlerStatus::InvalidSql,
             parse_errors: Vec::new(),
             findings: Vec::new(),
         };
@@ -75,16 +77,16 @@ pub(crate) fn bodies(sql: &str, tree: &Tree) -> Vec<Body> {
             let delimiters = if form.kind() == "string_body" { 1 } else { 2 };
             let range = form.start_byte() + delimiters..form.end_byte() - delimiters;
             let decoded = if delimiters == 1 {
-                BodySource::quoted(&sql[range.clone()], range.start)
+                HandlerSource::quoted(&sql[range.clone()], range.start)
             } else {
-                Ok(BodySource::verbatim(&sql[range.clone()], range.start))
+                Ok(HandlerSource::verbatim(&sql[range.clone()], range.start))
             };
             match decoded {
                 Ok(source) => {
                     body.source = Some(source);
-                    body.status = BodyStatus::UnavailableLanguage;
+                    body.status = HandlerStatus::UnavailableLanguage;
                 }
-                Err(message) => body.status = BodyStatus::InvalidEncoding(message),
+                Err(message) => body.status = HandlerStatus::InvalidEncoding(message),
             }
         }
         result.push(body);

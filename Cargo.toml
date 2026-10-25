@@ -1,5 +1,5 @@
 [workspace]
-members = ["snowflake-bodies"]
+members = ["snowflake-handlers"]
 resolver = "3"
 
 [package]
@@ -33,7 +33,7 @@ cc = "~1.5.1"
 # the published crate's runtime dependency is `tree-sitter-language`, so a
 # consumer's own `tree-sitter` version is what governs at their end, not
 # this line. The `consumer-pin` CI job covers the other direction by
-# rebuilding against 0.26, snowflake-bodies' declared floor (cadence and
+# rebuilding against 0.26, snowflake-handlers' declared floor (cadence and
 # marlin have both since moved to 0.27, so this no longer tracks either
 # consumer's own pin).
 #
