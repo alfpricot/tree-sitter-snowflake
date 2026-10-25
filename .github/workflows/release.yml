@@ -56,7 +56,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  TREE_SITTER_CLI_VERSION: '0.27.1'
   PREBUILDIFY_VERSION: '6.0.1'
 
 permissions:
@@ -169,7 +168,9 @@ jobs:
         with:
           node-version: '24.x'
       - name: Build the WASM grammar
-        run: npx --yes --package=tree-sitter-cli@${{ env.TREE_SITTER_CLI_VERSION }} -- tree-sitter build --wasm
+        # The CLI version comes from the devDependency, so Dependabot's bump
+        # of package.json is the single source of truth for every consumer.
+        run: npx --yes --package="tree-sitter-cli@$(node -p "require('./package.json').devDependencies['tree-sitter-cli']")" -- tree-sitter build --wasm
       - name: Locate the WASM build
         id: wasm
         # The CLI names its output after the grammar's `name` in

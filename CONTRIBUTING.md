@@ -16,7 +16,7 @@ npx --no-install tree-sitter generate
 cargo build
 ```
 
-The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile. The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run. On a machine without MSVC, set `CC=gcc CXX=g++`.
+The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile; `tools/cli-version.test.mjs` fails CI when that entry, an npm script, or a workflow pins a `tree-sitter-cli` version that lags the devDependency. The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run. On a machine without MSVC, set `CC=gcc CXX=g++`.
 
 ## Validation before a pull request
 

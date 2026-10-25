@@ -6,8 +6,8 @@
   "types": "bindings/node",
   "scripts": {
     "install": "node-gyp-build",
-    "prestart": "npx --yes --package=tree-sitter-cli@0.27.1 -- tree-sitter build --wasm",
-    "start": "npx --yes --package=tree-sitter-cli@0.27.1 -- tree-sitter playground",
+    "prestart": "npx --no-install tree-sitter build --wasm",
+    "start": "npx --no-install tree-sitter playground",
     "test": "node --test bindings/node/*_test.js",
     "lint": "oxlint grammar.js grammar tools bindings/node",
     "format": "oxfmt grammar.js \"grammar/**/*.js\" \"tools/**/*.mjs\" \"bindings/node/*.js\"",
