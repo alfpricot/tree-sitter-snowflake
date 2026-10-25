@@ -23,6 +23,8 @@ const queries = [
   ['HIGHLIGHTS_QUERY', `${root}/queries/highlights.scm`],
   ['INJECTIONS_QUERY', `${root}/queries/injections.scm`],
   ['STRUCTURE_QUERY', `${root}/queries/structure.scm`],
+  ['TAGS_QUERY', `${root}/queries/tags.scm`],
+  ['LOCALS_QUERY', `${root}/queries/locals.scm`],
 ];
 
 for (const [prop, path] of queries) {
