@@ -2,14 +2,14 @@ use std::ops::Range;
 
 /// Decoded UTF-8 text with byte positions in the original SQL file.
 #[derive(Debug, Clone)]
-pub struct BodySource {
+pub struct HandlerSource {
     text: String,
     // Each output byte maps to the entire input character/escape that produced it.
     origins: Vec<Range<usize>>,
     end: usize,
 }
 
-impl BodySource {
+impl HandlerSource {
     pub fn text(&self) -> &str {
         &self.text
     }

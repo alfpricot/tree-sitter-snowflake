@@ -119,6 +119,22 @@ export default {
       $.keyword_user,
       $.keyword_streamlit,
       $.keyword_agent,
+      $.keyword_alert,
+      seq(
+        optional(
+          choice(
+            $.keyword_masking,
+            seq($.keyword_row, $.keyword_access),
+            $.keyword_aggregation,
+            $.keyword_projection,
+            $.keyword_network,
+            $.keyword_password,
+            $.keyword_session,
+            $.keyword_authentication,
+          ),
+        ),
+        $.keyword_policy,
+      ),
       $.identifier,
     ),
 

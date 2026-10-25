@@ -213,6 +213,18 @@
   (keyword_after)
   (keyword_when)
   (keyword_schedule)
+  (keyword_alert)
+  (keyword_condition)
+  (keyword_action)
+  (keyword_iceberg)
+  (keyword_event)
+  (keyword_hybrid)
+  (keyword_aggregation)
+  (keyword_projection)
+  (keyword_network)
+  (keyword_password)
+  (keyword_authentication)
+  (keyword_body)
 ] @keyword
 
 [

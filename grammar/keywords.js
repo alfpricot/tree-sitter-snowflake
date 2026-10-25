@@ -205,6 +205,18 @@ export default {
   keyword_optimization: (_) => make_keyword('optimization'),
   keyword_row: (_) => make_keyword('row'),
   keyword_comment: (_) => make_keyword('comment'),
+  keyword_alert: (_) => make_keyword('alert'),
+  keyword_condition: (_) => make_keyword('condition'),
+  keyword_action: (_) => make_keyword('action'),
+  keyword_iceberg: (_) => make_keyword('iceberg'),
+  keyword_event: (_) => make_keyword('event'),
+  keyword_hybrid: (_) => make_keyword('hybrid'),
+  keyword_aggregation: (_) => make_keyword('aggregation'),
+  keyword_projection: (_) => make_keyword('projection'),
+  keyword_network: (_) => make_keyword('network'),
+  keyword_password: (_) => make_keyword('password'),
+  keyword_authentication: (_) => make_keyword('authentication'),
+  keyword_body: (_) => make_keyword('body'),
 
   // Constraint suffixes
   keyword_constraint: (_) => make_keyword('constraint'),

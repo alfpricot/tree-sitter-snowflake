@@ -4,7 +4,12 @@
 // function rather than a shared named rule, because a named rule whose
 // every segment is optional matches the empty string and `generate`
 // rejects it.
-import { comma_list, paren_list, set_unset_properties } from '../helpers.js';
+import {
+  comma_list,
+  paren_list,
+  set_unset_properties,
+  wrapped_in_parenthesis,
+} from '../helpers.js';
 
 function alter_object(keyword, actions = []) {
   return ($) =>
@@ -38,6 +43,8 @@ export default {
       $.alter_integration,
       $.alter_session,
       $.alter_account,
+      $.alter_policy,
+      $.alter_alert,
     ),
 
   alter_table: ($) =>
@@ -200,4 +207,57 @@ export default {
   // parameter statements Snowflake scripts as one-liners.
   alter_account: ($) =>
     prec.right(seq($.keyword_alter, $.keyword_account, choice(...set_unset_properties($)))),
+
+  alter_policy: ($) =>
+    prec.right(
+      seq(
+        $.keyword_alter,
+        optional($._if_exists_clause),
+        optional(
+          choice(
+            $.keyword_masking,
+            seq($.keyword_row, $.keyword_access),
+            $.keyword_aggregation,
+            $.keyword_projection,
+            $.keyword_network,
+            $.keyword_password,
+            $.keyword_session,
+            $.keyword_authentication,
+          ),
+        ),
+        $.keyword_policy,
+        optional($._if_exists_clause),
+        field('name', $.object_reference),
+        choice(
+          seq($.keyword_set, optional($.keyword_body), '->', field('body', $.policy_body)),
+          seq($.keyword_set, seq($.keyword_tag, paren_list($.tag_assignment, true))),
+          seq($.keyword_unset, seq($.keyword_tag, paren_list($.identifier, true))),
+          ...set_unset_properties($),
+          seq($.keyword_rename, $.keyword_to, $.object_reference),
+        ),
+      ),
+    ),
+
+  alter_alert: ($) =>
+    prec.right(
+      seq(
+        $.keyword_alter,
+        $.keyword_alert,
+        optional($._if_exists_clause),
+        field('name', $.object_reference),
+        choice(
+          $.keyword_resume,
+          $.keyword_suspend,
+          seq(
+            $.keyword_modify,
+            choice(
+              seq($.keyword_condition, choice($.exists, wrapped_in_parenthesis($._expression))),
+              seq($.keyword_action, field('action', $.statement)),
+            ),
+          ),
+          ...set_unset_properties($),
+          seq($.keyword_rename, $.keyword_to, $.object_reference),
+        ),
+      ),
+    ),
 };
