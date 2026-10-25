@@ -2,7 +2,7 @@
 
 This public project provides a Snowflake SQL grammar for editors, source-analysis tools,
 linters, and parser test harnesses. The companion
-[`snowflake-bodies`](../snowflake-bodies/README.md) crate provides foreign-language body
+[`snowflake-handlers`](../snowflake-handlers/README.md) crate provides foreign-language body
 extraction, position mapping, parsing, and advisory restriction checks. Consumers implement
 their own dialect selection, structural profiles, masking, and metric attribution.
 
@@ -64,8 +64,8 @@ parser selection, structural analysis, and masking all use the same resolved dia
 
 ## Foreign-language bodies
 
-Use `snowflake_bodies::Analyzer` to obtain reconstructed source and embedded trees. Reuse the
-analyzer across files, and inspect both `Analysis::sql_errors` and each `Body::status`:
+Use `snowflake_handlers::Analyzer` to obtain reconstructed source and embedded trees. Reuse the
+analyzer across files, and inspect both `Analysis::sql_errors` and each `Handler::status`:
 
 - `Parsed` means the embedded syntax parsed successfully.
 - `UnavailableLanguage` retains decoded source but has no embedded tree.
@@ -96,8 +96,8 @@ The two delimiter forms require different handling:
   reconstructs the text and records its mapping back to the original SQL source.
 
 Embedded tree ranges refer to decoded UTF-8 text. Translate them through
-`BodySource::source_range`, then use `source_point` on the original SQL text to obtain a
-zero-based row and byte column. `Body::findings` already contains absolute SQL ranges.
+`HandlerSource::source_range`, then use `source_point` on the original SQL text to obtain a
+zero-based row and byte column. `Handler::findings` already contains absolute SQL ranges.
 Tree-sitter injection queries alone cannot decode the single-quoted form.
 
 ### Measurement attribution

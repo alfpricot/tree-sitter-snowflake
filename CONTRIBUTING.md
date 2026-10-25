@@ -1,10 +1,13 @@
-# Contributing
+# Contributing to tree-sitter-snowflake
 
-## Build
+A tree-sitter grammar for Snowflake SQL, with Rust and Node bindings and the `snowflake-handlers` companion crate.
 
-The exact CLI version is declared in `package.json` and resolved by `package-lock.json`.
-CI uses this same lockfile. When changing the CLI dependency, update its `allowScripts`
-entry before installing, then regenerate the lockfile.
+## Before you start
+
+1. Branch from **`dev`**; `main` is the production branch, updated by release pull request.
+2. Read [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Local setup
 
 ```sh
 npm ci --ignore-scripts
@@ -13,42 +16,38 @@ npx --no-install tree-sitter generate
 cargo build
 ```
 
-The generated parser (`src/parser.c`, `src/grammar.json`, and `src/node-types.json`) is committed.
-Regenerate and commit its diff after every `grammar.js` change. A failed generation leaves the prior
-parser in place, so confirm that generation succeeded before trusting a subsequent test run.
+The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile. The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run. On a machine without MSVC, set `CC=gcc CXX=g++`.
 
-## Test
+## Validation before a pull request
 
 ```sh
-CC=gcc CXX=g++ npx --no-install tree-sitter test
+npx --no-install tree-sitter test
 node tools/node-kinds.mjs --check
 node tools/fixture-check.mjs
 node tools/fixture-leak-grep.mjs
 node tools/keyword-probe.mjs
+node tools/package-check.mjs
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
-cargo test
-```
-
-`test/corpus/` holds per-construct tree assertions. `test/fixtures/*.sql` are larger real-shaped
-inputs checked for `ERROR`, `MISSING`, and zero-width nodes. The fixture identifier check prevents
-private source-corpus names from entering the public repository.
-
-## Lint and format
-
-```sh
-npm install --ignore-scripts
+cargo test --workspace
+cargo test -p snowflake-handlers --all-features
 npm run lint
 npm run format:check
 ```
 
-Use `npm run format` to apply formatting. The generated parser under `src/` is excluded.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, and Rust and JavaScript style. CI also builds against tree-sitter 0.26 and runs the Node binding tests (`npm test`), which need MSVC on Windows. `npm run format` applies formatting.
 
 ## Pull requests
 
-- Regenerate and commit the parser and node-kind snapshot with any grammar change; CI rejects drift
-  in either artifact.
+- Open pull requests against **`dev`**, with a Conventional Commit title (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, ...).
+- Keep each pull request to one change and link the issue in the body.
 - Add a corpus case or extend a fixture for every newly supported construct.
 - Keep node-kind renames for a breaking release: consumers match these names at runtime.
-- Run `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `npm run lint`, and
-  `npm run format:check`; keep the full Rust verification suite warning-free.
+
+## Documentation
+
+| Document | Covers |
+| --- | --- |
+| [docs/CONSUMER_INTEGRATION.md](docs/CONSUMER_INTEGRATION.md) | Node mappings, dialect selection, masking, version compatibility |
+| [docs/SYNTAX_COVERAGE.md](docs/SYNTAX_COVERAGE.md) | Supported statements and expressions |
+| [docs/EMBEDDED_BODIES.md](docs/EMBEDDED_BODIES.md) | Foreign-language handler bodies |
