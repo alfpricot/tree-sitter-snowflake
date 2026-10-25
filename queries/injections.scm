@@ -12,7 +12,7 @@
 ; bodies (the common single-quoted form for foreign-language bodies) are
 ; reconstructed by the consumer: collapse the `doubled_quote` and
 ; `escape` nodes, then parse the result with a position-mapping table.
-; See docs/consumer-integration.md.
+; See docs/CONSUMER_INTEGRATION.md.
 
 ((create_procedure
    (foreign_language (keyword_javascript))

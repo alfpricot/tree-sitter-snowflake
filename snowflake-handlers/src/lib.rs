@@ -1,6 +1,6 @@
 //! Shared extraction, parsing, and advisory checks for Snowflake handler bodies.
 //! Returned embedded trees use decoded-body byte offsets; translate them through
-//! [`BodySource`] before reporting findings in the SQL file. This crate computes
+//! [`HandlerSource`] before reporting findings in the SQL file. This crate computes
 //! no complexity totals. Consumers attribute their measurements to the SQL file.
 
 #![doc = include_str!("../README.md")]
@@ -10,7 +10,7 @@ mod extract;
 mod source;
 
 pub use checks::{Finding, RULES, Rule, Severity};
-pub use source::{BodySource, source_point};
+pub use source::{HandlerSource, source_point};
 pub use tree_sitter;
 
 use std::{collections::HashMap, fmt, ops::Range};
@@ -80,7 +80,7 @@ pub enum ExecutionRights {
 /// An unavailable/invalid body must never be interpreted as measured at zero.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-pub enum BodyStatus {
+pub enum HandlerStatus {
     Parsed,
     UnavailableLanguage,
     InvalidSql,
@@ -90,16 +90,16 @@ pub enum BodyStatus {
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct Body {
+pub struct Handler {
     pub name: String,
     pub routine_kind: RoutineKind,
     pub language: Language,
     pub rights: ExecutionRights,
     pub routine_range: Range<usize>,
     pub body_range: Range<usize>,
-    pub source: Option<BodySource>,
+    pub source: Option<HandlerSource>,
     pub tree: Option<Tree>,
-    pub status: BodyStatus,
+    pub status: HandlerStatus,
     /// Embedded syntax errors, translated into absolute SQL byte ranges.
     pub parse_errors: Vec<Range<usize>>,
     pub findings: Vec<Finding>,
@@ -110,7 +110,7 @@ pub struct Body {
 pub struct Analysis {
     pub sql_tree: Tree,
     pub sql_errors: Vec<Range<usize>>,
-    pub bodies: Vec<Body>,
+    pub handlers: Vec<Handler>,
     /// Cross-statement checks, such as a Scala task without a warehouse.
     pub findings: Vec<Finding>,
 }
@@ -161,36 +161,36 @@ impl Analyzer {
             .parse(sql, None)
             .ok_or_else(|| Error("SQL parse cancelled".into()))?;
         let sql_errors = error_ranges(sql_tree.root_node());
-        let mut bodies = extract::bodies(sql, &sql_tree);
-        for body in &mut bodies {
+        let mut handlers = extract::handlers(sql, &sql_tree);
+        for body in &mut handlers {
             let Some(source) = &body.source else { continue };
             let Some((parser, query)) = self.embedded.get_mut(&body.language) else {
-                body.status = BodyStatus::UnavailableLanguage;
+                body.status = HandlerStatus::UnavailableLanguage;
                 continue;
             };
             let tree = parser
                 .parse(source.text(), None)
-                .ok_or_else(|| Error("Body parse cancelled".into()))?;
+                .ok_or_else(|| Error("Handler body parse cancelled".into()))?;
             body.parse_errors = error_ranges(tree.root_node())
                 .into_iter()
                 .filter_map(|range| source.source_range(range))
                 .collect();
             body.status = if tree.root_node().has_error() {
-                BodyStatus::InvalidBody
+                HandlerStatus::InvalidBody
             } else {
-                BodyStatus::Parsed
+                HandlerStatus::Parsed
             };
             // Partial trees are exposed for inspection, but are not checked as if valid.
-            if body.status == BodyStatus::Parsed {
+            if body.status == HandlerStatus::Parsed {
                 body.findings = checks::check(body, &tree, query, &mut self.sql)?;
             }
             body.tree = Some(tree);
         }
-        let findings = checks::tasks(sql, &sql_tree, &bodies);
+        let findings = checks::tasks(sql, &sql_tree, &handlers);
         Ok(Analysis {
             sql_tree,
             sql_errors,
-            bodies,
+            handlers,
             findings,
         })
     }

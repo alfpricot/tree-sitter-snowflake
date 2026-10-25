@@ -22,7 +22,7 @@ test('Node packaging changes receive Windows binding verification before merge',
     '.github/workflows/verify.yml',
   ])
     assert(needsWindowsBinding([path]));
-  assert(!needsWindowsBinding(['README.md', 'grammar.js', 'snowflake-bodies/src/lib.rs']));
+  assert(!needsWindowsBinding(['README.md', 'grammar.js', 'snowflake-handlers/src/lib.rs']));
 });
 
 test('renames include the removed source path when classifying prose', () => {
@@ -35,12 +35,12 @@ test('renames include the removed source path when classifying prose', () => {
 });
 
 test('only explicit prose paths skip builds', () => {
-  assert(docsOnly(['README.md', 'docs/consumer-integration.md']));
+  assert(docsOnly(['README.md', 'docs/CONSUMER_INTEGRATION.md']));
   for (const files of [
     [],
     ['grammar.js'],
     ['README.md', 'package.json'],
-    ['snowflake-bodies/README.md'],
+    ['snowflake-handlers/README.md'],
     ['test/fixtures/README.md'],
     ['.github/workflows/verify.yml'],
   ])
