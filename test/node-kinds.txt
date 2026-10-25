@@ -1,11 +1,14 @@
 add_column_action
+alert_option
 all_fields
 alter_account
+alter_alert
 alter_column_action
 alter_database
 alter_function
 alter_integration
 alter_pipe
+alter_policy
 alter_procedure
 alter_role
 alter_schema
@@ -49,6 +52,7 @@ constraint_action
 continue_statement
 copy_into_statement
 create_agent
+create_alert
 create_cortex_search
 create_database
 create_dynamic_table
@@ -57,6 +61,7 @@ create_function
 create_integration
 create_materialized_view
 create_pipe
+create_policy
 create_procedure
 create_query
 create_role
@@ -129,10 +134,13 @@ join
 keyword_abort
 keyword_access
 keyword_account
+keyword_action
 keyword_add
 keyword_after
 keyword_agent
+keyword_aggregation
 keyword_ai_verified_queries
+keyword_alert
 keyword_all
 keyword_alter
 keyword_and
@@ -141,11 +149,13 @@ keyword_array
 keyword_as
 keyword_asc
 keyword_at
+keyword_authentication
 keyword_autoincrement
 keyword_before
 keyword_begin
 keyword_between
 keyword_binary
+keyword_body
 keyword_boolean
 keyword_break
 keyword_by
@@ -164,6 +174,7 @@ keyword_collate
 keyword_column
 keyword_comment
 keyword_commit
+keyword_condition
 keyword_connect
 keyword_constraint
 keyword_continue
@@ -197,6 +208,7 @@ keyword_elseif
 keyword_enable
 keyword_end
 keyword_enforced
+keyword_event
 keyword_evolve
 keyword_except
 keyword_exception
@@ -233,6 +245,8 @@ keyword_grants
 keyword_group
 keyword_grouping
 keyword_having
+keyword_hybrid
+keyword_iceberg
 keyword_identifier
 keyword_if
 keyword_ilike
@@ -273,6 +287,7 @@ keyword_metrics
 keyword_minus
 keyword_modify
 keyword_monitor
+keyword_network
 keyword_next
 keyword_no
 keyword_none
@@ -299,6 +314,7 @@ keyword_overwrite
 keyword_owner
 keyword_ownership
 keyword_partition
+keyword_password
 keyword_past
 keyword_pattern
 keyword_per
@@ -310,6 +326,7 @@ keyword_primary
 keyword_prior
 keyword_privileges
 keyword_procedure
+keyword_projection
 keyword_public
 keyword_put
 keyword_python
@@ -449,6 +466,8 @@ order_target
 parenthesized_expression
 partition_by
 pivot_clause
+policy_body
+policy_parameter
 privilege
 privilege_list
 program

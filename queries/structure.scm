@@ -27,6 +27,14 @@
   (function_arguments) @definition.parameters
   body: (function_body) @definition.body) @definition.block
 
+(create_policy
+  name: (object_reference) @definition.name
+  body: (policy_body) @definition.body) @definition.block
+
+(create_alert
+  name: (object_reference) @definition.name
+  action: (_) @definition.body) @definition.block
+
 ; --- decisions: Snowflake Scripting control flow -------------------------
 
 (if_statement) @decision

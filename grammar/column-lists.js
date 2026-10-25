@@ -1,4 +1,9 @@
-import { comma_list, paren_list, wrapped_in_parenthesis } from './helpers.js';
+import {
+  comma_list,
+  paren_list,
+  stage_reference_or_quoted,
+  wrapped_in_parenthesis,
+} from './helpers.js';
 
 // Column definitions, constraints and option lists, shared by CREATE
 // TABLE, ALTER TABLE ... ADD, and the option-driven DDL (stages, tasks,
@@ -158,6 +163,7 @@ export default {
           choice($.keyword_on, $.keyword_off, $.object_reference),
           optional($._paren_options),
         ),
+        stage_reference_or_quoted($),
         $.literal,
         // ('a', 'b', ...) — a parenthesized literal list, e.g. a storage
         // integration's STORAGE_ALLOWED_LOCATIONS or a UDF's PACKAGES.

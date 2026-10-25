@@ -5,9 +5,11 @@ What the grammar parses today. The grammar covers Snowflake SQL only; T-SQL and 
 **Status: Tier 1 and Tier 2 coverage complete, plus most of Tier 3.** `SELECT` in full (CTEs incl.
 recursive, set operators, joins incl. `LATERAL`, `QUALIFY`, `GROUP BY GROUPING SETS`/`CUBE`/
 `ROLLUP`, window functions, `MATCH_RECOGNIZE`, `PIVOT`/`UNPIVOT`), `MERGE`, `CREATE`/`ALTER`/`DROP`
-for supported object families (table, view, materialized and dynamic table, stage, file
-format, stream, pipe, task, warehouse, database, schema, role, user, sequence, tag, integration,
-streamlit, Cortex search service and agent, semantic view), `GRANT`/`REVOKE` incl. future grants,
+for supported object families (table incl. external, iceberg, event, and hybrid,
+view, materialized and dynamic table, stage, file format, stream, pipe, task, alert,
+policy incl. masking, row access, aggregation, projection, network, password, and session,
+warehouse, database, schema, role, user, sequence, tag, integration, streamlit,
+Cortex search service and agent, semantic view), `GRANT`/`REVOKE` incl. future grants,
 `COPY INTO` both directions, `PUT`/`GET`/`LIST`/`REMOVE`, `CALL`/`USE`/`SET`/`UNSET`/`SHOW`/
 `DESCRIBE`/`COMMENT ON`, transactions, procedure and function definitions with Snowflake Scripting
 control flow complete through cursors, `RESULTSET`, `EXECUTE IMMEDIATE`, and `EXCEPTION ... WHEN`,
