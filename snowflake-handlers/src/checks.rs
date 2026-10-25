@@ -1,4 +1,4 @@
-use crate::{Body, Error, ExecutionRights, Language, RoutineKind, descendants};
+use crate::{Error, ExecutionRights, Handler, Language, RoutineKind, descendants};
 use std::ops::Range;
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
@@ -149,7 +149,7 @@ fn finding_by_rule(id: &'static str, range: Range<usize>) -> Finding {
 }
 
 pub(crate) fn check(
-    body: &Body,
+    body: &Handler,
     tree: &Tree,
     query: &Query,
     sql_parser: &mut Parser,
@@ -213,7 +213,7 @@ pub(crate) fn check(
 
 fn check_sql(
     sql: &str,
-    body: &Body,
+    body: &Handler,
     range: Range<usize>,
     parser: &mut Parser,
     findings: &mut Vec<Finding>,
@@ -342,7 +342,7 @@ fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
     Some(result)
 }
 
-pub(crate) fn tasks(sql: &str, tree: &Tree, bodies: &[Body]) -> Vec<Finding> {
+pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding> {
     let mut result = Vec::new();
     let declarations: Vec<_> = descendants(tree.root_node())
         .into_iter()
@@ -375,7 +375,7 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, bodies: &[Body]) -> Vec<Finding> {
             let Some(reference) = reference else { continue };
             let name = canonical_name(&sql[reference.byte_range()]);
             // Same-file exact qualification only. Multiple overloads are ambiguous.
-            let candidates: Vec<_> = bodies
+            let candidates: Vec<_> = handlers
                 .iter()
                 .filter(|b| {
                     b.routine_kind == RoutineKind::Procedure && canonical_name(&b.name) == name

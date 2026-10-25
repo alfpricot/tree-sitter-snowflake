@@ -16,7 +16,7 @@
 #                      carry no source-corpus identifiers, probe both
 #                      identifier slots for every keyword, build and test
 #                      the Rust binding (against the tree-sitter version
-#                      that is snowflake-bodies' declared floor, and
+#                      that is snowflake-handlers' declared floor, and
 #                      against the latest), build and test the Node
 #                      binding, validate the PR title, scan for secrets,
 #                      and lint workflow/YAML files. A final aggregate job
@@ -280,13 +280,13 @@ jobs:
       - name: Cargo build & test
         run: |
           cargo test --workspace
-          cargo test -p snowflake-bodies --all-features
+          cargo test -p snowflake-handlers --all-features
 
       - name: Verify package contents
         run: node tools/package-check.mjs
 
   consumer-pin:
-    name: Rust build/test against tree-sitter 0.26 (snowflake-bodies' declared floor)
+    name: Rust build/test against tree-sitter 0.26 (snowflake-handlers' declared floor)
     needs: changes
     if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true'
     runs-on: ubuntu-latest
@@ -307,7 +307,7 @@ jobs:
 
       # The dev-dependency tracks the latest tree-sitter, so the `verify`
       # job above covers the newest release. This job covers the other
-      # end of the range: snowflake-bodies/Cargo.toml declares
+      # end of the range: snowflake-handlers/Cargo.toml declares
       # `tree-sitter = ">=0.26, <0.28"`, and the generated parser's ABI
       # must stay one that floor accepts. cadence and marlin both moved to
       # `tree-sitter = "0.27"` (verified 2026-09-26), so 0.26 no longer
@@ -321,8 +321,8 @@ jobs:
       - name: Pin tree-sitter to its declared floor and test
         run: |
           sed -i 's/^tree-sitter = .*/tree-sitter = "0.26"/' Cargo.toml
-          sed -i 's/^tree-sitter = .*/tree-sitter = "0.26"/' snowflake-bodies/Cargo.toml
-          grep 'tree-sitter = ' Cargo.toml snowflake-bodies/Cargo.toml
+          sed -i 's/^tree-sitter = .*/tree-sitter = "0.26"/' snowflake-handlers/Cargo.toml
+          grep 'tree-sitter = ' Cargo.toml snowflake-handlers/Cargo.toml
           cargo test --workspace --all-features
 
   node-binding:
