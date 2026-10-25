@@ -52,6 +52,31 @@ This approach does not require using tree-sitter as the tool's runtime parser. A
 can retain its own lossless syntax tree, comment handling, and recovery rules while using
 this grammar to expand its regression coverage.
 
+To compare outputs without integrating tree-sitter into the external tool's harness, use
+`tools/parse-summary.mjs`:
+
+```bash
+node tools/parse-summary.mjs <corpus-root-or-file> [--grammar <dir>] [--out <file>]
+```
+
+The script outputs JSON Lines where each line represents one `.sql` file:
+
+```json
+{
+  "file": "path/to/script.sql",
+  "statements": [
+    { "kind": "create_table", "start": 0, "end": 45 }
+  ],
+  "errors": [
+    { "start": 50, "end": 52 }
+  ]
+}
+```
+
+- `file`: the file path, formatted with forward slashes (relative to the corpus directory when a directory path was provided).
+- `statements`: top-level statement entries with node `kind` and half-open byte range `[start, end)`.
+- `errors`: byte ranges of outermost `ERROR` and `MISSING` nodes.
+
 ## Dialect selection
 
 The `.sql` extension does not distinguish Snowflake from other SQL dialects. Use explicit

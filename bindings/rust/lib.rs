@@ -39,6 +39,8 @@ pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
 pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
 pub const STRUCTURE_QUERY: &str = include_str!("../../queries/structure.scm");
+pub const TAGS_QUERY: &str = include_str!("../../queries/tags.scm");
+pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
 
 /// The exported C symbol name, `tree_sitter_snowflake`. Two grammars that
 /// share a name export the same symbol, and a linker that sees both
@@ -84,5 +86,15 @@ mod tests {
         parser.set_language(&LANGUAGE.into()).unwrap();
         let tree = parser.parse("SELECT 1;", None).unwrap();
         assert!(!tree.root_node().has_error());
+    }
+
+    #[test]
+    fn test_queries_are_valid() {
+        let language: tree_sitter::Language = LANGUAGE.into();
+        tree_sitter::Query::new(&language, HIGHLIGHTS_QUERY).unwrap();
+        tree_sitter::Query::new(&language, INJECTIONS_QUERY).unwrap();
+        tree_sitter::Query::new(&language, STRUCTURE_QUERY).unwrap();
+        tree_sitter::Query::new(&language, TAGS_QUERY).unwrap();
+        tree_sitter::Query::new(&language, LOCALS_QUERY).unwrap();
     }
 }
