@@ -90,7 +90,8 @@ test('parseSummaryFromXml captures status-line MISSING errors and deduplicates',
       </statement>
       ;
     </program>
-    test.sql\tParse: 0.40 ms 44 bytes/ms (MISSING identifier [0, 6] - [0, 6])
+    </source>
+    test.sql\tParse: 0.40 ms 44 bytes/ms (MISSING identifier [0, 6] - [0, 6]) (MISSING ";" [0, 6] - [0, 6])
   `;
   const starts = [0];
   const { statements, errors } = parseSummaryFromXml(xml, starts);
@@ -102,6 +103,27 @@ test('parseSummaryFromXml captures status-line MISSING errors and deduplicates',
     end: 6,
   });
   assert.deepEqual(errors, [{ start: 6, end: 6 }]);
+});
+
+test('parseSummaryFromXml does not flag fake error patterns in SQL comments or literals', () => {
+  const xml = `
+    <program srow="0" scol="0" erow="0" ecol="40">
+      <comment srow="0" scol="0" erow="0" ecol="30">-- (MISSING ";" [0, 0] - [0, 5])</comment>
+      <statement srow="0" scol="31" erow="0" ecol="39">
+        <select srow="0" scol="31" erow="0" ecol="39">
+          <keyword_select srow="0" scol="31" erow="0" ecol="37">SELECT</keyword_select>
+        </select>
+      </statement>
+      ;
+    </program>
+    </source>
+  `;
+  const starts = [0];
+  const { statements, errors } = parseSummaryFromXml(xml, starts);
+
+  assert.equal(errors.length, 0);
+  assert.equal(statements.length, 1);
+  assert.equal(statements[0].kind, 'select');
 });
 
 test('parseSummaryFromXml ignores marginalia when determining statement kind', () => {

@@ -9,7 +9,7 @@ import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
-import { dirname, join, relative, sep } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolveTreeSitterCli } from './fixture-result.mjs';
 import { decode } from './parse-rate/parse-rate.mjs';
@@ -50,13 +50,17 @@ export function parseSummaryFromXml(xml, starts) {
   let m;
   let currentTopLevelStatement = null;
 
-  while ((m = re.exec(xml)) !== null) {
+  const sourceEndIdx = xml.indexOf('</source>');
+  const xmlTree = sourceEndIdx !== -1 ? xml.slice(0, sourceEndIdx + 9) : xml;
+  const statusText = sourceEndIdx !== -1 ? xml.slice(sourceEndIdx + 9) : xml;
+
+  while ((m = re.exec(xmlTree)) !== null) {
     const isClosing = m[1] === '/';
     const tag = m[2];
     const isSelfClosing = /\/>$/.test(m[0]);
 
     if (isClosing) {
-      const idx = stack.map((s) => s.tag).lastIndexOf(tag);
+      const idx = stack.findLastIndex((s) => s.tag === tag);
       if (idx !== -1) {
         if (currentTopLevelStatement && stack[idx] === currentTopLevelStatement) {
           currentTopLevelStatement = null;
@@ -120,8 +124,8 @@ export function parseSummaryFromXml(xml, starts) {
   }
 
   const statusRe =
-    /\((?:ERROR|MISSING)(?:\s+[A-Za-z0-9_]+)?\s+\[(\d+),\s*(\d+)\]\s*-\s*\[(\d+),\s*(\d+)\]\)/g;
-  while ((m = statusRe.exec(xml)) !== null) {
+    /\((?:ERROR|MISSING)(?:\s+(?:[A-Za-z0-9_]+|"[^"]+"))?\s+\[(\d+),\s*(\d+)\]\s*-\s*\[(\d+),\s*(\d+)\]\)/g;
+  while ((m = statusRe.exec(statusText)) !== null) {
     const start = byteOffset(starts, Number(m[1]), Number(m[2]));
     const end = byteOffset(starts, Number(m[3]), Number(m[4]));
     const key = `${start}:${end}`;
@@ -177,16 +181,20 @@ if (isMain) {
   process.on('exit', () => rmSync(scratch, { recursive: true, force: true }));
 
   const normalized = [];
+  let fileIndex = 0;
   for (const file of files) {
     const [, text] = decode(readFileSync(file));
     const rel = isDirectory ? relative(inputPath, file) : file;
-    const normName = rel.split(sep).join('__');
-    const norm = join(scratch, normName);
+    const safeBase = basename(file).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const norm = join(scratch, `${fileIndex++}__${safeBase}`);
     mkdirSync(dirname(norm), { recursive: true });
     writeFileSync(norm, text, 'utf8');
     normalized.push({
       original: file,
-      displayPath: rel.split(sep).join('/'),
+      displayPath: rel
+        .split(sep)
+        .join('/')
+        .replace(/^(\.\/)+/, ''),
       norm,
       text,
     });
@@ -209,6 +217,7 @@ if (isMain) {
 
     const xml = proc.stdout.toString('utf8');
     const chunks = xml.split('<source name="');
+    const matched = new Set();
 
     for (let c = 1; c < chunks.length; c++) {
       const nl = chunks[c].indexOf('\n');
@@ -224,6 +233,7 @@ if (isMain) {
         );
       }
 
+      matched.add(target);
       const starts = lineStarts(target.text);
       const { statements, errors } = parseSummaryFromXml(body, starts);
       results.push({
@@ -231,6 +241,12 @@ if (isMain) {
         statements,
         errors,
       });
+    }
+
+    if (matched.size !== batch.length) {
+      throw new Error(
+        `parse-summary: parser failed on batch (matched ${matched.size}/${batch.length} files, exit code ${proc.status}): ${proc.stderr.toString('utf8')}`,
+      );
     }
   }
 
