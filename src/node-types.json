@@ -35,6 +35,48 @@
     }
   },
   {
+    "type": "alert_option",
+    "named": true,
+    "fields": {
+      "warehouse": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "literal",
+            "named": true
+          },
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_schedule",
+          "named": true
+        },
+        {
+          "type": "keyword_warehouse",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "all_fields",
     "named": true,
     "fields": {},
@@ -95,6 +137,178 @@
         },
         {
           "type": "option",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "alter_alert",
+    "named": true,
+    "fields": {
+      "action": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "array_constructor",
+          "named": true
+        },
+        {
+          "type": "between_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "bind_variable",
+          "named": true
+        },
+        {
+          "type": "case",
+          "named": true
+        },
+        {
+          "type": "cast",
+          "named": true
+        },
+        {
+          "type": "cast_expression",
+          "named": true
+        },
+        {
+          "type": "exists",
+          "named": true
+        },
+        {
+          "type": "extract_expression",
+          "named": true
+        },
+        {
+          "type": "field",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "identifier_function",
+          "named": true
+        },
+        {
+          "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "keyword_action",
+          "named": true
+        },
+        {
+          "type": "keyword_alert",
+          "named": true
+        },
+        {
+          "type": "keyword_alter",
+          "named": true
+        },
+        {
+          "type": "keyword_condition",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_modify",
+          "named": true
+        },
+        {
+          "type": "keyword_rename",
+          "named": true
+        },
+        {
+          "type": "keyword_resume",
+          "named": true
+        },
+        {
+          "type": "keyword_set",
+          "named": true
+        },
+        {
+          "type": "keyword_suspend",
+          "named": true
+        },
+        {
+          "type": "keyword_to",
+          "named": true
+        },
+        {
+          "type": "keyword_unset",
+          "named": true
+        },
+        {
+          "type": "lambda_expression",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "semi_structured",
+          "named": true
+        },
+        {
+          "type": "subquery",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "window_function",
           "named": true
         }
       ]
@@ -738,6 +952,130 @@
         },
         {
           "type": "option",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "alter_policy",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "policy_body",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_access",
+          "named": true
+        },
+        {
+          "type": "keyword_aggregation",
+          "named": true
+        },
+        {
+          "type": "keyword_alter",
+          "named": true
+        },
+        {
+          "type": "keyword_authentication",
+          "named": true
+        },
+        {
+          "type": "keyword_body",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_masking",
+          "named": true
+        },
+        {
+          "type": "keyword_network",
+          "named": true
+        },
+        {
+          "type": "keyword_password",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_projection",
+          "named": true
+        },
+        {
+          "type": "keyword_rename",
+          "named": true
+        },
+        {
+          "type": "keyword_row",
+          "named": true
+        },
+        {
+          "type": "keyword_session",
+          "named": true
+        },
+        {
+          "type": "keyword_set",
+          "named": true
+        },
+        {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_to",
+          "named": true
+        },
+        {
+          "type": "keyword_unset",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -4488,6 +4826,150 @@
     }
   },
   {
+    "type": "create_alert",
+    "named": true,
+    "fields": {
+      "action": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "alert_option",
+          "named": true
+        },
+        {
+          "type": "array_constructor",
+          "named": true
+        },
+        {
+          "type": "between_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "bind_variable",
+          "named": true
+        },
+        {
+          "type": "case",
+          "named": true
+        },
+        {
+          "type": "cast",
+          "named": true
+        },
+        {
+          "type": "cast_expression",
+          "named": true
+        },
+        {
+          "type": "exists",
+          "named": true
+        },
+        {
+          "type": "extract_expression",
+          "named": true
+        },
+        {
+          "type": "field",
+          "named": true
+        },
+        {
+          "type": "identifier_function",
+          "named": true
+        },
+        {
+          "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "keyword_alert",
+          "named": true
+        },
+        {
+          "type": "keyword_create",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_not",
+          "named": true
+        },
+        {
+          "type": "keyword_or",
+          "named": true
+        },
+        {
+          "type": "keyword_replace",
+          "named": true
+        },
+        {
+          "type": "keyword_then",
+          "named": true
+        },
+        {
+          "type": "lambda_expression",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "semi_structured",
+          "named": true
+        },
+        {
+          "type": "subquery",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "window_function",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "create_cortex_search",
     "named": true,
     "fields": {
@@ -5120,6 +5602,214 @@
         },
         {
           "type": "option",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "create_policy",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "policy_body",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      },
+      "policy_type": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "keyword_access",
+            "named": true
+          },
+          {
+            "type": "keyword_aggregation",
+            "named": true
+          },
+          {
+            "type": "keyword_authentication",
+            "named": true
+          },
+          {
+            "type": "keyword_masking",
+            "named": true
+          },
+          {
+            "type": "keyword_network",
+            "named": true
+          },
+          {
+            "type": "keyword_password",
+            "named": true
+          },
+          {
+            "type": "keyword_projection",
+            "named": true
+          },
+          {
+            "type": "keyword_row",
+            "named": true
+          },
+          {
+            "type": "keyword_session",
+            "named": true
+          }
+        ]
+      },
+      "return_type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary",
+            "named": true
+          },
+          {
+            "type": "custom_type",
+            "named": true
+          },
+          {
+            "type": "keyword_array",
+            "named": true
+          },
+          {
+            "type": "keyword_boolean",
+            "named": true
+          },
+          {
+            "type": "keyword_char",
+            "named": true
+          },
+          {
+            "type": "keyword_date",
+            "named": true
+          },
+          {
+            "type": "keyword_datetime",
+            "named": true
+          },
+          {
+            "type": "keyword_double",
+            "named": true
+          },
+          {
+            "type": "keyword_double_prec_only",
+            "named": true
+          },
+          {
+            "type": "keyword_float",
+            "named": true
+          },
+          {
+            "type": "keyword_geography",
+            "named": true
+          },
+          {
+            "type": "keyword_geometry",
+            "named": true
+          },
+          {
+            "type": "keyword_int",
+            "named": true
+          },
+          {
+            "type": "keyword_object",
+            "named": true
+          },
+          {
+            "type": "keyword_string",
+            "named": true
+          },
+          {
+            "type": "keyword_variant",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "time",
+            "named": true
+          },
+          {
+            "type": "timestamp",
+            "named": true
+          },
+          {
+            "type": "varchar",
+            "named": true
+          },
+          {
+            "type": "vector",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_as",
+          "named": true
+        },
+        {
+          "type": "keyword_create",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_not",
+          "named": true
+        },
+        {
+          "type": "keyword_or",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_replace",
+          "named": true
+        },
+        {
+          "type": "keyword_returns",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        },
+        {
+          "type": "policy_parameter",
           "named": true
         }
       ]
@@ -5786,11 +6476,23 @@
           "named": true
         },
         {
+          "type": "keyword_event",
+          "named": true
+        },
+        {
           "type": "keyword_exists",
           "named": true
         },
         {
           "type": "keyword_external",
+          "named": true
+        },
+        {
+          "type": "keyword_hybrid",
+          "named": true
+        },
+        {
+          "type": "keyword_iceberg",
           "named": true
         },
         {
@@ -10926,7 +11628,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -10934,7 +11636,23 @@
           "named": true
         },
         {
+          "type": "keyword_access",
+          "named": true
+        },
+        {
           "type": "keyword_agent",
+          "named": true
+        },
+        {
+          "type": "keyword_aggregation",
+          "named": true
+        },
+        {
+          "type": "keyword_alert",
+          "named": true
+        },
+        {
+          "type": "keyword_authentication",
           "named": true
         },
         {
@@ -10954,7 +11672,19 @@
           "named": true
         },
         {
+          "type": "keyword_masking",
+          "named": true
+        },
+        {
           "type": "keyword_materialized_view",
+          "named": true
+        },
+        {
+          "type": "keyword_network",
+          "named": true
+        },
+        {
+          "type": "keyword_password",
           "named": true
         },
         {
@@ -10962,11 +11692,23 @@
           "named": true
         },
         {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
           "type": "keyword_procedure",
           "named": true
         },
         {
+          "type": "keyword_projection",
+          "named": true
+        },
+        {
           "type": "keyword_role",
+          "named": true
+        },
+        {
+          "type": "keyword_row",
           "named": true
         },
         {
@@ -10975,6 +11717,10 @@
         },
         {
           "type": "keyword_sequence",
+          "named": true
+        },
+        {
+          "type": "keyword_session",
           "named": true
         },
         {
@@ -11120,6 +11866,10 @@
           },
           {
             "type": "option",
+            "named": true
+          },
+          {
+            "type": "stage_reference",
             "named": true
           }
         ]
@@ -11548,6 +12298,199 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "policy_body",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "array_constructor",
+          "named": true
+        },
+        {
+          "type": "between_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "bind_variable",
+          "named": true
+        },
+        {
+          "type": "case",
+          "named": true
+        },
+        {
+          "type": "cast",
+          "named": true
+        },
+        {
+          "type": "cast_expression",
+          "named": true
+        },
+        {
+          "type": "exists",
+          "named": true
+        },
+        {
+          "type": "extract_expression",
+          "named": true
+        },
+        {
+          "type": "field",
+          "named": true
+        },
+        {
+          "type": "identifier_function",
+          "named": true
+        },
+        {
+          "type": "invocation",
+          "named": true
+        },
+        {
+          "type": "lambda_expression",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "semi_structured",
+          "named": true
+        },
+        {
+          "type": "subquery",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "window_function",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "policy_parameter",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary",
+            "named": true
+          },
+          {
+            "type": "custom_type",
+            "named": true
+          },
+          {
+            "type": "keyword_array",
+            "named": true
+          },
+          {
+            "type": "keyword_boolean",
+            "named": true
+          },
+          {
+            "type": "keyword_char",
+            "named": true
+          },
+          {
+            "type": "keyword_date",
+            "named": true
+          },
+          {
+            "type": "keyword_datetime",
+            "named": true
+          },
+          {
+            "type": "keyword_double",
+            "named": true
+          },
+          {
+            "type": "keyword_double_prec_only",
+            "named": true
+          },
+          {
+            "type": "keyword_float",
+            "named": true
+          },
+          {
+            "type": "keyword_geography",
+            "named": true
+          },
+          {
+            "type": "keyword_geometry",
+            "named": true
+          },
+          {
+            "type": "keyword_int",
+            "named": true
+          },
+          {
+            "type": "keyword_object",
+            "named": true
+          },
+          {
+            "type": "keyword_string",
+            "named": true
+          },
+          {
+            "type": "keyword_variant",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "time",
+            "named": true
+          },
+          {
+            "type": "timestamp",
+            "named": true
+          },
+          {
+            "type": "varchar",
+            "named": true
+          },
+          {
+            "type": "vector",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -13590,6 +14533,10 @@
           "named": true
         },
         {
+          "type": "alter_alert",
+          "named": true
+        },
+        {
           "type": "alter_database",
           "named": true
         },
@@ -13603,6 +14550,10 @@
         },
         {
           "type": "alter_pipe",
+          "named": true
+        },
+        {
+          "type": "alter_policy",
           "named": true
         },
         {
@@ -13702,6 +14653,10 @@
           "named": true
         },
         {
+          "type": "create_alert",
+          "named": true
+        },
+        {
           "type": "create_cortex_search",
           "named": true
         },
@@ -13731,6 +14686,10 @@
         },
         {
           "type": "create_pipe",
+          "named": true
+        },
+        {
+          "type": "create_policy",
           "named": true
         },
         {
@@ -14194,6 +15153,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "partition_by",
           "named": true
         },
         {
@@ -16023,6 +16986,10 @@
     "named": true
   },
   {
+    "type": "keyword_action",
+    "named": true
+  },
+  {
     "type": "keyword_add",
     "named": true
   },
@@ -16035,7 +17002,15 @@
     "named": true
   },
   {
+    "type": "keyword_aggregation",
+    "named": true
+  },
+  {
     "type": "keyword_ai_verified_queries",
+    "named": true
+  },
+  {
+    "type": "keyword_alert",
     "named": true
   },
   {
@@ -16071,6 +17046,10 @@
     "named": true
   },
   {
+    "type": "keyword_authentication",
+    "named": true
+  },
+  {
     "type": "keyword_before",
     "named": true
   },
@@ -16080,6 +17059,10 @@
   },
   {
     "type": "keyword_between",
+    "named": true
+  },
+  {
+    "type": "keyword_body",
     "named": true
   },
   {
@@ -16144,6 +17127,10 @@
   },
   {
     "type": "keyword_commit",
+    "named": true
+  },
+  {
+    "type": "keyword_condition",
     "named": true
   },
   {
@@ -16256,6 +17243,10 @@
   },
   {
     "type": "keyword_enforced",
+    "named": true
+  },
+  {
+    "type": "keyword_event",
     "named": true
   },
   {
@@ -16384,6 +17375,14 @@
   },
   {
     "type": "keyword_having",
+    "named": true
+  },
+  {
+    "type": "keyword_hybrid",
+    "named": true
+  },
+  {
+    "type": "keyword_iceberg",
     "named": true
   },
   {
@@ -16539,6 +17538,10 @@
     "named": true
   },
   {
+    "type": "keyword_network",
+    "named": true
+  },
+  {
     "type": "keyword_next",
     "named": true
   },
@@ -16635,6 +17638,10 @@
     "named": true
   },
   {
+    "type": "keyword_password",
+    "named": true
+  },
+  {
     "type": "keyword_past",
     "named": true
   },
@@ -16676,6 +17683,10 @@
   },
   {
     "type": "keyword_procedure",
+    "named": true
+  },
+  {
+    "type": "keyword_projection",
     "named": true
   },
   {

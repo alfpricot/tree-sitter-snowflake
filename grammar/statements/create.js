@@ -27,6 +27,8 @@ export default {
       $.create_agent,
       $.create_streamlit,
       $.create_cortex_search,
+      $.create_policy,
+      $.create_alert,
     ),
 
   // CREATE [OR REPLACE] CORTEX SEARCH SERVICE name ON column
@@ -97,8 +99,17 @@ export default {
       seq(
         $.keyword_create,
         optional($._or_replace),
-        optional(choice($.keyword_transient, $.keyword_volatile, $.keyword_temporary)),
-        optional($.keyword_external),
+        repeat(
+          choice(
+            $.keyword_transient,
+            $.keyword_volatile,
+            $.keyword_temporary,
+            $.keyword_external,
+            $.keyword_iceberg,
+            $.keyword_event,
+            $.keyword_hybrid,
+          ),
+        ),
         $.keyword_table,
         optional($._if_not_exists),
         field('name', $.object_reference),
@@ -124,17 +135,21 @@ export default {
   // The CTAS query.
   create_query: ($) => $._dml_read,
 
-  // CLUSTER BY (expr, ...), COPY GRANTS, and the identifier = value
-  // property tail Snowflake tables carry.
+  // CLUSTER BY (expr, ...), PARTITION BY (...), COPY GRANTS, and the
+  // identifier = value property tail Snowflake tables carry.
   table_option: ($) =>
     prec.left(
       choice(
         $.cluster_by,
+        $.partition_by,
         seq($.keyword_copy, $.keyword_grants),
         seq($.keyword_with, $.keyword_tag, paren_list($.tag_assignment, true)),
         $.option,
       ),
     ),
+
+  partition_by: ($) =>
+    seq($.keyword_partition, $.keyword_by, paren_list(choice($.identifier, $._expression), true)),
 
   cluster_by: ($) => seq($.keyword_cluster, $.keyword_by, paren_list($._expression, true)),
 
@@ -385,5 +400,82 @@ export default {
         field('name', $.identifier),
         repeat1($.option),
       ),
+    ),
+
+  // CREATE [OR REPLACE] {MASKING | ROW ACCESS | AGGREGATION | PROJECTION} POLICY [IF NOT EXISTS] name
+  //   AS (args) RETURNS type -> expr [COMMENT = '...'] ...
+  // CREATE [OR REPLACE] {NETWORK | PASSWORD | SESSION | AUTHENTICATION} POLICY [IF NOT EXISTS] name
+  //   [options ...]
+  create_policy: ($) =>
+    prec.right(
+      seq(
+        $.keyword_create,
+        optional($._or_replace),
+        optional(
+          field(
+            'policy_type',
+            choice(
+              $.keyword_masking,
+              seq($.keyword_row, $.keyword_access),
+              $.keyword_aggregation,
+              $.keyword_projection,
+              $.keyword_network,
+              $.keyword_password,
+              $.keyword_session,
+              $.keyword_authentication,
+            ),
+          ),
+        ),
+        $.keyword_policy,
+        optional($._if_not_exists),
+        field('name', $.object_reference),
+        choice(
+          seq(
+            repeat($.option),
+            $.keyword_as,
+            paren_list($.policy_parameter, false),
+            $.keyword_returns,
+            field('return_type', $._type),
+            '->',
+            field('body', $.policy_body),
+            repeat($.option),
+          ),
+          repeat($.option),
+        ),
+      ),
+    ),
+
+  policy_parameter: ($) => seq(field('name', $.identifier), optional(field('type', $._type))),
+
+  policy_body: ($) => $._expression,
+
+  // CREATE [OR REPLACE] ALERT [IF NOT EXISTS] name
+  //   [WAREHOUSE = ...] [SCHEDULE = ...] [COMMENT = ...]
+  //   IF ( EXISTS ( query ) ) THEN statement
+  create_alert: ($) =>
+    prec.right(
+      seq(
+        $.keyword_create,
+        optional($._or_replace),
+        $.keyword_alert,
+        optional($._if_not_exists),
+        field('name', $.object_reference),
+        repeat($.alert_option),
+        $.keyword_if,
+        wrapped_in_parenthesis($._expression),
+        $.keyword_then,
+        field('action', $.statement),
+      ),
+    ),
+
+  alert_option: ($) =>
+    choice(
+      seq(
+        $.keyword_warehouse,
+        '=',
+        field('warehouse', choice($.object_reference, alias($._single_quote_string, $.literal))),
+      ),
+      seq($.keyword_schedule, '=', alias($._single_quote_string, $.literal)),
+      $.option,
     ),
 };
