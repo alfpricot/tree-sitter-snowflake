@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 const tracked = new Set(execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0'));
 const common = ['LICENSE', 'README.md', 'src/parser.c', 'src/scanner.c', 'queries/highlights.scm'];
@@ -26,6 +27,12 @@ for (const [name, prefix, required] of [
   ['tree-sitter-snowflake', '', [...common, 'bindings/rust/lib.rs', 'bindings/rust/build.rs']],
   ['snowflake-handlers', 'snowflake-handlers/', ['LICENSE', 'README.md', 'src/lib.rs']],
 ]) {
+  // The release workflow runs this script from main against an older tag's tree, which can
+  // predate the companion crate's current directory; skip it there rather than fail the run.
+  if (prefix && !existsSync(`${prefix}Cargo.toml`)) {
+    console.log(`Skipped ${name}: ${prefix} is not in this checkout.`);
+    continue;
+  }
   const files = execFileSync('cargo', ['package', '-p', name, '--list', '--allow-dirty'], {
     encoding: 'utf8',
   })
