@@ -15,7 +15,14 @@
 *.cc                     text eol=lf linguist-detectable=true linguist-language=C++
 *.gyp                    text eol=lf
 *.scm                    text eol=lf
-src/parser.c             linguist-generated=true
+# -diff: parser.c is a ~400k-line parse-state table whose state numbers shift
+# wholesale when the grammar changes, so its textual diff is one giant rewrite
+# that carries no reviewable information. Treat it as binary so git and GitHub
+# show no content diff; grammar.json and node-types.json stay textual and
+# carry the reviewable half of a regeneration. Note that a binary file cannot be
+# merged textually: when two branches both change the grammar, resolve by
+# regenerating after keeping one side's grammar.js.
+src/parser.c             -diff linguist-generated=true
 src/grammar.json         linguist-generated=true
 src/node-types.json      linguist-generated=true
 
