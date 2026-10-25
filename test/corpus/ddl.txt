@@ -1120,3 +1120,458 @@ create or replace semantic view DB1.S2.SEMV2
               (identifier)
               (literal
                 (literal)))))))))
+
+================================================================================
+governance policies
+================================================================================
+
+CREATE OR REPLACE MASKING POLICY email_mask AS (val string) RETURNS string ->
+  CASE WHEN current_role() IN ('ANALYST') THEN val ELSE '***MASKED***' END
+  COMMENT = 'email masking';
+
+CREATE ROW ACCESS POLICY rap AS (dept_id int) RETURNS BOOLEAN ->
+  current_role() = 'ADMIN' OR dept_id = 10;
+
+CREATE AGGREGATION POLICY agg_policy AS () RETURNS BOOLEAN ->
+  current_role() = 'ANALYST';
+
+CREATE PROJECTION POLICY proj_policy AS () RETURNS BOOLEAN -> false;
+
+CREATE PASSWORD POLICY pwd_policy
+  PASSWORD_MIN_LENGTH = 12
+  PASSWORD_MAX_AGE_DAYS = 90;
+
+CREATE NETWORK POLICY net_policy
+  ALLOWED_IP_LIST = ('192.168.1.0/24')
+  BLOCKED_IP_LIST = ('10.0.0.1');
+
+ALTER MASKING POLICY email_mask SET BODY -> '***REDACTED***';
+
+DROP MASKING POLICY IF EXISTS email_mask;
+
+---
+
+(program
+  (statement
+    (create_policy
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_masking)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_as)
+      (policy_parameter
+        (identifier)
+        (keyword_string))
+      (keyword_returns)
+      (keyword_string)
+      (policy_body
+        (case
+          (keyword_case)
+          (when_clause
+            (keyword_when)
+            (binary_expression
+              (invocation
+                (object_reference
+                  (identifier)))
+              (keyword_in)
+              (list
+                (literal
+                  (literal))))
+            (keyword_then)
+            (field
+              (identifier)))
+          (keyword_else)
+          (literal
+            (literal))
+          (keyword_end)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_policy
+      (keyword_create)
+      (keyword_row)
+      (keyword_access)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_as)
+      (policy_parameter
+        (identifier)
+        (keyword_int))
+      (keyword_returns)
+      (keyword_boolean)
+      (policy_body
+        (binary_expression
+          (binary_expression
+            (invocation
+              (object_reference
+                (identifier)))
+            (literal
+              (literal)))
+          (keyword_or)
+          (binary_expression
+            (field
+              (identifier))
+            (literal))))))
+  (statement
+    (create_policy
+      (keyword_create)
+      (keyword_aggregation)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_as)
+      (keyword_returns)
+      (keyword_boolean)
+      (policy_body
+        (binary_expression
+          (invocation
+            (object_reference
+              (identifier)))
+          (literal
+            (literal))))))
+  (statement
+    (create_policy
+      (keyword_create)
+      (keyword_projection)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_as)
+      (keyword_returns)
+      (keyword_boolean)
+      (policy_body
+        (literal
+          (keyword_false)))))
+  (statement
+    (create_policy
+      (keyword_create)
+      (keyword_password)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal))
+      (option
+        (identifier)
+        (literal))))
+  (statement
+    (create_policy
+      (keyword_create)
+      (keyword_network)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_policy
+      (keyword_alter)
+      (keyword_masking)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_body)
+      (policy_body
+        (literal
+          (literal)))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_masking)
+      (keyword_policy))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier))))
+
+================================================================================
+alerts
+================================================================================
+
+CREATE OR REPLACE ALERT my_alert
+  WAREHOUSE = my_wh
+  SCHEDULE = '1 MINUTE'
+  COMMENT = 'check errors'
+  IF (EXISTS (SELECT 1 FROM errors WHERE count > 100))
+  THEN CALL send_notification('High error count');
+
+ALTER ALERT my_alert RESUME;
+
+ALTER ALERT my_alert MODIFY CONDITION EXISTS (SELECT 1 FROM errors WHERE count > 200);
+
+ALTER ALERT my_alert MODIFY ACTION CALL send_notification('Critical error count');
+
+DROP ALERT IF EXISTS my_alert;
+
+---
+
+(program
+  (statement
+    (create_alert
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_alert)
+      (object_reference
+        (identifier))
+      (alert_option
+        (keyword_warehouse)
+        (object_reference
+          (identifier)))
+      (alert_option
+        (keyword_schedule)
+        (literal))
+      (alert_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (keyword_if)
+      (exists
+        (keyword_exists)
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (literal))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))))
+      (keyword_then)
+      (statement
+        (call_statement
+          (keyword_call)
+          (invocation
+            (object_reference
+              (identifier))
+            (literal
+              (literal)))))))
+  (statement
+    (alter_alert
+      (keyword_alter)
+      (keyword_alert)
+      (object_reference
+        (identifier))
+      (keyword_resume)))
+  (statement
+    (alter_alert
+      (keyword_alter)
+      (keyword_alert)
+      (object_reference
+        (identifier))
+      (keyword_modify)
+      (keyword_condition)
+      (exists
+        (keyword_exists)
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (literal))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))))))
+  (statement
+    (alter_alert
+      (keyword_alter)
+      (keyword_alert)
+      (object_reference
+        (identifier))
+      (keyword_modify)
+      (keyword_action)
+      (statement
+        (call_statement
+          (keyword_call)
+          (invocation
+            (object_reference
+              (identifier))
+            (literal
+              (literal)))))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_alert))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier))))
+
+================================================================================
+external iceberg event and hybrid tables
+================================================================================
+
+CREATE EXTERNAL TABLE ext_events (
+  date_part DATE AS (to_date(substr(metadata$filename, 1, 10))),
+  payload VARIANT
+)
+PARTITION BY (date_part)
+LOCATION = @my_stage/events/
+FILE_FORMAT = (TYPE = JSON);
+
+CREATE OR REPLACE ICEBERG TABLE my_iceberg (
+  id INT,
+  data STRING
+)
+CATALOG = 'SNOWFLAKE'
+EXTERNAL_VOLUME = 'my_ext_vol'
+BASE_LOCATION = 'iceberg/';
+
+CREATE EVENT TABLE my_events (
+  timestamp TIMESTAMP_LTZ,
+  event_type STRING
+);
+
+CREATE HYBRID TABLE my_hybrid (
+  id INT NOT NULL,
+  name VARCHAR(50),
+  CONSTRAINT pk_hybrid PRIMARY KEY (id)
+);
+
+---
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_external)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_date)
+          (keyword_as)
+          (invocation
+            (object_reference
+              (identifier))
+            (invocation
+              (object_reference
+                (identifier))
+              (field
+                (identifier))
+              (literal)
+              (literal))))
+        (column_definition
+          (identifier)
+          (keyword_variant)))
+      (table_option
+        (partition_by
+          (keyword_partition)
+          (keyword_by)
+          (parenthesized_expression
+            (field
+              (identifier)))))
+      (table_option
+        (option
+          (identifier)
+          (stage_reference)))
+      (table_option
+        (option
+          (identifier)
+          (option
+            (identifier)
+            (object_reference
+              (identifier)))))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_iceberg)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int))
+        (column_definition
+          (identifier)
+          (keyword_string)))
+      (table_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (table_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (table_option
+        (option
+          (identifier)
+          (literal
+            (literal))))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_event)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (timestamp
+            (keyword_timestamp)))
+        (column_definition
+          (identifier)
+          (keyword_string)))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_hybrid)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (keyword_not)
+          (keyword_null))
+        (column_definition
+          (identifier)
+          (varchar
+            (keyword_varchar)
+            (literal)))
+        (table_constraint
+          (keyword_constraint)
+          (identifier)
+          (keyword_primary)
+          (keyword_key)
+          (identifier))))))
