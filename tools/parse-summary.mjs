@@ -57,7 +57,7 @@ export function parseSummaryFromXml(xml, starts) {
   while ((m = re.exec(xmlTree)) !== null) {
     const isClosing = m[1] === '/';
     const tag = m[2];
-    const isSelfClosing = /\/>$/.test(m[0]);
+    const isSelfClosing = m[0].endsWith('/>');
 
     if (isClosing) {
       const idx = stack.findLastIndex((s) => s.tag === tag);
