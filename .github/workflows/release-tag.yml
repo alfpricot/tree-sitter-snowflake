@@ -6,7 +6,9 @@
 #  Type                Entrypoint (runs in this repo only)
 #  Triggers            pull_request (closed, base main)
 #  Purpose             Tags the version once release-plz.yml's release PR
-#                      (head branch release-plz/release) is merged into main.
+#                      (head branch release-plz/release) is merged into main,
+#                      and tags the companion snowflake-handlers crate at its
+#                      own version with release-plz.toml's tag template.
 #                      A tag ref isn't covered by this repo's branch
 #                      rulesets, so pushing it needs no PR — but GitHub never
 #                      fires further workflow runs off a GITHUB_TOKEN-
@@ -44,6 +46,34 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+      # The companion crate versions independently of the root package, so
+      # release-plz.toml names a tag template of its own for it. release-plz
+      # only ever runs `update` in this repository, never `release`, and no
+      # other step creates that tag — release-plz's changelog entries link to
+      # it and its per-package release state reads from it. This step does.
+      # The name does not start with `v`, so pushing it never matches
+      # release.yml's `v*` filter: publishing stays driven by the `v` tag below.
+      - name: Tag the companion crate release
+        run: |
+          set -euo pipefail
+          manifest="snowflake-handlers/Cargo.toml"
+          if [ ! -f "$manifest" ]; then
+            echo "No snowflake-handlers package in this commit — skipping its tag."
+            exit 0
+          fi
+          handlers_version=$(sed -n 's/^version = "\(.*\)"/\1/p' "$manifest")
+          if [ -z "${handlers_version}" ]; then
+            echo "Could not read a version from ${manifest}" >&2
+            exit 1
+          fi
+          handlers_tag="snowflake-handlers-v${handlers_version}"
+          if git show-ref --verify --quiet "refs/tags/${handlers_tag}"; then
+            echo "Tag ${handlers_tag} already exists."
+          else
+            git tag -a "${handlers_tag}" -m "${handlers_tag}"
+            git push origin "${handlers_tag}"
+            echo "Tagged ${handlers_tag}."
+          fi
       - name: Tag the release and dispatch the publish workflow
         env:
           GH_TOKEN: ${{ github.token }}
