@@ -8,7 +8,8 @@
 #  Purpose             Tags the version once release-plz.yml's release PR
 #                      (head branch release-plz/release) is merged into main,
 #                      and tags the companion snowflake-handlers crate at its
-#                      own version with release-plz.toml's tag template.
+#                      own version with release-plz.toml's tag template and
+#                      publishes that tag's GitHub release.
 #                      A tag ref isn't covered by this repo's branch
 #                      rulesets, so pushing it needs no PR — but GitHub never
 #                      fires further workflow runs off a GITHUB_TOKEN-
@@ -70,6 +71,8 @@ jobs:
       # must not keep the crates.io and npm publish from starting. The name
       # does not start with `v` either, so it matches no `v*` tag filter.
       - name: Tag the companion crate release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           manifest="snowflake-handlers/Cargo.toml"
@@ -89,4 +92,17 @@ jobs:
             git tag -a "${handlers_tag}" -m "${handlers_tag}"
             git push origin "${handlers_tag}"
             echo "Tagged ${handlers_tag}."
+          fi
+          # The changelog entries release-plz writes link to a GitHub Release,
+          # not a bare tag, so publish one or that link 404s. --latest=false
+          # keeps the grammar's own release carrying the "Latest" badge. The
+          # notes stay silent on crates.io: this step cannot observe the
+          # release.yml run it dispatched, so it must not claim a publish that
+          # may still fail.
+          if gh release view "${handlers_tag}" >/dev/null 2>&1; then
+            echo "Release ${handlers_tag} already exists."
+          else
+            gh release create "${handlers_tag}" --verify-tag --latest=false \
+              -n "snowflake-handlers ${handlers_version} — companion crate of tree-sitter-snowflake."
+            echo "Created release ${handlers_tag}."
           fi
