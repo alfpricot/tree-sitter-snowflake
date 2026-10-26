@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0](https://github.com/meloncholic/tree-sitter-snowflake/releases/tag/snowflake-bodies-v0.1.0) - 2026-09-12
+## [0.1.0](https://github.com/meloncholic/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.1.0) - 2026-09-12
 
 ### Added
 
