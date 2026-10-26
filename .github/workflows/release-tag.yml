@@ -46,13 +46,29 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Tag the release and dispatch the publish workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          tag="v${version}"
+          if git show-ref --verify --quiet "refs/tags/${tag}"; then
+            test "$(git rev-parse "refs/tags/${tag}^{commit}")" = "$(git rev-parse HEAD)"
+            echo "Tag ${tag} already exists at this release commit — retrying publish dispatch."
+          else
+            git tag -a "${tag}" -m "${tag}"
+            git push origin "${tag}"
+          fi
+          gh workflow run release.yml --ref "$tag" -f "tag=${tag}"
       # The companion crate versions independently of the root package, so
       # release-plz.toml names a tag template of its own for it. release-plz
       # only ever runs `update` in this repository, never `release`, and no
       # other step creates that tag — release-plz's changelog entries link to
       # it and its per-package release state reads from it. This step does.
-      # The name does not start with `v`, so pushing it never matches
-      # release.yml's `v*` filter: publishing stays driven by the `v` tag below.
+      # It runs after the dispatch on purpose: a rejected companion tag push
+      # must not keep the crates.io and npm publish from starting. The name
+      # does not start with `v` either, so it matches no `v*` tag filter.
       - name: Tag the companion crate release
         run: |
           set -euo pipefail
@@ -74,18 +90,3 @@ jobs:
             git push origin "${handlers_tag}"
             echo "Tagged ${handlers_tag}."
           fi
-      - name: Tag the release and dispatch the publish workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          version=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
-          tag="v${version}"
-          if git show-ref --verify --quiet "refs/tags/${tag}"; then
-            test "$(git rev-parse "refs/tags/${tag}^{commit}")" = "$(git rev-parse HEAD)"
-            echo "Tag ${tag} already exists at this release commit — retrying publish dispatch."
-          else
-            git tag -a "${tag}" -m "${tag}"
-            git push origin "${tag}"
-          fi
-          gh workflow run release.yml --ref "$tag" -f "tag=${tag}"
