@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2](https://github.com/meloncholera/tree-sitter-snowflake/compare/v0.2.1...v0.2.2) - 2026-10-25
+
+### Added
+
+- *(tooling)* add parse summary, tags and locals queries, and companion release config ([#51](https://github.com/meloncholera/tree-sitter-snowflake/pull/51))
+- *(grammar)* parse governance policies, alerts, and specialized tables ([#50](https://github.com/meloncholera/tree-sitter-snowflake/pull/50))
+
+### Other
+
+- replace eslint and prettier with oxlint and oxfmt ([#52](https://github.com/meloncholera/tree-sitter-snowflake/pull/52))
+- *(deps)* update cc requirement from ~1.5.1 to ~1.9.0 in the cargo-major group across 1 directory ([#45](https://github.com/meloncholera/tree-sitter-snowflake/pull/45))
+- *(deps)* bump the github-actions group across 1 directory with 4 updates ([#46](https://github.com/meloncholera/tree-sitter-snowflake/pull/46))
+- *(deps-dev)* bump undici from 8.10.2 to 8.12.3 ([#49](https://github.com/meloncholera/tree-sitter-snowflake/pull/49))
+- *(deps-dev)* bump the npm-minor-and-patch group with 2 updates ([#47](https://github.com/meloncholera/tree-sitter-snowflake/pull/47))
+- *(handlers)* rename snowflake-bodies to snowflake-handlers and refresh docs ([#48](https://github.com/meloncholera/tree-sitter-snowflake/pull/48))
+
 ## [0.2.1](https://github.com/meloncholera/tree-sitter-snowflake/compare/v0.2.0...v0.2.1) - 2026-10-04
 
 ### Other
