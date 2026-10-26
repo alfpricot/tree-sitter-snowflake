@@ -95,11 +95,14 @@ jobs:
           fi
           # The changelog entries release-plz writes link to a GitHub Release,
           # not a bare tag, so publish one or that link 404s. --latest=false
-          # keeps the grammar's own release carrying the "Latest" badge.
+          # keeps the grammar's own release carrying the "Latest" badge. The
+          # notes stay silent on crates.io: this step cannot observe the
+          # release.yml run it dispatched, so it must not claim a publish that
+          # may still fail.
           if gh release view "${handlers_tag}" >/dev/null 2>&1; then
             echo "Release ${handlers_tag} already exists."
           else
             gh release create "${handlers_tag}" --verify-tag --latest=false \
-              -n "snowflake-handlers ${handlers_version} — published to crates.io from this commit."
+              -n "snowflake-handlers ${handlers_version} — companion crate of tree-sitter-snowflake."
             echo "Created release ${handlers_tag}."
           fi
