@@ -2,7 +2,8 @@
 
 Extract and parse JavaScript, Python, Java, and Scala handlers embedded in Snowflake SQL.
 The grammar package remains independent: installing `tree-sitter-snowflake` does not link any
-embedded-language grammar. This companion crate is not yet published.
+embedded-language grammar. This crate is published on
+[crates.io](https://crates.io/crates/snowflake-handlers); install it with `cargo add snowflake-handlers`.
 
 ```rust
 use snowflake_handlers::{Analyzer, HandlerStatus};
