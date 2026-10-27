@@ -19,10 +19,10 @@ The grammar source: shared rules, expressions, clauses, scripting, types, keywor
 The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the hand-written `scanner.c`, which lexes `$$`-delimited bodies. The scanner must be compiled alongside the parser; vendoring one without the other produces a link error or a parser that cannot lex a dollar-quoted body.
 
 ### [queries/](queries)
-`highlights.scm`, `injections.scm` (dollar-quoted bodies only, since single-quoted bodies need decoding), and `structure.scm`.
+`highlights.scm`, `injections.scm` (dollar-quoted bodies only, since single-quoted bodies need decoding), `locals.scm`, `structure.scm`, and `tags.scm`.
 
 ### [bindings/](bindings)
-`bindings/rust` exposes `LANGUAGE`, the node-type JSON, and the query strings. `bindings/node` exposes `name`, `language`, and `nodeTypeInfo`.
+`bindings/rust` exposes `LANGUAGE`, the node-type JSON (`NODE_TYPES`), and one constant per query file (`HIGHLIGHTS_QUERY`, `INJECTIONS_QUERY`, `LOCALS_QUERY`, `STRUCTURE_QUERY`, `TAGS_QUERY`). `bindings/node` loads the native addon and adds `nodeTypeInfo` and the same query strings.
 
 ### [snowflake-handlers/](snowflake-handlers)
 A separate crate that decodes handler bodies, maps offsets back to the SQL file, parses JavaScript and Python (Java and Scala behind Cargo features), and runs advisory restriction checks.
@@ -36,9 +36,9 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 
 ## Build, test, release, and deploy
 
-`verify.yml` runs on pull requests and on pushes to `dev` and `main`. It checks the changed paths, secret scanning, workflow and YAML syntax, the pull request title, grammar regeneration (the committed parser must match), the corpus, fixtures, Rust format, lint and tests (also against tree-sitter 0.26, the companion's declared floor), package contents, and the Node binding. A final aggregate job named `Verify` is the required check.
+`verify.yml` runs on pull requests, on pushes to `dev` and `main`, and on manual dispatch. It checks the changed paths, secret scanning, workflow and YAML syntax, the pull request title, the unit tests for the repository's own scripts, grammar regeneration (the committed parser and node-kind snapshot must match), lint and formatting for the JavaScript, the corpus, fixtures, keyword handling, Rust format, lint and tests (also against tree-sitter 0.26, the companion's declared floor), package contents, and the Node binding. A final aggregate job named `Verify` is the required check.
 
-Feature pull requests go to `dev`. A release pull request from release-plz (`release-plz.toml`, git-only, tags `v<version>`) is promoted to `main`; `release-tag.yml` checks the tag, and `release.yml` publishes the crate to crates.io and the npm package to npm and GitHub Packages from the verified commit. `sync-dev-from-main.yml` brings `dev` back in line after a release. Nothing is deployed.
+Feature pull requests go to `dev`. A release pull request from release-plz (`release-plz.toml`, git-only) is promoted to `main`; the grammar crate is tagged `v<version>` and the companion crate `snowflake-handlers-v<version>`. `release-tag.yml` tags the merged release commit and dispatches `release.yml`, which publishes the crate to crates.io and the npm package to npm and GitHub Packages from the verified commit, builds prebuilt native addons for Linux and Windows, and attaches a WASM build to the GitHub Release. `sync-dev-from-main.yml` opens a pull request that merges `main` back into `dev` after a release, and `cache-cleanup.yml` deletes stale Actions caches on a daily schedule. Nothing is deployed.
 
 ## Where things live
 
@@ -46,9 +46,10 @@ Feature pull requests go to `dev`. A release pull request from release-plz (`rel
 | --- | --- |
 | `grammar.js`, `grammar/` | Grammar source |
 | `src/` | Generated parser and external scanner |
-| `queries/` | Highlight, injection, and structure queries |
+| `queries/` | Highlight, injection, locals, structure, and tags queries |
 | `bindings/` | Rust and Node bindings |
 | `snowflake-handlers/` | Embedded handler extraction crate |
 | `test/`, `tools/` | Corpus, fixtures, and verification scripts |
 | `docs/` | Reference documents |
 | `.github/workflows/` | Verify, release, and maintenance workflows |
+| `release-plz.toml` | Release configuration for the grammar and companion crates |

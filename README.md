@@ -1,6 +1,6 @@
 # tree-sitter-snowflake
 
-[![Verify](https://github.com/meloncholera/tree-sitter-snowflake/actions/workflows/verify.yml/badge.svg?branch=dev)](https://github.com/meloncholera/tree-sitter-snowflake/actions/workflows/verify.yml)
+[![Verify](https://github.com/alfpricot/tree-sitter-snowflake/actions/workflows/verify.yml/badge.svg?branch=dev)](https://github.com/alfpricot/tree-sitter-snowflake/actions/workflows/verify.yml)
 [![crates.io](https://img.shields.io/crates/v/tree-sitter-snowflake)](https://crates.io/crates/tree-sitter-snowflake)
 [![crates.io](https://img.shields.io/crates/v/snowflake-handlers)](https://crates.io/crates/snowflake-handlers)
 [![npm](https://img.shields.io/npm/v/tree-sitter-snowflake)](https://www.npmjs.com/package/tree-sitter-snowflake)
@@ -18,7 +18,7 @@ The optional [`snowflake-handlers`](snowflake-handlers/README.md) companion, for
 
 ### Requirements
 
-The Rust crate compiles the committed C parser through `cc`, so it needs a C compiler and Rust 1.85 or later. The Node package declares `tree-sitter` ^0.25 as an optional peer dependency.
+The Rust crate compiles the committed C parser through `cc`, so it needs a C compiler and Rust 1.85 or later; the `snowflake-handlers` crate needs Rust 1.90 or later. The Node package declares `tree-sitter` ^0.25 as an optional peer dependency.
 
 ## Usage
 

@@ -69,13 +69,13 @@ test('resolve only real tags on main and prepare consistent npm metadata', () =>
     assert.throws(() => resolveRelease('v0.1.2', run));
     writeFileSync(
       join(root, 'package.json'),
-      '{"name":"@meloncholic/tree-sitter-snowflake","version":"0.1.0"}',
+      '{"name":"@alfpricot/tree-sitter-snowflake","version":"0.1.0"}',
     );
     writeFileSync(join(root, 'tree-sitter.json'), '{"metadata":{"version":"0.1.0"}}');
     prepareNpm('v0.1.2', pathToFileURL(root + '/'));
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     assert.equal(pkg.version, '0.1.2');
-    assert.equal(pkg.name, '@meloncholic/tree-sitter-snowflake');
+    assert.equal(pkg.name, '@alfpricot/tree-sitter-snowflake');
     assert.equal(
       JSON.parse(readFileSync(join(root, 'tree-sitter.json'), 'utf8')).metadata.version,
       '0.1.2',
