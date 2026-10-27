@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a vulnerability. Use [GitHub's private vulnerability reporting](https://github.com/meloncholera/tree-sitter-snowflake/security/advisories/new) and include what you found, how to reproduce it, and the impact you expect. A parser crash or hang on some input that could affect downstream consumers belongs here too; a plain parse failure on valid Snowflake SQL is an ordinary bug for a normal issue, with a minimized input.
+Do not open a public issue for a vulnerability. Use [GitHub's private vulnerability reporting](https://github.com/alfpricot/tree-sitter-snowflake/security/advisories/new) and include what you found, how to reproduce it, and the impact you expect. A parser crash or hang on some input that could affect downstream consumers belongs here too; a plain parse failure on valid Snowflake SQL is an ordinary bug for a normal issue, with a minimized input.
 
 ## Scope
 

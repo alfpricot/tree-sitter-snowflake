@@ -27,15 +27,16 @@ node tools/fixture-check.mjs
 node tools/fixture-leak-grep.mjs
 node tools/keyword-probe.mjs
 node tools/package-check.mjs
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
+node --test tools/*.test.mjs tools/parse-rate/*.test.mjs
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo test -p snowflake-handlers --all-features
 npm run lint
 npm run format:check
 ```
 
-These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, and Rust and JavaScript style. CI also builds against tree-sitter 0.26 and runs the Node binding tests (`npm test`), which need MSVC on Windows. `npm run format` applies formatting.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, and Rust and JavaScript style. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. It also builds against tree-sitter 0.26 and runs the Node binding tests (`npm test`), which need MSVC on Windows. `npm run format` applies formatting.
 
 ## Pull requests
 
