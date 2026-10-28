@@ -38,7 +38,7 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 
 `verify.yml` runs on pull requests, on pushes to `dev` and `main`, and on manual dispatch. It checks the changed paths, secret scanning, workflow and YAML syntax, the pull request title, the unit tests for the repository's own scripts, grammar regeneration (the committed parser and node-kind snapshot must match), lint and formatting for the JavaScript, the corpus, fixtures, keyword handling, Rust format, lint and tests (also against tree-sitter 0.26, the companion's declared floor), package contents, and the Node binding. A final aggregate job named `Verify` is the required check.
 
-Feature pull requests go to `dev`. A release pull request from release-plz (`release-plz.toml`, git-only) is promoted to `main`; the grammar crate is tagged `v<version>` and the companion crate `snowflake-handlers-v<version>`. `release-tag.yml` tags the merged release commit and dispatches `release.yml`, which publishes the crate to crates.io and the npm package to npm and GitHub Packages from the verified commit, builds prebuilt native addons for Linux and Windows, and attaches a WASM build to the GitHub Release. `sync-dev-from-main.yml` opens a pull request that merges `main` back into `dev` after a release, and `cache-cleanup.yml` deletes stale Actions caches on a daily schedule. Nothing is deployed.
+Feature pull requests go to `dev`. A promotion pull request from `dev` to `main` cuts the release: `gala-release.yml` runs gala (`.gala.toml`), which computes the next version from Conventional Commits, bumps `Cargo.toml`, writes `CHANGELOG.md`, commits, tags `v<version>`, pushes with a deploy key, and fast-forwards `dev` to the release commit. The workflow then dispatches `release.yml`, which publishes the crate to crates.io and the npm package to npm and GitHub Packages from the verified commit, builds prebuilt native addons for Linux and Windows, and attaches a WASM build to the GitHub Release. `cache-cleanup.yml` deletes stale Actions caches on a daily schedule. Nothing is deployed.
 
 ## Where things live
 
@@ -52,4 +52,4 @@ Feature pull requests go to `dev`. A release pull request from release-plz (`rel
 | `test/`, `tools/` | Corpus, fixtures, and verification scripts |
 | `docs/` | Reference documents |
 | `.github/workflows/` | Verify, release, and maintenance workflows |
-| `release-plz.toml` | Release configuration for the grammar and companion crates |
+| `.gala.toml` | Release configuration (gala) |
