@@ -1,0 +1,110 @@
+# =============================================================================
+#  tree-sitter-snowflake · GitHub Actions
+# -----------------------------------------------------------------------------
+#  File                gala-release.yml
+#  Workflow name       Gala release
+#  Type                Entrypoint (runs in this repo only)
+#  Triggers            push (main branch)
+#                      workflow_dispatch
+#  Purpose             Cuts the release when a promotion lands on main. gala
+#                      reads the Conventional Commits since the last v* tag,
+#                      picks the next version, bumps Cargo.toml (the version
+#                      source of truth), writes the CHANGELOG.md entry,
+#                      commits (the skip-ci marker is in the commit body),
+#                      tags, pushes main and the tag atomically, and
+#                      fast-forwards dev to the release commit. .gala.toml
+#                      sets githubRelease = false and publish = false:
+#                      release.yml publishes to crates.io and npm and creates
+#                      the GitHub Release itself.
+#
+#                      The pushes go over the RELEASE_DEPLOY_KEY deploy key:
+#                      this repo's rulesets require a pull request for every
+#                      change to main and dev and block creating v* tags, and
+#                      a deploy key is the bypass actor available to a
+#                      workflow on a personal-account repository.
+#
+#                      The skip-ci marker in the release commit body can also
+#                      suppress release.yml's push-tag trigger, so this
+#                      workflow dispatches release.yml with the new tag when
+#                      gala released something. If the tag trigger fires too,
+#                      the second run is harmless: every publish step in
+#                      release.yml checks whether the version is already live.
+#
+#                      package.json and tree-sitter.json are not bumped by the
+#                      release commit; release.yml sets them from the tag at
+#                      publish time in its working tree only.
+# =============================================================================
+
+name: Gala release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: gala-release
+  cancel-in-progress: false
+
+env:
+  GALA_VERSION: 'v0.2.0'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    # Job-level elevation: the git pushes use the deploy key, so the only
+    # write GITHUB_TOKEN needs is dispatching release.yml (actions: write).
+    permissions:
+      contents: read
+      actions: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # origin becomes an SSH remote authenticated by the deploy key, so
+          # gala's atomic push and dev sync use the ruleset bypass.
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Install Rust toolchain
+        # gala's cargo manager runs cargo to write the version and refresh
+        # the lockfile.
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # v1.97.0
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.3'
+      - name: Install gala
+        run: |
+          go install "github.com/alfpricot/gala/cmd/gala@${GALA_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          before=$(git rev-parse HEAD)
+          gala release
+          after=$(git rev-parse HEAD)
+          if [ "$before" = "$after" ]; then
+            echo "No release was due."
+            exit 0
+          fi
+          tag=$(git describe --tags --abbrev=0 --exact-match --match 'v[0-9]*' HEAD)
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+      - name: Dispatch the publish workflow
+        if: steps.release.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: gh workflow run release.yml --ref main -f "tag=${TAG}"

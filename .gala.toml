@@ -1,0 +1,13 @@
+# gala release configuration. Cargo.toml's [package] version is the source of
+# truth; package.json and tree-sitter.json are set from the tag at publish time
+# by release.yml and are never committed. release.yml creates the GitHub
+# Release itself after the registries are live, so gala does not.
+kind = "app"
+manager = "cargo"
+publish = false
+githubRelease = false
+releaseBranches = ["main"]
+syncBranch = "dev"
+tagPrefix = "v"
+changelog = "CHANGELOG.md"
+remote = "origin"

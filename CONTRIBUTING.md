@@ -4,7 +4,7 @@ A tree-sitter grammar for Snowflake SQL, with Rust and Node bindings and the `sn
 
 ## Before you start
 
-1. Branch from **`dev`**; `main` is the production branch, updated by release pull request.
+1. Branch from **`dev`**; `main` is the production branch, updated by promotion pull request; releases are cut automatically from it.
 2. Read [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Local setup
