@@ -4,7 +4,7 @@ A tree-sitter grammar for Snowflake SQL, with Rust and Node bindings and the `sn
 
 ## Before you start
 
-1. Branch from **`dev`**; `main` is the production branch, updated by release pull request.
+1. Branch from **`dev`**; `main` is the production branch, updated by promotion pull request; releases are cut automatically from it.
 2. Read [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Local setup
@@ -16,7 +16,7 @@ npx --no-install tree-sitter generate
 cargo build
 ```
 
-The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile; `tools/cli-version.test.mjs` fails CI when that entry, an npm script, or a workflow pins a `tree-sitter-cli` version that lags the devDependency. The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run. On a machine without MSVC, set `CC=gcc CXX=g++`.
+The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile; `tools/cli-version.test.mjs` fails CI when that entry, an npm script, or a workflow pins a `tree-sitter-cli` version that lags the devDependency. The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. `.gitattributes` marks `src/parser.c` with `-diff` — a grammar change renumbers the parse states, so its diff is a whole-file rewrite that carries no reviewable information. Review `grammar.js`, `src/grammar.json`, and the corpus tests instead, and on a merge conflict in `src/parser.c` resolve `grammar.js` with both sides' changes, then regenerate rather than editing the C file by hand. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run. On a machine without MSVC, set `CC=gcc CXX=g++`.
 
 ## Validation before a pull request
 
@@ -27,15 +27,16 @@ node tools/fixture-check.mjs
 node tools/fixture-leak-grep.mjs
 node tools/keyword-probe.mjs
 node tools/package-check.mjs
-cargo fmt --check
-cargo clippy --all-targets -- -D warnings
+node --test tools/*.test.mjs tools/parse-rate/*.test.mjs
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo test -p snowflake-handlers --all-features
 npm run lint
 npm run format:check
 ```
 
-These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, and Rust and JavaScript style. CI also builds against tree-sitter 0.26 and runs the Node binding tests (`npm test`), which need MSVC on Windows. `npm run format` applies formatting.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, and Rust and JavaScript style. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. It also builds against tree-sitter 0.26 and runs the Node binding tests (`npm test`), which need MSVC on Windows. `npm run format` applies formatting.
 
 ## Pull requests
 

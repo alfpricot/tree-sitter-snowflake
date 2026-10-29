@@ -11,7 +11,7 @@ needs.
 The repository scaffold (module layout under grammar/, the option-list and
 keyword-extraction conventions, the Rust and Node bindings, and the CI
 shape) follows tree-sitter-mssql
-(https://github.com/meloncholic/tree-sitter-mssql), itself a fork of
+(https://github.com/alfpricot/tree-sitter-mssql), itself a fork of
 DerekStride/tree-sitter-sql; its grammar modules were used as style
 reference for rule organization, and node naming for constructs common to
 both dialects echoes the general-SQL naming so existing consumer profiles

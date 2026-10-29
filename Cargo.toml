@@ -11,7 +11,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["incremental", "parsing", "tree-sitter", "sql", "snowflake"]
 categories = ["parsing", "parser-implementations", "text-editors"]
-repository = "https://github.com/meloncholera/tree-sitter-snowflake.git"
+repository = "https://github.com/alfpricot/tree-sitter-snowflake.git"
 edition = "2024"
 rust-version = "1.85"
 autoexamples = false
@@ -26,7 +26,7 @@ path = "bindings/rust/lib.rs"
 tree-sitter-language = "0.1"
 
 [build-dependencies]
-cc = "~1.9.0"
+cc = "~1.10.0"
 
 [dev-dependencies]
 # Tracks the newest tree-sitter release. This is a dev-dependency only —
