@@ -18,8 +18,9 @@
 #                      the Rust binding (against the tree-sitter version
 #                      that is snowflake-handlers' declared floor, and
 #                      against the latest), build and test the Node
-#                      binding, validate the PR title, scan for secrets,
-#                      and lint workflow/YAML files. A final aggregate job
+#                      binding, validate the PR title, scan the working
+#                      tree and Git history for secrets, and lint
+#                      workflow/YAML files. A final aggregate job
 #                      rolls every check up into a single `Verify` status
 #                      for branch rulesets to require.
 # =============================================================================
@@ -93,12 +94,17 @@ jobs:
         id: scan
         run: $HOME/.local/bin/gitleaks detect --no-git --redact --source . --exit-code 1 --report-format json --report-path gitleaks-report.json
 
+      - name: Scan Git history with Gitleaks
+        id: history-scan
+        run: $HOME/.local/bin/gitleaks detect --redact --source . --exit-code 1 --report-format json --report-path gitleaks-history-report.json
+
       - name: Upload redacted secret scan report
-        if: failure() && steps.scan.outcome == 'failure'
+        if: failure() && (steps.scan.outcome == 'failure' || steps.history-scan.outcome == 'failure')
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gitleaks-report
-          path: gitleaks-report.json
+          path: gitleaks-*report.json
+          if-no-files-found: ignore
           retention-days: 3
 
       - name: Cache actionlint
