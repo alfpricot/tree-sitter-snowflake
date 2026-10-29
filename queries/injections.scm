@@ -9,12 +9,12 @@
 ; Only the dollar-quoted body is injectable, and the capture is its
 ; `body_content` child rather than the whole `dollar_quoted_body`, so the
 ; injected parse starts after the opening `$$` and stops before the
-; closing one. Tree-sitter parses a range
-; of the original source, and the single-quoted body's `''` doubling
-; means its byte range is not the embedded language's source. Those
-; bodies (the common single-quoted form for foreign-language bodies) are
-; reconstructed by the consumer: collapse the `doubled_quote` and
-; `escape` nodes, then parse the result with a position-mapping table.
+; closing one. Tree-sitter parses a range of the original source, and
+; the single-quoted body's `''` doubling means its byte range is not the
+; embedded language's source. Those bodies (the common single-quoted
+; form for foreign-language bodies) are reconstructed by the consumer:
+; collapse the `doubled_quote` and `escape` nodes, then parse the
+; result with a position-mapping table.
 ; See docs/CONSUMER_INTEGRATION.md.
 
 ((create_procedure
