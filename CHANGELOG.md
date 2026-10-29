@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.2.3 (2026-10-29)
+
+### Bug Fixes
+
+* **queries:** inject dollar-quoted bodies without their delimiters (#66)
+
 ## [0.2.2](https://github.com/alfpricot/tree-sitter-snowflake/compare/v0.2.1...v0.2.2) - 2026-10-25
 
 ### Added
