@@ -97,4 +97,33 @@ mod tests {
         tree_sitter::Query::new(&language, TAGS_QUERY).unwrap();
         tree_sitter::Query::new(&language, LOCALS_QUERY).unwrap();
     }
+
+    /// The injected range must be the embedded source alone: an injected
+    /// parser handed the `$$` delimiters starts and ends on a syntax error.
+    #[test]
+    fn test_injection_excludes_dollar_delimiters() {
+        use tree_sitter::StreamingIterator;
+
+        let source = "CREATE FUNCTION f() RETURNS VARCHAR LANGUAGE PYTHON \
+                      RUNTIME_VERSION = '3.10' HANDLER = 'main' AS\n\
+                      $$\ndef main():\n    return 'x'\n$$;";
+        let language: tree_sitter::Language = LANGUAGE.into();
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&language).unwrap();
+        let tree = parser.parse(source, None).unwrap();
+        assert!(!tree.root_node().has_error());
+
+        let query = tree_sitter::Query::new(&language, INJECTIONS_QUERY).unwrap();
+        let content = query.capture_index_for_name("injection.content").unwrap();
+        let mut cursor = tree_sitter::QueryCursor::new();
+        let mut matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+        let mut captured = Vec::new();
+        while let Some(m) = matches.next() {
+            captured.extend(
+                m.nodes_for_capture_index(content)
+                    .map(|node| &source[node.byte_range()]),
+            );
+        }
+        assert_eq!(captured, ["\ndef main():\n    return 'x'\n"]);
+    }
 }
