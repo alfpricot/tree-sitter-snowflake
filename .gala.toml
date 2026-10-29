@@ -1,7 +1,8 @@
-# gala release configuration. Cargo.toml's [package] version is the source of
-# truth; package.json and tree-sitter.json are set from the tag at publish time
-# by release.yml and are never committed. release.yml creates the GitHub
-# Release itself after the registries are live, so gala does not.
+# gala release configuration. gala bumps the version in Cargo.toml's
+# [package], package.json, and tree-sitter.json together, refreshes the
+# lockfiles, and regenerates the parser, so the release commit is exactly
+# what release.yml publishes. release.yml creates the GitHub Release itself
+# after the registries are live, so gala does not.
 kind = "app"
 manager = "cargo"
 publish = false
@@ -11,3 +12,24 @@ syncBranch = "dev"
 tagPrefix = "v"
 changelog = "CHANGELOG.md"
 remote = "origin"
+
+# The generated parser embeds tree-sitter.json's version, so the release
+# commit regenerates it with the CLI version package.json pins; Verify's
+# generated-parser check then passes on the release commit too.
+postBump = ["npx --no-install tree-sitter generate"]
+postBumpPaths = ["src/parser.c", "src/grammar.json", "src/node-types.json"]
+
+[[versionFile]]
+path = "package.json"
+key = "version"
+
+[[versionFile]]
+path = "tree-sitter.json"
+key = "metadata.version"
+
+# snowflake-handlers keeps its own version (bumped by hand, tagged
+# snowflake-handlers-v*), but its path dependency on this crate must accept
+# the new version or cargo cannot resolve the workspace after a minor bump.
+[[versionFile]]
+path = "snowflake-handlers/Cargo.toml"
+pattern = '(?m)^tree-sitter-snowflake = \{ version = "([^"]+)"'
