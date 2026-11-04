@@ -28,7 +28,7 @@ The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the han
 A separate crate that decodes handler bodies, maps offsets back to the SQL file, parses JavaScript and Python (Java and Scala behind Cargo features), and runs advisory restriction checks.
 
 ### [test/](test) and [tools/](tools)
-`test/corpus` holds per-construct tree assertions, `test/fixtures` holds synthetic whole files, and `test/node-kinds.txt` snapshots the exported node kinds. `tools/` holds the checks CI runs over them (fixtures, keyword probe, node kinds, package contents) and the parse-rate harness.
+`test/corpus` holds per-construct tree assertions, `test/fixtures` holds synthetic whole files, and `test/node-kinds.txt` snapshots the exported node kinds and their fields. `tools/` holds the checks CI runs over them (fixtures, keyword probe, node kinds, package contents) and the parse-rate harness.
 
 ## External systems and data flow
 
