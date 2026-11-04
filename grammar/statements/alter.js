@@ -12,7 +12,9 @@ import {
   wrapped_in_parenthesis,
 } from '../helpers.js';
 
-function alter_object(keyword, actions = []) {
+// `tags: false` leaves out SET TAG / UNSET TAG for an object Snowflake
+// doesn't tag.
+function alter_object(keyword, actions = [], { tags = true } = {}) {
   return ($) =>
     seq(
       $.keyword_alter,
@@ -21,7 +23,7 @@ function alter_object(keyword, actions = []) {
       field('name', $.object_reference),
       choice(
         ...actions.map((action) => action($)),
-        ...set_unset_tags($),
+        ...(tags ? set_unset_tags($) : []),
         ...set_unset_properties($),
         seq($.keyword_rename, $.keyword_to, $.object_reference),
       ),
@@ -191,7 +193,7 @@ export default {
 
   alter_stage: alter_object(($) => $.keyword_stage, []),
   alter_stream: alter_object(($) => $.keyword_stream, []),
-  alter_sequence: alter_object(($) => $.keyword_sequence, []),
+  alter_sequence: alter_object(($) => $.keyword_sequence, [], { tags: false }),
   alter_role: alter_object(($) => $.keyword_role, []),
   alter_user: alter_object(($) => $.keyword_user, []),
   alter_pipe: alter_object(

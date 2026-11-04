@@ -289,6 +289,7 @@ keyword_commit
 keyword_condition
 keyword_connect
 keyword_constraint
+keyword_contact
 keyword_continue
 keyword_copy
 keyword_cortex
@@ -321,6 +322,7 @@ keyword_empty
 keyword_enable
 keyword_end
 keyword_enforced
+keyword_entity
 keyword_event
 keyword_evolve
 keyword_except
@@ -389,6 +391,7 @@ keyword_limit
 keyword_list
 keyword_local
 keyword_loop
+keyword_managed
 keyword_masking
 keyword_match
 keyword_match_recognize
