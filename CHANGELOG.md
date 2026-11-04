@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.3.0 (2026-11-04)
+
+### Features
+
+* **grammar:** parse every stream source and dynamic table columns (#79)
+* **grammar:** parse tag, policy, contact, and managed-access clauses (#77)
+* **grammar:** parse tag clauses on object ALTERs and common CREATE forms (#74)
+* **grammar:** accept qualified tag names and require paired loop keywords (#73)
+* **grammar:** parse user stages, table partitions, nested row patterns, and more (#71)
+* **grammar:** accept documented Snowflake Scripting forms and empty bodies (#70)
+* **grammar:** parse Snowflake's real routine ALTER and CREATE forms (#69)
+
+### Bug Fixes
+
+* **tooling:** key the leak guard needle hashes and drop a downstream name (#76)
+* **queries:** highlight every keyword and prepare snowflake-handlers 0.2.0 (#75)
+* **queries:** highlight numbers and test what each release ships (#72)
+
 ## 0.2.3 (2026-10-29)
 
 ### Bug Fixes
