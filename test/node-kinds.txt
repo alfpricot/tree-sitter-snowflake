@@ -110,6 +110,7 @@ foreign_language
 frame_definition
 from
 function_argument
+function_argument_types
 function_arguments
 function_body
 get_statement

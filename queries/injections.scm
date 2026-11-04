@@ -16,43 +16,28 @@
 ; collapse the `doubled_quote` and `escape` nodes, then parse the
 ; result with a position-mapping table.
 ; See docs/CONSUMER_INTEGRATION.md.
+;
+; The wildcard parent matches every routine node that carries a foreign
+; `language` and an inline body: `create_procedure` and `create_function`
+; (CREATE OR REPLACE and CREATE OR ALTER included). ALTER PROCEDURE and
+; ALTER FUNCTION never carry a body.
 
-((create_procedure
+((_
    (foreign_language (keyword_javascript))
    body: (function_body (dollar_quoted_body (body_content) @injection.content)))
  (#set! injection.language "javascript"))
 
-((create_procedure
+((_
    (foreign_language (keyword_python))
    body: (function_body (dollar_quoted_body (body_content) @injection.content)))
  (#set! injection.language "python"))
 
-((create_procedure
+((_
    (foreign_language (keyword_java))
    body: (function_body (dollar_quoted_body (body_content) @injection.content)))
  (#set! injection.language "java"))
 
-((create_procedure
-   (foreign_language (keyword_scala))
-   body: (function_body (dollar_quoted_body (body_content) @injection.content)))
- (#set! injection.language "scala"))
-
-((create_function
-   (foreign_language (keyword_javascript))
-   body: (function_body (dollar_quoted_body (body_content) @injection.content)))
- (#set! injection.language "javascript"))
-
-((create_function
-   (foreign_language (keyword_python))
-   body: (function_body (dollar_quoted_body (body_content) @injection.content)))
- (#set! injection.language "python"))
-
-((create_function
-   (foreign_language (keyword_java))
-   body: (function_body (dollar_quoted_body (body_content) @injection.content)))
- (#set! injection.language "java"))
-
-((create_function
+((_
    (foreign_language (keyword_scala))
    body: (function_body (dollar_quoted_body (body_content) @injection.content)))
  (#set! injection.language "scala"))

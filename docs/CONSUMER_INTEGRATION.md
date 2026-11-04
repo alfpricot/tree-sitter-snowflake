@@ -12,7 +12,8 @@ Configure a Snowflake profile using the grammar's named nodes:
 
 | Purpose | Node kinds |
 |---|---|
-| Procedure and function definitions | `create_procedure`, `create_function`, `alter_procedure`, `alter_function` |
+| Procedure and function definitions | `create_procedure`, `create_function` (including `CREATE OR ALTER`) |
+| Procedure and function changes | `alter_procedure`, `alter_function` — a `name` field and the `function_argument_types` signature, no body |
 | Control-flow constructs | `if_statement`, `elseif_clause`, `case_statement`, `while_statement`, `for_statement`, `repeat_statement`, `loop_statement`, `exception_handler` |
 | Routine name | `object_reference`, available through the definition's `name` field |
 | Parameters | `function_arguments` |
