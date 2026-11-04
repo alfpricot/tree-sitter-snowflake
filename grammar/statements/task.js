@@ -21,7 +21,7 @@ export default {
         $.keyword_task,
         optional($._if_not_exists),
         field('name', $.object_reference),
-        repeat(choice($._with_tag, $.task_option)),
+        repeat(choice($._with_tag, $._with_contact, $.task_option)),
         $.keyword_as,
         field('body', $.statement),
       ),

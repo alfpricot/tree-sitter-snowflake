@@ -5226,6 +5226,18 @@
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_access",
+          "named": true
+        },
+        {
+          "type": "keyword_aggregation",
+          "named": true
+        },
+        {
           "type": "keyword_as",
           "named": true
         },
@@ -5238,11 +5250,31 @@
           "named": true
         },
         {
+          "type": "keyword_entity",
+          "named": true
+        },
+        {
+          "type": "keyword_key",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
           "type": "keyword_or",
           "named": true
         },
         {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
           "type": "keyword_replace",
+          "named": true
+        },
+        {
+          "type": "keyword_row",
           "named": true
         },
         {
@@ -5255,6 +5287,10 @@
         },
         {
           "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "object_reference",
           "named": true
         },
         {
@@ -5638,10 +5674,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "keyword_as",
           "named": true
         },
@@ -5663,6 +5695,10 @@
         },
         {
           "type": "keyword_view",
+          "named": true
+        },
+        {
+          "type": "view_column",
           "named": true
         },
         {
@@ -6567,11 +6603,19 @@
       "required": true,
       "types": [
         {
+          "type": "keyword_copy",
+          "named": true
+        },
+        {
           "type": "keyword_create",
           "named": true
         },
         {
           "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_grants",
           "named": true
         },
         {
@@ -6893,6 +6937,10 @@
           "named": true
         },
         {
+          "type": "keyword_contact",
+          "named": true
+        },
+        {
           "type": "keyword_create",
           "named": true
         },
@@ -6926,6 +6974,10 @@
         },
         {
           "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "option",
           "named": true
         },
         {
@@ -15637,6 +15689,10 @@
           "named": true
         },
         {
+          "type": "keyword_contact",
+          "named": true
+        },
+        {
           "type": "keyword_copy",
           "named": true
         },
@@ -17015,6 +17071,10 @@
         },
         {
           "type": "keyword_aggregation",
+          "named": true
+        },
+        {
+          "type": "keyword_contact",
           "named": true
         },
         {

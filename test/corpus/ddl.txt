@@ -2060,7 +2060,7 @@ tags on roles, users, tasks, streams, and dynamic tables
 CREATE ROLE r WITH TAG (a = 'x') COMMENT = 'c';
 CREATE USER u TAG (a.b.c = 'x') DEFAULT_ROLE = r;
 CREATE TASK tk WAREHOUSE = w SCHEDULE = '5 MINUTE' TAG (a = 'x') AS SELECT 1;
-CREATE STREAM s ON TABLE t WITH TAG (a = 'x');
+CREATE STREAM s WITH TAG (a = 'x') COPY GRANTS ON TABLE t;
 CREATE DYNAMIC TABLE d TARGET_LAG = '1 minute' WAREHOUSE = w TAG (a = 'x') AS SELECT 1;
 
 --------------------------------------------------------------------------------
@@ -2128,16 +2128,18 @@ CREATE DYNAMIC TABLE d TARGET_LAG = '1 minute' WAREHOUSE = w TAG (a = 'x') AS SE
       (keyword_stream)
       (object_reference
         (identifier))
-      (keyword_on)
-      (keyword_table)
-      (object_reference
-        (identifier))
       (keyword_with)
       (keyword_tag)
       (tag_assignment
         (object_reference
           (identifier))
-        (literal))))
+        (literal))
+      (keyword_copy)
+      (keyword_grants)
+      (keyword_on)
+      (keyword_table)
+      (object_reference
+        (identifier))))
   (statement
     (create_dynamic_table
       (keyword_create)
@@ -2231,13 +2233,16 @@ CREATE TABLE t (c INT WITH MASKING POLICY m USING (c, d), e INT PROJECTION POLIC
             (identifier)))))))
 
 ================================================================================
-schema managed access and contacts
+schema managed access and contacts on objects
 ================================================================================
 
 CREATE SCHEMA s WITH MANAGED ACCESS DATA_RETENTION_TIME_IN_DAYS = 1;
 CREATE TRANSIENT SCHEMA IF NOT EXISTS s WITH MANAGED ACCESS WITH TAG (a = 'x');
 CREATE DATABASE d WITH CONTACT (support = c, approver = db.sch.c2);
 CREATE WAREHOUSE w WITH WAREHOUSE_SIZE = 'XSMALL' WITH CONTACT (support = c);
+CREATE TABLE t (a INT) WITH CONTACT (support = c);
+CREATE VIEW v WITH CONTACT (support = c) AS SELECT 1 a;
+CREATE TASK tk WAREHOUSE = w WITH CONTACT (support = c) AS SELECT 1;
 
 --------------------------------------------------------------------------------
 
@@ -2307,7 +2312,68 @@ CREATE WAREHOUSE w WITH WAREHOUSE_SIZE = 'XSMALL' WITH CONTACT (support = c);
       (option
         (identifier)
         (object_reference
-          (identifier))))))
+          (identifier)))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)))
+      (table_option
+        (keyword_with)
+        (keyword_contact)
+        (option
+          (identifier)
+          (object_reference
+            (identifier))))))
+  (statement
+    (create_view
+      (keyword_create)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (view_option
+        (keyword_with)
+        (keyword_contact)
+        (option
+          (identifier)
+          (object_reference
+            (identifier))))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (literal)
+              (identifier)))))))
+  (statement
+    (create_task
+      (keyword_create)
+      (keyword_task)
+      (object_reference
+        (identifier))
+      (task_option
+        (keyword_warehouse)
+        (object_reference
+          (identifier)))
+      (keyword_with)
+      (keyword_contact)
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (keyword_as)
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (literal))))))))
 
 ================================================================================
 stage directory option after WITH
@@ -2337,12 +2403,14 @@ CREATE STAGE st URL = 's3://b/p' WITH DIRECTORY = (ENABLE = TRUE);
             (keyword_true)))))))
 
 ================================================================================
-row access and aggregation policies on views and tables
+row access and aggregation policies on views and tables, and materialized view column policies
 ================================================================================
 
 CREATE VIEW v WITH ROW ACCESS POLICY p ON (a) AS SELECT a FROM t;
 CREATE VIEW v (a WITH MASKING POLICY m, b COMMENT 'x' TAG (t1 = 'y')) AGGREGATION POLICY ap ENTITY KEY (a) AS SELECT a, b FROM t;
 CREATE TABLE t (a INT) WITH ROW ACCESS POLICY p ON (a) WITH AGGREGATION POLICY ap;
+CREATE DYNAMIC TABLE d TARGET_LAG = '1 minute' WAREHOUSE = w WITH ROW ACCESS POLICY p ON (a) AS SELECT a FROM t;
+CREATE MATERIALIZED VIEW mv (a WITH MASKING POLICY m PROJECTION POLICY pp, b TAG (t1 = 'y')) AS SELECT a, b FROM t;
 
 --------------------------------------------------------------------------------
 
@@ -2445,7 +2513,84 @@ CREATE TABLE t (a INT) WITH ROW ACCESS POLICY p ON (a) WITH AGGREGATION POLICY a
         (keyword_aggregation)
         (keyword_policy)
         (object_reference
-          (identifier))))))
+          (identifier)))))
+  (statement
+    (create_dynamic_table
+      (keyword_create)
+      (keyword_dynamic)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (keyword_with)
+      (keyword_row)
+      (keyword_access)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (identifier)
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier)))))))
+  (statement
+    (create_materialized_view
+      (keyword_create)
+      (keyword_materialized)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (view_column
+        (identifier)
+        (keyword_with)
+        (keyword_masking)
+        (keyword_policy)
+        (object_reference
+          (identifier))
+        (keyword_projection)
+        (keyword_policy)
+        (object_reference
+          (identifier)))
+      (view_column
+        (identifier)
+        (keyword_tag)
+        (tag_assignment
+          (object_reference
+            (identifier))
+          (literal)))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
 
 ================================================================================
 ALTER SEQUENCE has no tag clause
@@ -2455,4 +2600,5 @@ ALTER SEQUENCE has no tag clause
 ALTER SEQUENCE s SET TAG a = 'x';
 
 --------------------------------------------------------------------------------
+
 

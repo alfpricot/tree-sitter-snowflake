@@ -8211,6 +8211,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "_with_contact"
+          },
+          {
+            "type": "SYMBOL",
             "name": "option"
           }
         ]
@@ -8540,7 +8544,7 @@
                     "members": [
                       {
                         "type": "SYMBOL",
-                        "name": "identifier"
+                        "name": "view_column"
                       },
                       {
                         "type": "REPEAT",
@@ -8553,7 +8557,7 @@
                             },
                             {
                               "type": "SYMBOL",
-                              "name": "identifier"
+                              "name": "view_column"
                             }
                           ]
                         }
@@ -8647,6 +8651,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "_with_policy"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "option"
                 }
               ]
@@ -8686,6 +8694,10 @@
         {
           "type": "SYMBOL",
           "name": "_with_policy"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_with_contact"
         },
         {
           "type": "SYMBOL",
@@ -9250,6 +9262,39 @@
             }
           },
           {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_with_tag"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "keyword_copy"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "keyword_grants"
+                  }
+                ]
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
             "type": "SYMBOL",
             "name": "keyword_on"
           },
@@ -9268,17 +9313,8 @@
           {
             "type": "REPEAT",
             "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "_with_tag"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "option"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "option"
             }
           }
         ]
@@ -11894,6 +11930,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "_with_tag"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_with_contact"
                 },
                 {
                   "type": "SYMBOL",

@@ -147,6 +147,7 @@ export default {
         seq($.keyword_copy, $.keyword_grants),
         $._with_tag,
         $._with_policy,
+        $._with_contact,
         $.option,
       ),
     ),
@@ -189,7 +190,8 @@ export default {
       ),
     ),
 
-  // CREATE [OR REPLACE] MATERIALIZED VIEW name [(cols)]
+  // CREATE [OR REPLACE] MATERIALIZED VIEW name [(cols)] — the columns take
+  // the same COMMENT, policy, and tag clauses as a view's.
   //   [COMMENT = ''] [CLUSTER BY (...)] AS query
   create_materialized_view: ($) =>
     prec.right(
@@ -199,7 +201,7 @@ export default {
         $.keyword_materialized,
         $.keyword_view,
         field('name', $.object_reference),
-        optional(paren_list($.identifier, true)),
+        optional(paren_list($.view_column, true)),
         repeat(choice($.cluster_by, $.view_option)),
         $.keyword_as,
         $.create_query,
@@ -216,14 +218,20 @@ export default {
         $.keyword_dynamic,
         $.keyword_table,
         field('name', $.object_reference),
-        repeat1(choice($._with_tag, $.option)),
+        repeat1(choice($._with_tag, $._with_policy, $.option)),
         $.keyword_as,
         $.create_query,
       ),
     ),
 
   view_option: ($) =>
-    choice(seq($.keyword_copy, $.keyword_grants), $._with_tag, $._with_policy, $.option),
+    choice(
+      seq($.keyword_copy, $.keyword_grants),
+      $._with_tag,
+      $._with_policy,
+      $._with_contact,
+      $.option,
+    ),
 
   // [WITH] TAG (tag = 'value', ...) — object tags at creation. WITH is
   // optional, as Snowflake documents it.
@@ -306,7 +314,8 @@ export default {
       ),
     ),
 
-  // CREATE [OR REPLACE] [TEMPORARY] STREAM name ON TABLE t
+  // CREATE [OR REPLACE] [TEMPORARY] STREAM name [[WITH] TAG (...)]
+  //   [COPY GRANTS] ON TABLE t
   //   [APPEND_ONLY = ...] [INSERT_ONLY = ...] [SHOW_INITIAL_ROWS = ...]
   //   [COMMENT = '']
   create_stream: ($) =>
@@ -318,10 +327,12 @@ export default {
         $.keyword_stream,
         optional($._if_not_exists),
         field('name', $.object_reference),
+        optional($._with_tag),
+        optional(seq($.keyword_copy, $.keyword_grants)),
         $.keyword_on,
         $.keyword_table,
         field('table', $.object_reference),
-        repeat(choice($._with_tag, $.option)),
+        repeat($.option),
       ),
     ),
 
