@@ -1045,3 +1045,239 @@ CREATE FUNCTION g(x INT) RETURNS VARCHAR NULL LANGUAGE JAVA IMPORTS = ('@s/f.jar
           (identifier)
           (literal
             (literal)))))))
+
+================================================================================
+scripting loop alternatives, end labels, simple case, and or-joined handlers
+================================================================================
+
+EXECUTE IMMEDIATE $$
+BEGIN
+  FOR i IN 1 TO 3 LOOP
+    CONTINUE;
+  END LOOP outer_loop;
+  FOR r IN c DO
+    BREAK;
+  END FOR r_loop;
+  WHILE n > 0 LOOP
+    n := n - 1;
+  END LOOP;
+  WHILE n < 5 DO
+    n := n + 1;
+  END WHILE w;
+  REPEAT
+    n := n + 1;
+  UNTIL n > 9
+  END REPEAT rep;
+  LOOP
+    BREAK;
+  END LOOP lp;
+  CASE (v)
+    WHEN 1 THEN RETURN 'one';
+    WHEN 2 THEN RETURN 'two';
+    ELSE RETURN 'many';
+  END CASE;
+  CASE
+    WHEN v > 1 THEN RETURN 'big';
+  END;
+EXCEPTION
+  WHEN STATEMENT_ERROR OR EXPRESSION_ERROR THEN RETURN 'err';
+  WHEN OTHER THEN RAISE;
+END;
+$$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (execute_immediate_statement
+      (keyword_execute)
+      (keyword_immediate)
+      (dollar_quoted_script
+        (statement
+          (block
+            (keyword_begin)
+            (statement
+              (for_statement
+                (keyword_for)
+                (identifier)
+                (keyword_in)
+                (literal)
+                (keyword_to)
+                (literal)
+                (keyword_loop)
+                (statement
+                  (continue_statement
+                    (keyword_continue)))
+                (keyword_end)
+                (keyword_loop)
+                (identifier)))
+            (statement
+              (for_statement
+                (keyword_for)
+                (identifier)
+                (keyword_in)
+                (identifier)
+                (keyword_do)
+                (statement
+                  (break_statement
+                    (keyword_break)))
+                (keyword_end)
+                (keyword_for)
+                (identifier)))
+            (statement
+              (while_statement
+                (keyword_while)
+                (binary_expression
+                  (field
+                    (identifier))
+                  (literal))
+                (keyword_loop)
+                (statement
+                  (assignment_statement
+                    (identifier)
+                    (binary_expression
+                      (field
+                        (identifier))
+                      (literal))))
+                (keyword_end)
+                (keyword_loop)))
+            (statement
+              (while_statement
+                (keyword_while)
+                (binary_expression
+                  (field
+                    (identifier))
+                  (literal))
+                (keyword_do)
+                (statement
+                  (assignment_statement
+                    (identifier)
+                    (binary_expression
+                      (field
+                        (identifier))
+                      (literal))))
+                (keyword_end)
+                (keyword_while)
+                (identifier)))
+            (statement
+              (repeat_statement
+                (keyword_repeat)
+                (statement
+                  (assignment_statement
+                    (identifier)
+                    (binary_expression
+                      (field
+                        (identifier))
+                      (literal))))
+                (keyword_until)
+                (binary_expression
+                  (field
+                    (identifier))
+                  (literal))
+                (keyword_end)
+                (keyword_repeat)
+                (identifier)))
+            (statement
+              (loop_statement
+                (keyword_loop)
+                (statement
+                  (break_statement
+                    (keyword_break)))
+                (keyword_end)
+                (keyword_loop)
+                (identifier)))
+            (statement
+              (case_statement
+                (keyword_case)
+                (parenthesized_expression
+                  (field
+                    (identifier)))
+                (case_when_clause
+                  (keyword_when)
+                  (literal)
+                  (keyword_then)
+                  (statement
+                    (return_statement
+                      (keyword_return)
+                      (literal
+                        (literal)))))
+                (case_when_clause
+                  (keyword_when)
+                  (literal)
+                  (keyword_then)
+                  (statement
+                    (return_statement
+                      (keyword_return)
+                      (literal
+                        (literal)))))
+                (else_clause
+                  (keyword_else)
+                  (statement
+                    (return_statement
+                      (keyword_return)
+                      (literal
+                        (literal)))))
+                (keyword_end)
+                (keyword_case)))
+            (statement
+              (case_statement
+                (keyword_case)
+                (case_when_clause
+                  (keyword_when)
+                  (binary_expression
+                    (field
+                      (identifier))
+                    (literal))
+                  (keyword_then)
+                  (statement
+                    (return_statement
+                      (keyword_return)
+                      (literal
+                        (literal)))))
+                (keyword_end)))
+            (exception_section
+              (keyword_exception)
+              (exception_handler
+                (keyword_when)
+                (identifier)
+                (keyword_or)
+                (identifier)
+                (keyword_then)
+                (statement
+                  (return_statement
+                    (keyword_return)
+                    (literal
+                      (literal)))))
+              (exception_handler
+                (keyword_when)
+                (keyword_other)
+                (keyword_then)
+                (statement
+                  (raise_statement
+                    (keyword_raise)))))
+            (keyword_end)))))))
+
+================================================================================
+empty javascript dollar body
+================================================================================
+
+CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS $$$$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_function
+      (keyword_create)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_arguments)
+      (keyword_returns)
+      (keyword_string)
+      (foreign_language
+        (keyword_language)
+        (keyword_javascript))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_body)))))

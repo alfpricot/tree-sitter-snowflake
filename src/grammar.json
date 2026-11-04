@@ -5890,8 +5890,8 @@
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "STRING",
-                    "value": ","
+                    "type": "SYMBOL",
+                    "name": "keyword_or"
                   },
                   {
                     "type": "CHOICE",
@@ -6103,6 +6103,22 @@
           "name": "keyword_case"
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "value",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_expression"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
           "type": "REPEAT1",
           "content": {
             "type": "SYMBOL",
@@ -6124,6 +6140,18 @@
         {
           "type": "SYMBOL",
           "name": "keyword_end"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "keyword_case"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -6239,41 +6267,80 @@
           }
         },
         {
-          "type": "SYMBOL",
-          "name": "keyword_do"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "declare_statement"
-              },
-              {
-                "type": "SEQ",
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_do"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_loop"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "statement"
+                    "name": "declare_statement"
                   },
                   {
-                    "type": "STRING",
-                    "value": ";"
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "statement"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": ";"
+                      }
+                    ]
                   }
                 ]
               }
-            ]
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_end"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_for"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "keyword_end"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_for"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_loop"
+                }
+              ]
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "label",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -6293,41 +6360,80 @@
           }
         },
         {
-          "type": "SYMBOL",
-          "name": "keyword_do"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "declare_statement"
-              },
-              {
-                "type": "SEQ",
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_do"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_loop"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "statement"
+                    "name": "declare_statement"
                   },
                   {
-                    "type": "STRING",
-                    "value": ";"
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "statement"
+                      },
+                      {
+                        "type": "STRING",
+                        "value": ";"
+                      }
+                    ]
                   }
                 ]
               }
-            ]
-          }
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_end"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "keyword_while"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "keyword_end"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_while"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "keyword_loop"
+                }
+              ]
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "label",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  }
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -6382,6 +6488,22 @@
         {
           "type": "SYMBOL",
           "name": "keyword_repeat"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "label",
+              "content": {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -6424,6 +6546,22 @@
         {
           "type": "SYMBOL",
           "name": "keyword_loop"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "label",
+              "content": {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -11132,13 +11270,21 @@
             "name": "_dollar_quote_start"
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_dollar_quote_content"
-            },
-            "named": true,
-            "value": "body_content"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_dollar_quote_content"
+                },
+                "named": true,
+                "value": "body_content"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           },
           {
             "type": "SYMBOL",

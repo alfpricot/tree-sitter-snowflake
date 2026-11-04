@@ -210,12 +210,13 @@ export default {
 
   // $$ content $$ — a foreign-language body: one `body_content` node
   // between the delimiters, excluding them, so an injected parse starts
-  // on real source text rather than on a `$`.
+  // on real source text rather than on a `$`. An empty body (`$$$$`) has
+  // no `body_content` child.
   dollar_quoted_body: ($) =>
     prec.right(
       seq(
         $._dollar_quote_start,
-        alias($._dollar_quote_content, $.body_content),
+        optional(alias($._dollar_quote_content, $.body_content)),
         $._dollar_quote_end,
       ),
     ),
