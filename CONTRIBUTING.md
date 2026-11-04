@@ -24,7 +24,7 @@ The CLI version is pinned in `package.json` and resolved by `package-lock.json`;
 npx --no-install tree-sitter test
 node tools/node-kinds.mjs --check
 node tools/fixture-check.mjs
-node tools/fixture-leak-grep.mjs
+FIXTURE_LEAK_KEY=... node tools/fixture-leak-grep.mjs   # skips without the key; maintainers have it
 node tools/keyword-probe.mjs
 node tools/package-check.mjs
 node --test tools/*.test.mjs tools/parse-rate/*.test.mjs

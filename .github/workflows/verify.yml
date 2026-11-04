@@ -280,7 +280,13 @@ jobs:
       - name: Parse every fixture and fail on ERROR/MISSING or zero-width nodes
         run: node tools/fixture-check.mjs
 
+      # The needles are keyed hashes; the key is a repository secret, which
+      # pull requests from forks cannot read, so the check is required
+      # only where the secret is available and skips on forks.
       - name: Fail if any fixture carries a source-corpus identifier
+        env:
+          FIXTURE_LEAK_KEY: ${{ secrets.FIXTURE_LEAK_KEY }}
+          FIXTURE_LEAK_REQUIRE_KEY: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: node tools/fixture-leak-grep.mjs
 
       - name: Probe both identifier slots for every keyword
@@ -361,9 +367,9 @@ jobs:
       # job above covers the newest release. This job covers the other
       # end of the range: snowflake-handlers/Cargo.toml declares
       # `tree-sitter = ">=0.26, <0.28"`, and the generated parser's ABI
-      # must stay one that floor accepts. cadence and marlin both moved to
+      # must stay one that floor accepts. cadence moved to
       # `tree-sitter = "0.27"` (verified 2026-09-26), so 0.26 no longer
-      # matches any consumer's own pin — this job now exists solely to
+      # matches a known consumer's pin — this job now exists solely to
       # keep the companion's declared floor honest, not to track a
       # consumer. Edit the manifest in-job and test there. The
       # `^tree-sitter = ` anchor matches only the dev-dependency —

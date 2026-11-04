@@ -5,16 +5,22 @@
 // is added or edited. A hit means the scrub failed; fix the source file,
 // not this list.
 //
-// The repository is public, so the needle list stores SHA-256 hashes of
-// each real identifier instead of the plaintext — the guard itself must
-// not be the thing that discloses what it exists to keep out. A scanned
+// The repository is public, so the needle list stores keyed hashes
+// (HMAC-SHA256) of each real identifier instead of the plaintext — the
+// guard itself must not be the thing that discloses what it exists to
+// keep out. A plain hash of a short lowercase word can be reversed by
+// hashing a dictionary, so the key lives outside the repository, in the
+// FIXTURE_LEAK_KEY repository secret, and CI passes it in. Without the
+// key the check cannot run: it skips with a notice, unless
+// FIXTURE_LEAK_REQUIRE_KEY is `true` (CI sets that wherever the secret
+// is available), in which case a missing key is an error. A scanned
 // file is tokenized into words, and every contiguous 1-, 2-, and 3-word
 // run (joined with `_`, matching how the source identifiers are spelled)
 // is hashed and checked against the needle set, so a needle spelled
 // `acme_bank` in the source is caught whether a scanned file spells it
 // `acme_bank` or `acme bank`; a single word out of a multi-word needle
 // (a bare `acme`) is not, by itself, a hash the needle set contains.
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -23,7 +29,7 @@ import { join } from 'node:path';
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const self = fileURLToPath(import.meta.url);
 
-// Real names observed in the source corpora, stored as SHA-256 hashes of
+// Real names observed in the source corpora, stored as keyed hashes of
 // the lowercase identifier: databases, schemas, warehouses, roles,
 // integrations, storage accounts, business and vendor words. Generic
 // Snowflake/system vocabulary (SYSADMIN, INFORMATION_SCHEMA,
@@ -40,49 +46,49 @@ const self = fileURLToPath(import.meta.url);
 // always ran in; every other needle now runs against the whole
 // repository.
 const fixtureOnlyNeedleHashes = new Set([
-  '247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed', // live
-  'ef260e9aa3c673af240d17a2660480361a8e081d1ffeca2a5ed0e3219fc18567', // dev
-  '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', // test
-  '6f1eb246f9c696c2949931afafec18fea76beb0210d240f5baccbbd9a076a2f2', // locally
-  '637d7becb9983937d58f53af972dc87373f3b7a2010cfb6805880f1463fcef8d', // reporting
+  'aa6551d61900c13443eabb8e085d3cafe5dd83e1fb6bd7b33948e9c6122e7d77', // live
+  '0d4c883182134ac8a47ef11ec8431eb19b76d60dd511b7b74cb32405d9dab43d', // dev
+  '5dcdf47e2f064cf8183d24250168b650a56e3e11dd70ad7b4e8eb74d7824ec43', // test
+  '89446346069d06232ea2ff9ce7f9f2d14de5e32679add9238bce6656f0145c6e', // locally
+  'ceeae302dcbd6f7513a74767bf5ffc0b4ec56b6c7d8619c737d6e18f5dcde5f7', // reporting
 ]);
 
 const broadNeedleHashes = new Set([
-  '3f76c910dbcc58fe67879927204fd2d8477d1b72c51d151456573955af32e993',
-  'cb3bf2a589f9d3889fefc40933fb919364b99bc171fbf29f97b8f0f916cf34cd',
-  '2896cc1b4204c7e64482f8c1726321dd0f12ef8f3f8f68bebfddbac53d7e08b0',
-  '3ccbd9105a45d8fcd4a0101c6532c599f6f59cfa4d4ce378792f547a869a4bea',
-  '18097e8d7df0996b560a3ee081e6f167bf3b9273528ba2b73ae5bbd7cff0966c',
-  'd60d9195446fb1f38074df3791cd0d915b085ad2e43ac6f15d9768dd04c3793e',
-  '47fb98ae08563b05d63cfaf1c84f4144b0de753be03e853ce371dc8ab297d5b8',
-  '8265324164adf2e9aa3b46be993ae04938ec3ae0645386ed23d5b50c34578a50',
-  '9261ceef0b969e70ac20f1510f07a1e0d8db05f20c75161a2ef43b4eba27a7aa',
-  '2206dbc62ccfa17b531e8d4d581677e0ec6452655c6b88140aa604a78d300418',
-  '2aa46ef834e8d2f453daaa22b0cd6a0d1be923c594d228e6ffba4ca5a58bfe75',
-  'c90b8be5faa8b23fd44205e4125d0f0d9c64a497195c80dd03389ae774e37511',
-  '1a75b9283430e98d53a31bb858237c5eec0ba8a7099f174e8fdbd09c4b21f2ba',
-  'b32b06f9b780175417f1c965b42c98a13739a255542d8420cd5c11919bf9e3b7',
-  '1d43cb5b990e3f23fcfd909fd4d53eb4e8c4760c81c2aa834f9f45305ebb57b5',
-  '16f3c31b44437bea8174fe8b58089e9c93776192b7d1b0e7aa7224f76f2bad63',
-  '54ab8d0ee559f623c7fb5733dcfeb6803d00f8c578844bfc9a1361902a45ec50',
-  '0210c955f797c3a03252d1fc703cd7ec5f3f6b97dac17a05cb1307ac43cff9d6',
-  'b6f8d434a847fb0f0c1a8d9b936b8ca952e224f205a55f4ba9b2c20f88fdc9e7',
-  '6a0da33e42e56de46a7f6a9e99c6ac4d6fbc9960a1941d10c17df8a6c61cc62f',
-  '1677da7b371dc2f6791b1412b8cc7b42ecf1af4d748f3ee7f2f033595a94fba8',
-  '0bc0719c5438725728bfc2ba833965a6be8f91613c95e916c00241d3b9e7b4ec',
-  '0a47bef46ece8828ffa954afd1ef72e5b8b42db9cba5638cda6ba17efc7ecc63',
-  'f76b51304e5ed1299588aac5dada57bde927c0d5de7b44c7b35c345aaecaa945',
-  '3045099a9cd6cf1cd05761f7c6ef9b0559783f92f816cfb22d1e2f75cb0c39cf',
-  '3fd3b6d511e349cc23fdd2fd4420f38b1fd3a4f25bd0abe40b468354a619752c',
-  '45c06a24fbd885eb1d794a65eb66b953a4386564bd9cd249938e38834e703912',
-  'd2a3bc0f5af77babd12b5aeb5e56e816c1e4d5bb779e5490cb1aa6b781b9113c',
-  '3abdae75474b462a562c568bb6df620ff7d53edab8cd23747872597081e55145',
-  '8a2e8f546c1e162f225c719e4ccfb75fd3050cd0bcfba9e218e19c9f48f8da26',
-  'faa3e7730b54ea48eff4c3910c23d1f159fa84a4b62dd0a9be30c30df27a6f49',
-  '9496dbbccc74f488afee54ddaed73817ab0ef6b80ab68265778979eda1aa6889',
-  'b695de9bcecc68416fbbc357f0468d8af023dc3f2527acf896fdac0168418310',
-  'a55b0caa960a1e32f76b4de9546027597eb3602c807637f5912cd834f16336aa',
-  '51246a5d9ba657e6de7e1dbba573bcb35f298184453f932c62402c4f76248f23',
+  '6d831ace4fe4abc407e4391996ce2e5997b324655d1e7d9499b1f3a3ff8598ed',
+  '469107e7c2402cde06ea3d9354fa8774b4db4b05891c0c324c4d48f373abd728',
+  '9780c550e63a53d2a7ffab2e27d9c4f336c4317983c9e66c6542917d310f7a6f',
+  'f9e7fd177bcc3f012ef4c980b746cbaf0b11bd46ec0bd02cfa9e409a346d09a2',
+  'f7af79f8af1e0a7ed553fe9acdef009f97b02250909941d266137c9141e71fab',
+  '16496dd34de1a5d428a72e16ef5b0077dde8cc4738bd56a386f7406a742d13d2',
+  'cab351ac40c149539fbd215912a0bc7f8eb6ab10e9cb983d23a6e8a9c0d49112',
+  'cfd5ad4dc79867d1c5dbf460a0d481d95c53054a1e84038fb49ad665a830cc50',
+  '1282046d39742cf9bab4ea0eede631350cbc465b90654ff32f7645d69d3e3cc3',
+  '748dfd245d070017f73f8c62230a7d6c7b4b8868e466c2c2df7df8b4c47ef6fb',
+  'e4cbd27e482e610bfd4243b41b2ab38af0ead9cc8ebd3630a9ef105de3fa23ce',
+  '8937a98b9d87360a15734bce9696d6074181c50e51ee536ae6ed3abdc72b303c',
+  'da96d6101f44cc3c5f02247ab521ea321f5bdb0cb21b862cce7e1b2e32e02a35',
+  '121e2757663d676a840cd3e318903f109ddff759fed4c8f7015d548bbe022c1c',
+  '03870078d6aa441c11776f3a585c6f824a046c0712ee3a3a8775af3b015dbff7',
+  '9f6e462fa4c4d087eb8af7f312b18035614661b55bd64b383517babfccc068c5',
+  '6628b87bda7ca4fd57fe59e2d8c37da51dd946d8bda3b2f76a78a2cc50ceaca8',
+  'd814430e9517de5d4b8e89595ea4e1529fab880f15e2d2a693162be887997350',
+  '36ee9b09d558e610479823bc8e0b7e8adc63c525e5da828afa6bf7172edcb6ea',
+  'c3a6ad894269e5fa8d634f8ddf42927edc9f161d44da56076abd841693b39ac3',
+  '6724751faf3c3baa98d276bb76a75394960967fba4093336356837014a2327d8',
+  '9aaf772d92e62065982d6f97f92456d117da6fc1d3f1f9b53a1685e3cd4fd74d',
+  '396f4b0f9131d31901da1c21c046b89cf6a3bbb9bcfe1f9538ac14807d73a693',
+  'f7dc9deb4d7b7490e34609767a154c0385d3ea2d51b515d21a7189d1e35a1a46',
+  '37a00afa496f0e477ba449d67240d8d7e7329bfdbaf76b76e3922a405d88e56d',
+  'ca381b662d04bc7737f11ce7e6b7926ac95a58ca8c0c976ad340b012725752d5',
+  '89fc9487d31aa66f464cc0f66f8a4ea5170d2dcb74a0e55f2fc5b790eed1961a',
+  '5fef556de974ca2be5e3606219b53d3550e9fc3de30edab48819a775720c74d5',
+  '2f11bf83c9225af873e9218d6ca8c35412a295671257eb4aaab7e48d5a52f79c',
+  '7359db15f39dc7774125e6c3e38e761808c0e302c7f272d758d9a913fb58366d',
+  'd57f2c9888a4bf471b109be1341d803bf9060f40a2c2c2b0550423a64374d463',
+  '915bb7d3991aaf719130953710f67bf2a954aa3c070d27071ed3e47b05834433',
+  '9e2b3a9e886166fb87fb8913f6a4739cade05eca9c50ebd658d40e68f06122f1',
+  '2f9329cbeb8670551a9dd462783493c6621ee19464b6f850a113f19883db3b7c',
+  '74dbff3e39677ccc3bc90428f235180547c6d65fc38689bf02e91e4536dc8b20',
 ]);
 
 // Generated files (regenerated wholesale from grammar/ source on every
@@ -98,8 +104,18 @@ const skip = new Set([
   'Cargo.lock',
 ]);
 
-function sha256(text) {
-  return createHash('sha256').update(text).digest('hex');
+const key = process.env.FIXTURE_LEAK_KEY;
+if (!key) {
+  if (process.env.FIXTURE_LEAK_REQUIRE_KEY === 'true') {
+    console.error('FIXTURE_LEAK_KEY is not set, so the leak check cannot run.');
+    process.exit(1);
+  }
+  console.log('skipped: FIXTURE_LEAK_KEY is not set (fork pull requests and local runs)');
+  process.exit(0);
+}
+
+function keyedHash(text) {
+  return createHmac('sha256', key).update(text).digest('hex');
 }
 
 function isBinary(buffer) {
@@ -111,7 +127,7 @@ function ngramHashes(text) {
   const hashes = new Set();
   for (let n = 1; n <= 3; n++) {
     for (let i = 0; i + n <= words.length; i++) {
-      hashes.add(sha256(words.slice(i, i + n).join('_')));
+      hashes.add(keyedHash(words.slice(i, i + n).join('_')));
     }
   }
   return hashes;
