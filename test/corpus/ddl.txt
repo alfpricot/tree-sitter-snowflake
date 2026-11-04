@@ -2725,10 +2725,8 @@ CREATE OR REPLACE STREAM s CLONE db.sch.s2 COPY GRANTS;
         (identifier)
         (identifier)
         (identifier))
-      (option
-        (identifier))
-      (option
-        (identifier)))))
+      (keyword_copy)
+      (keyword_grants))))
 
 ================================================================================
 dynamic table column list

@@ -9500,6 +9500,27 @@
                       "type": "SYMBOL",
                       "name": "object_reference"
                     }
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "keyword_copy"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "keyword_grants"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
                   }
                 ]
               }

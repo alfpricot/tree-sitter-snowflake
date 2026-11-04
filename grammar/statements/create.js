@@ -336,7 +336,7 @@ export default {
   //   { ON { [EXTERNAL | EVENT | DYNAMIC] TABLE | VIEW | STAGE } source
   //       [{AT | BEFORE} (...)] [APPEND_ONLY = ...] [INSERT_ONLY = ...]
   //       [SHOW_INITIAL_ROWS = ...] [COMMENT = '']
-  //   | CLONE source_stream }
+  //   | CLONE source_stream [COPY GRANTS] }
   // The source keeps the `table` field name whatever kind of object it is.
   create_stream: ($) =>
     prec.right(
@@ -363,7 +363,11 @@ export default {
             field('table', $.object_reference),
             optional($.time_travel),
           ),
-          seq($.keyword_clone, field('clone', $.object_reference)),
+          seq(
+            $.keyword_clone,
+            field('clone', $.object_reference),
+            optional(seq($.keyword_copy, $.keyword_grants)),
+          ),
         ),
         repeat($.option),
       ),
