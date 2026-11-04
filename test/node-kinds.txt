@@ -143,6 +143,7 @@ create_sequence.name
 create_stage
 create_stage.name
 create_stream
+create_stream.clone
 create_stream.name
 create_stream.table
 create_streamlit
@@ -181,6 +182,9 @@ dollar_quoted_expression
 dollar_quoted_script
 doubled_quote
 drop_column_action
+dynamic_table_column
+dynamic_table_column.name
+dynamic_table_column.type
 else_clause
 elseif_clause
 elseif_clause.condition

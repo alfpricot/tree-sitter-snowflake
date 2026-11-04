@@ -5226,6 +5226,10 @@
           "named": true
         },
         {
+          "type": "dynamic_table_column",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -6577,6 +6581,16 @@
     "type": "create_stream",
     "named": true,
     "fields": {
+      "clone": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      },
       "name": {
         "multiple": false,
         "required": true,
@@ -6589,7 +6603,7 @@
       },
       "table": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "object_reference",
@@ -6603,6 +6617,10 @@
       "required": true,
       "types": [
         {
+          "type": "keyword_clone",
+          "named": true
+        },
+        {
           "type": "keyword_copy",
           "named": true
         },
@@ -6611,7 +6629,19 @@
           "named": true
         },
         {
+          "type": "keyword_dynamic",
+          "named": true
+        },
+        {
+          "type": "keyword_event",
+          "named": true
+        },
+        {
           "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_external",
           "named": true
         },
         {
@@ -6639,6 +6669,10 @@
           "named": true
         },
         {
+          "type": "keyword_stage",
+          "named": true
+        },
+        {
           "type": "keyword_stream",
           "named": true
         },
@@ -6655,6 +6689,10 @@
           "named": true
         },
         {
+          "type": "keyword_view",
+          "named": true
+        },
+        {
           "type": "keyword_with",
           "named": true
         },
@@ -6664,6 +6702,10 @@
         },
         {
           "type": "tag_assignment",
+          "named": true
+        },
+        {
+          "type": "time_travel",
           "named": true
         }
       ]
@@ -7842,6 +7884,170 @@
         },
         {
           "type": "keyword_if",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "dynamic_table_column",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary",
+            "named": true
+          },
+          {
+            "type": "custom_type",
+            "named": true
+          },
+          {
+            "type": "keyword_array",
+            "named": true
+          },
+          {
+            "type": "keyword_boolean",
+            "named": true
+          },
+          {
+            "type": "keyword_char",
+            "named": true
+          },
+          {
+            "type": "keyword_date",
+            "named": true
+          },
+          {
+            "type": "keyword_datetime",
+            "named": true
+          },
+          {
+            "type": "keyword_double",
+            "named": true
+          },
+          {
+            "type": "keyword_double_prec_only",
+            "named": true
+          },
+          {
+            "type": "keyword_float",
+            "named": true
+          },
+          {
+            "type": "keyword_geography",
+            "named": true
+          },
+          {
+            "type": "keyword_geometry",
+            "named": true
+          },
+          {
+            "type": "keyword_int",
+            "named": true
+          },
+          {
+            "type": "keyword_object",
+            "named": true
+          },
+          {
+            "type": "keyword_string",
+            "named": true
+          },
+          {
+            "type": "keyword_variant",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "time",
+            "named": true
+          },
+          {
+            "type": "timestamp",
+            "named": true
+          },
+          {
+            "type": "varchar",
+            "named": true
+          },
+          {
+            "type": "vector",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_comment",
+          "named": true
+        },
+        {
+          "type": "keyword_contact",
+          "named": true
+        },
+        {
+          "type": "keyword_masking",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_projection",
+          "named": true
+        },
+        {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_using",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "literal",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]

@@ -190,9 +190,9 @@ export default {
       ),
     ),
 
-  // CREATE [OR REPLACE] MATERIALIZED VIEW name [(cols)] — the columns take
-  // the same COMMENT, policy, and tag clauses as a view's.
+  // CREATE [OR REPLACE] MATERIALIZED VIEW name [(cols)]
   //   [COMMENT = ''] [CLUSTER BY (...)] AS query
+  // The columns take the same COMMENT, policy, and tag clauses as a view's.
   create_materialized_view: ($) =>
     prec.right(
       seq(
@@ -208,7 +208,7 @@ export default {
       ),
     ),
 
-  // CREATE [OR REPLACE] DYNAMIC TABLE name
+  // CREATE [OR REPLACE] DYNAMIC TABLE name [(cols)]
   //   TARGET_LAG = '..' WAREHOUSE = '..' [COMMENT = ''] AS query
   create_dynamic_table: ($) =>
     prec.right(
@@ -218,9 +218,26 @@ export default {
         $.keyword_dynamic,
         $.keyword_table,
         field('name', $.object_reference),
+        optional(paren_list($.dynamic_table_column, true)),
         repeat1(choice($._with_tag, $._with_policy, $.option)),
         $.keyword_as,
         $.create_query,
+      ),
+    ),
+
+  // A dynamic table column: a name, an optional type, then the view column
+  // clauses plus WITH CONTACT.
+  dynamic_table_column: ($) =>
+    seq(
+      field('name', $.identifier),
+      optional(field('type', $._type)),
+      repeat(
+        choice(
+          seq($.keyword_comment, alias($._single_quote_string, $.literal)),
+          $._with_column_policy,
+          $._with_tag,
+          $._with_contact,
+        ),
       ),
     ),
 
@@ -315,9 +332,12 @@ export default {
     ),
 
   // CREATE [OR REPLACE] [TEMPORARY] STREAM name [[WITH] TAG (...)]
-  //   [COPY GRANTS] ON TABLE t
-  //   [APPEND_ONLY = ...] [INSERT_ONLY = ...] [SHOW_INITIAL_ROWS = ...]
-  //   [COMMENT = '']
+  //   [COPY GRANTS]
+  //   { ON { [EXTERNAL | EVENT | DYNAMIC] TABLE | VIEW | STAGE } source
+  //       [{AT | BEFORE} (...)] [APPEND_ONLY = ...] [INSERT_ONLY = ...]
+  //       [SHOW_INITIAL_ROWS = ...] [COMMENT = '']
+  //   | CLONE source_stream [COPY GRANTS] }
+  // The source keeps the `table` field name whatever kind of object it is.
   create_stream: ($) =>
     prec.right(
       seq(
@@ -329,9 +349,26 @@ export default {
         field('name', $.object_reference),
         optional($._with_tag),
         optional(seq($.keyword_copy, $.keyword_grants)),
-        $.keyword_on,
-        $.keyword_table,
-        field('table', $.object_reference),
+        choice(
+          seq(
+            $.keyword_on,
+            choice(
+              seq(
+                optional(choice($.keyword_external, $.keyword_event, $.keyword_dynamic)),
+                $.keyword_table,
+              ),
+              $.keyword_view,
+              $.keyword_stage,
+            ),
+            field('table', $.object_reference),
+            optional($.time_travel),
+          ),
+          seq(
+            $.keyword_clone,
+            field('clone', $.object_reference),
+            optional(seq($.keyword_copy, $.keyword_grants)),
+          ),
+        ),
         repeat($.option),
       ),
     ),
