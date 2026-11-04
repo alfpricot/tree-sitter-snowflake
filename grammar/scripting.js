@@ -6,11 +6,11 @@ import { comma_list, paren_list, wrapped_in_parenthesis, statement_list } from '
 //   DECLARE ...; LET x := 1;
 //   BEGIN ... [EXCEPTION WHEN name THEN ...] END
 //   IF ... THEN ... [ELSEIF ... THEN ...] [ELSE ...] END IF
-//   CASE WHEN ... THEN ... [ELSE ...] END
-//   FOR v IN c | (query) | [REVERSE] 1 TO n DO ... END FOR
-//   WHILE ... DO ... END WHILE
-//   REPEAT ... UNTIL ... END REPEAT
-//   LOOP ... END LOOP; BREAK; CONTINUE;
+//   CASE [expr] WHEN ... THEN ... [ELSE ...] END [CASE]
+//   FOR v IN c | (query) | [REVERSE] 1 TO n {DO | LOOP} ... END {FOR | LOOP} [label]
+//   WHILE ... {DO | LOOP} ... END {WHILE | LOOP} [label]
+//   REPEAT ... UNTIL ... END REPEAT [label]
+//   LOOP ... END LOOP [label]; BREAK; CONTINUE;
 //   RETURN [expr]; RAISE [name];
 //   OPEN c; FETCH c INTO :v; CLOSE c; c := (SELECT ...);
 //
@@ -18,6 +18,31 @@ import { comma_list, paren_list, wrapped_in_parenthesis, statement_list } from '
 // key on (if_statement, elseif_clause, case_statement, while_statement,
 // for_statement, repeat_statement, loop_statement, exception_handler) —
 // renaming any of them is a breaking change.
+
+// name [OR name ...] — the exception names one handler catches.
+function or_list($, item) {
+  return seq(item, repeat(seq($.keyword_or, item)));
+}
+
+// The label Snowflake allows after a loop's END keyword, naming the loop
+// it closes.
+function optional_end_label($) {
+  return optional(field('label', $.identifier));
+}
+
+// {DO | LOOP} statements END {keyword | LOOP} [label] — the body FOR and
+// WHILE share; Snowflake accepts LOOP in place of DO, and LOOP in place
+// of the loop's own keyword after END.
+function loop_body($, end_keyword) {
+  return seq(
+    choice($.keyword_do, $.keyword_loop),
+    statement_list($),
+    $.keyword_end,
+    choice(end_keyword, $.keyword_loop),
+    optional_end_label($),
+  );
+}
+
 export default {
   // A labeled or bare BEGIN ... END block with an optional exception
   // section. This is the Snowflake Scripting block, not a transaction; a
@@ -39,7 +64,7 @@ export default {
   exception_handler: ($) =>
     seq(
       $.keyword_when,
-      comma_list(choice($.identifier, $.keyword_other), true),
+      or_list($, choice($.identifier, $.keyword_other)),
       $.keyword_then,
       statement_list($),
     ),
@@ -61,12 +86,21 @@ export default {
 
   else_clause: ($) => seq($.keyword_else, statement_list($)),
 
-  // Scripting CASE: branches are statement lists, not expressions, and
-  // there is no input expression — a SQL CASE expression is `case` in
-  // grammar/expressions.js. The two share the CASE token; the branch
-  // contents settle which is which a token later.
+  // Scripting CASE: branches are statement lists, not expressions — a SQL
+  // CASE expression is `case` in grammar/expressions.js. The two share the
+  // CASE token; the branch contents settle which is which a token later.
+  // The simple form names an input after CASE, and each WHEN's condition
+  // is then a value compared against it — the same fields the expression
+  // form uses.
   case_statement: ($) =>
-    seq($.keyword_case, repeat1($.case_when_clause), optional($.else_clause), $.keyword_end),
+    seq(
+      $.keyword_case,
+      optional(field('input', $._expression)),
+      repeat1($.case_when_clause),
+      optional($.else_clause),
+      $.keyword_end,
+      optional($.keyword_case),
+    ),
 
   case_when_clause: ($) =>
     seq($.keyword_when, field('condition', $._expression), $.keyword_then, statement_list($)),
@@ -85,21 +119,11 @@ export default {
           seq(optional($.keyword_reverse), $._expression, $.keyword_to, $._expression),
         ),
       ),
-      $.keyword_do,
-      statement_list($),
-      $.keyword_end,
-      $.keyword_for,
+      loop_body($, $.keyword_for),
     ),
 
   while_statement: ($) =>
-    seq(
-      $.keyword_while,
-      field('condition', $._expression),
-      $.keyword_do,
-      statement_list($),
-      $.keyword_end,
-      $.keyword_while,
-    ),
+    seq($.keyword_while, field('condition', $._expression), loop_body($, $.keyword_while)),
 
   repeat_statement: ($) =>
     seq(
@@ -109,9 +133,11 @@ export default {
       field('condition', $._expression),
       $.keyword_end,
       $.keyword_repeat,
+      optional_end_label($),
     ),
 
-  loop_statement: ($) => seq($.keyword_loop, statement_list($), $.keyword_end, $.keyword_loop),
+  loop_statement: ($) =>
+    seq($.keyword_loop, statement_list($), $.keyword_end, $.keyword_loop, optional_end_label($)),
 
   // BREAK [label] — prec.right so an identifier after BREAK reads as the
   // label rather than the start of the next, unterminated item.
