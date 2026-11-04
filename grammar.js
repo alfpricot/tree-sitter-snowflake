@@ -16,6 +16,9 @@ export default grammar({
   // before it can settle; tree-sitter reports any that stop being needed
   // as "unnecessary conflicts" on generate, and those are removed.
   conflicts: ($) => [
+    // `CREATE TEMPORARY ...` — the modifier list belongs to a table or a
+    // routine; settled by the object keyword that follows it.
+    [$.create_table, $.create_procedure, $.create_function],
     // `a.b` — the prefix of a qualified column vs. an object reference.
     [$.object_reference, $._qualified_field],
     // `a.b.c` — how many parts belong to the reference.

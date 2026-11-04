@@ -7,8 +7,8 @@ pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
     let mut result = Vec::new();
     for routine in descendants(tree.root_node()) {
         let kind = match routine.kind() {
-            "create_procedure" | "alter_procedure" => RoutineKind::Procedure,
-            "create_function" | "alter_function" => RoutineKind::Function,
+            "create_procedure" => RoutineKind::Procedure,
+            "create_function" => RoutineKind::Function,
             _ => continue,
         };
         let Some(language_node) = routine.child_by_field_name("language") else {

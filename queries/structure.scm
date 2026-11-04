@@ -17,16 +17,6 @@
   (function_arguments) @definition.parameters
   body: (function_body) @definition.body) @definition.block
 
-(alter_procedure
-  name: (object_reference) @definition.name
-  (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
-
-(alter_function
-  name: (object_reference) @definition.name
-  (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
-
 (create_policy
   name: (object_reference) @definition.name
   body: (policy_body) @definition.body) @definition.block

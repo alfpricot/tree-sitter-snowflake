@@ -4,8 +4,9 @@ A `LANGUAGE JAVASCRIPT`/`PYTHON`/`JAVA`/`SCALA` body is not Snowflake SQL — it
 language carried inside the body's delimiters. This grammar does not parse that language, but it
 exposes the body so another grammar can:
 
-- The declared language is a `language` field on the `create_procedure`/`create_function`/
-  `alter_procedure`/`alter_function` node.
+- The declared language is a `language` field on the `create_procedure`/`create_function` node.
+  A staged handler (`IMPORTS` and `HANDLER` with no `AS` clause) has a `language` field and no
+  `body` field.
 - The body's content — the text between the delimiters, excluding the delimiters themselves — is
   its own node, distinct for the two delimiter forms Snowflake accepts:
   `dollar_quoted_body`/`dollar_quoted_script`/`dollar_quoted_expression` for `$$ ... $$`, and

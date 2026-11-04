@@ -300,3 +300,16 @@ fn scala_queries_and_tasks() {
     assert_eq!(result.findings[0].rule_id, "scala-task-warehouse");
     assert_eq!(&input[result.findings[0].range.clone()], "CALL p()");
 }
+
+#[test]
+fn owner_rights_flag_temporary_routines() {
+    let mut analyzer = Analyzer::new().unwrap();
+    for statement in [
+        "CREATE TEMPORARY FUNCTION f(x INT) RETURNS INT AS 'x + 1'",
+        "CREATE OR REPLACE TEMP SECURE PROCEDURE p() RETURNS INT LANGUAGE SQL AS 'BEGIN RETURN 1; END'",
+    ] {
+        let content = format!("session.sql(\"{statement}\")");
+        let result = analyzer.analyze(&sql("PYTHON", &content)).unwrap();
+        assert_eq!(ids(&result), ["owner-temp-object"], "{statement}");
+    }
+}

@@ -708,3 +708,340 @@ $$;
                   (keyword_end)
                   (keyword_for)))
               (keyword_end))))))))
+
+================================================================================
+alter procedure actions
+================================================================================
+
+ALTER PROCEDURE IF EXISTS dw.load(VARCHAR, INT) RENAME TO dw.load2;
+ALTER PROCEDURE p(INT) SET COMMENT = 'x';
+ALTER PROCEDURE p() UNSET COMMENT;
+ALTER PROCEDURE p(INT) EXECUTE AS CALLER;
+ALTER PROCEDURE p(INT) SET TAG owner = 'data';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_procedure
+      (keyword_alter)
+      (keyword_procedure)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier))
+      (function_argument_types
+        (varchar
+          (keyword_varchar))
+        (keyword_int))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier)
+        (identifier))))
+  (statement
+    (alter_procedure
+      (keyword_alter)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (keyword_int))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_procedure
+      (keyword_alter)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_argument_types)
+      (keyword_unset)
+      (identifier)))
+  (statement
+    (alter_procedure
+      (keyword_alter)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (keyword_int))
+      (execute_as_clause
+        (keyword_execute_as)
+        (keyword_as)
+        (keyword_caller))))
+  (statement
+    (alter_procedure
+      (keyword_alter)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (keyword_int))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (identifier)
+        (literal)))))
+
+================================================================================
+alter function actions
+================================================================================
+
+ALTER FUNCTION f(NUMBER) SET SECURE;
+ALTER FUNCTION f(NUMBER) UNSET SECURE;
+ALTER FUNCTION f(NUMBER) UNSET TAG governance.owner;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_function
+      (keyword_alter)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (number
+          (keyword_number)))
+      (keyword_set)
+      (keyword_secure)))
+  (statement
+    (alter_function
+      (keyword_alter)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (number
+          (keyword_number)))
+      (keyword_unset)
+      (keyword_secure)))
+  (statement
+    (alter_function
+      (keyword_alter)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (number
+          (keyword_number)))
+      (keyword_unset)
+      (keyword_tag)
+      (object_reference
+        (identifier)
+        (identifier)))))
+
+================================================================================
+create or alter procedure
+================================================================================
+
+CREATE OR ALTER PROCEDURE p() RETURNS INT LANGUAGE SQL AS $$ BEGIN RETURN 1; END; $$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_procedure
+      (keyword_create)
+      (keyword_or)
+      (keyword_alter)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_arguments)
+      (keyword_returns)
+      (keyword_int)
+      (sql_language
+        (keyword_language)
+        (keyword_sql))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_script
+          (statement
+            (block
+              (keyword_begin)
+              (statement
+                (return_statement
+                  (keyword_return)
+                  (literal)))
+              (keyword_end))))))))
+
+================================================================================
+temporary secure procedure returning a table
+================================================================================
+
+CREATE OR REPLACE TEMPORARY SECURE PROCEDURE IF NOT EXISTS p(a INT) COPY GRANTS
+RETURNS TABLE (id INT, name VARCHAR)
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.11'
+PACKAGES = ('snowflake-snowpark-python')
+HANDLER = 'run'
+AS $$
+def run(session, a):
+    return session.table('t')
+$$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_procedure
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_temporary)
+      (keyword_secure)
+      (keyword_procedure)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (function_arguments
+        (function_argument
+          (identifier)
+          (keyword_int)))
+      (keyword_copy)
+      (keyword_grants)
+      (keyword_returns)
+      (keyword_table)
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int))
+        (column_definition
+          (identifier)
+          (varchar
+            (keyword_varchar))))
+      (foreign_language
+        (keyword_language)
+        (keyword_python))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_body
+          (body_content))))))
+
+================================================================================
+staged python handler with an empty table return
+================================================================================
+
+CREATE PROCEDURE p()
+RETURNS TABLE ()
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.11'
+PACKAGES = ('snowflake-snowpark-python')
+IMPORTS = ('@stage/handler.py')
+HANDLER = 'handler.run';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_procedure
+      (keyword_create)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_arguments)
+      (keyword_returns)
+      (keyword_table)
+      (foreign_language
+        (keyword_language)
+        (keyword_python))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal)))))))
+
+================================================================================
+function return nullability and staged java handler
+================================================================================
+
+CREATE TEMP FUNCTION f(x INT) RETURNS INT NOT NULL AS 'x + 1';
+CREATE FUNCTION g(x INT) RETURNS VARCHAR NULL LANGUAGE JAVA IMPORTS = ('@s/f.jar') HANDLER = 'F.run';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_function
+      (keyword_create)
+      (keyword_temporary)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_arguments
+        (function_argument
+          (identifier)
+          (keyword_int)))
+      (keyword_returns)
+      (keyword_int)
+      (keyword_not)
+      (keyword_null)
+      (keyword_as)
+      (function_body
+        (string_body
+          (body_content)))))
+  (statement
+    (create_function
+      (keyword_create)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_arguments
+        (function_argument
+          (identifier)
+          (keyword_int)))
+      (keyword_returns)
+      (varchar
+        (keyword_varchar))
+      (keyword_null)
+      (foreign_language
+        (keyword_language)
+        (keyword_java))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal)))))))
