@@ -230,8 +230,18 @@ export default {
         field('name', $.object_reference),
         choice(
           seq($.keyword_set, optional($.keyword_body), '->', field('body', $.policy_body)),
-          seq($.keyword_set, seq($.keyword_tag, paren_list($.tag_assignment, true))),
-          seq($.keyword_unset, seq($.keyword_tag, paren_list($.identifier, true))),
+          // SET TAG / UNSET TAG take a bare list; the parenthesized form is
+          // kept for input that already uses it.
+          seq(
+            $.keyword_set,
+            $.keyword_tag,
+            choice(comma_list($.tag_assignment, true), paren_list($.tag_assignment, true)),
+          ),
+          seq(
+            $.keyword_unset,
+            $.keyword_tag,
+            choice(comma_list($.object_reference, true), paren_list($.object_reference, true)),
+          ),
           ...set_unset_properties($),
           seq($.keyword_rename, $.keyword_to, $.object_reference),
         ),

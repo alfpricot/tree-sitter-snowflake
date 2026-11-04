@@ -785,7 +785,8 @@ ALTER PROCEDURE p(INT) SET TAG owner = 'data';
       (keyword_set)
       (keyword_tag)
       (tag_assignment
-        (identifier)
+        (object_reference
+          (identifier))
         (literal)))))
 
 ================================================================================

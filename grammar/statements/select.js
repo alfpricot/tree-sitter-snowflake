@@ -330,12 +330,14 @@ export default {
       ),
     ),
 
-  // MATCH_RECOGNIZE ( PARTITION BY ... ORDER BY ... MEASURES ...
-  //   [ONE | ALL ROWS] PER MATCH [AFTER MATCH SKIP ...]
-  //   PATTERN (...) DEFINE ... ) [AS] alias
+  // ( pattern ) — the MATCH_RECOGNIZE row pattern: opaque text with
+  // balanced, nestable parentheses.
   _row_pattern_group: ($) =>
     seq('(', repeat(choice(token(prec(-1, /[^()]+/)), $._row_pattern_group)), ')'),
 
+  // MATCH_RECOGNIZE ( PARTITION BY ... ORDER BY ... MEASURES ...
+  //   [ONE | ALL ROWS] PER MATCH [AFTER MATCH SKIP ...]
+  //   PATTERN (...) DEFINE ... ) [AS] alias
   match_recognize: ($) =>
     prec.right(
       seq(

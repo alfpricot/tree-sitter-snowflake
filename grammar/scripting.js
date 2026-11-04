@@ -7,8 +7,9 @@ import { comma_list, paren_list, wrapped_in_parenthesis, statement_list } from '
 //   BEGIN ... [EXCEPTION WHEN name THEN ...] END
 //   IF ... THEN ... [ELSEIF ... THEN ...] [ELSE ...] END IF
 //   CASE [expr] WHEN ... THEN ... [ELSE ...] END [CASE]
-//   FOR v IN c | (query) | [REVERSE] 1 TO n {DO | LOOP} ... END {FOR | LOOP} [label]
-//   WHILE ... {DO | LOOP} ... END {WHILE | LOOP} [label]
+//   FOR v IN c | (query) | [REVERSE] 1 TO n DO ... END FOR [label]
+//     (or LOOP ... END LOOP)
+//   WHILE ... DO ... END WHILE [label] (or LOOP ... END LOOP)
 //   REPEAT ... UNTIL ... END REPEAT [label]
 //   LOOP ... END LOOP [label]; BREAK; CONTINUE;
 //   RETURN [expr]; RAISE [name];
@@ -30,15 +31,15 @@ function optional_end_label($) {
   return optional(field('label', $.identifier));
 }
 
-// {DO | LOOP} statements END {keyword | LOOP} [label] — the body FOR and
-// WHILE share; Snowflake accepts LOOP in place of DO, and LOOP in place
-// of the loop's own keyword after END.
+// DO statements END {FOR | WHILE} or LOOP statements END LOOP, then an
+// optional label — the body FOR and WHILE share. Snowflake pairs DO with
+// the loop's own keyword and LOOP with END LOOP.
 function loop_body($, end_keyword) {
   return seq(
-    choice($.keyword_do, $.keyword_loop),
-    statement_list($),
-    $.keyword_end,
-    choice(end_keyword, $.keyword_loop),
+    choice(
+      seq($.keyword_do, statement_list($), $.keyword_end, end_keyword),
+      seq($.keyword_loop, statement_list($), $.keyword_end, $.keyword_loop),
+    ),
     optional_end_label($),
   );
 }

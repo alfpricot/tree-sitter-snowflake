@@ -15507,7 +15507,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "object_reference",
             "named": true
           }
         ]
