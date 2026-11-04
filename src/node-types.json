@@ -132,11 +132,23 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_unset",
           "named": true
         },
         {
+          "type": "object_reference",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -268,6 +280,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -301,6 +317,10 @@
         },
         {
           "type": "subquery",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         },
         {
@@ -456,6 +476,10 @@
         },
         {
           "type": "keyword_masking",
+          "named": true
+        },
+        {
+          "type": "keyword_modify",
           "named": true
         },
         {
@@ -629,6 +653,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -646,6 +674,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -781,6 +813,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -794,6 +830,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -855,6 +895,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -872,6 +916,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1131,6 +1179,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1144,6 +1196,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1201,6 +1257,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1218,6 +1278,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1271,6 +1335,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1284,6 +1352,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1372,6 +1444,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1385,6 +1461,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1438,6 +1518,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1451,6 +1535,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1552,6 +1640,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_unset",
           "named": true
         },
@@ -1569,6 +1661,10 @@
         },
         {
           "type": "rename_column_action",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1714,6 +1810,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1731,6 +1831,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1804,6 +1908,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1821,6 +1929,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -1894,6 +2006,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_to",
           "named": true
         },
@@ -1911,6 +2027,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -5052,11 +5172,23 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_transient",
           "named": true
         },
         {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -6141,7 +6273,19 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -6323,11 +6467,23 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_temporary",
           "named": true
         },
         {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -6879,6 +7035,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_warehouse",
           "named": true
         },
@@ -6888,6 +7048,10 @@
         },
         {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -16690,7 +16854,19 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]

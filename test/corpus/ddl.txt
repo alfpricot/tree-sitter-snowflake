@@ -1738,3 +1738,274 @@ ALTER MASKING POLICY p UNSET TAG (cost_center);
       (keyword_tag)
       (object_reference
         (identifier)))))
+
+================================================================================
+set and unset tag on objects
+================================================================================
+
+ALTER TABLE t SET TAG governance.tags.owner = 'data', cost = 'x';
+ALTER WAREHOUSE w SET TAG governance.tags.owner = 'data';
+ALTER SCHEMA s UNSET TAG governance.tags.owner, cost;
+ALTER VIEW v SET TAG a.b.c = 'x';
+ALTER ACCOUNT SET TAG a.b.c = 'x';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (alter_warehouse
+      (keyword_alter)
+      (keyword_warehouse)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))))
+  (statement
+    (alter_schema
+      (keyword_alter)
+      (keyword_schema)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (keyword_tag)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (object_reference
+        (identifier))))
+  (statement
+    (alter_view
+      (keyword_alter)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))))
+  (statement
+    (alter_account
+      (keyword_alter)
+      (keyword_account)
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal)))))
+
+================================================================================
+with tag on create
+================================================================================
+
+CREATE WAREHOUSE w WITH WAREHOUSE_SIZE = XSMALL AUTO_SUSPEND = 60 WITH TAG (a.b.c = 'x');
+CREATE WAREHOUSE w WITH TAG (governance.tags.owner = 'data');
+CREATE SCHEMA s WITH TAG (owner = 'data');
+CREATE DATABASE d TAG (a.b.c = 'x');
+CREATE STAGE st URL = 's3://b/' WITH TAG (a = 'x');
+CREATE VIEW v WITH TAG (a = 'x') AS SELECT 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_warehouse
+      (keyword_create)
+      (keyword_warehouse)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))))
+  (statement
+    (create_warehouse
+      (keyword_create)
+      (keyword_warehouse)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))))
+  (statement
+    (create_schema
+      (keyword_create)
+      (keyword_schema)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))))
+  (statement
+    (create_stage
+      (keyword_create)
+      (keyword_stage)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (create_view
+      (keyword_create)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (view_option
+        (keyword_with)
+        (keyword_tag)
+        (tag_assignment
+          (object_reference
+            (identifier))
+          (literal)))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (literal))))))))
+
+================================================================================
+column tags and modify column
+================================================================================
+
+ALTER TABLE t ALTER COLUMN c SET TAG governance.tags.owner = 'data';
+ALTER TABLE t MODIFY COLUMN c UNSET TAG governance.tags.owner, x;
+ALTER TABLE t ALTER COLUMN c UNSET TAG;
+ALTER TABLE t MODIFY COLUMN c DROP DEFAULT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (alter_column_action
+        (keyword_alter)
+        (keyword_column)
+        (identifier)
+        (keyword_set)
+        (keyword_tag)
+        (tag_assignment
+          (object_reference
+            (identifier)
+            (identifier)
+            (identifier))
+          (literal)))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (alter_column_action
+        (keyword_modify)
+        (keyword_column)
+        (identifier)
+        (keyword_unset)
+        (keyword_tag)
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (object_reference
+          (identifier)))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (alter_column_action
+        (keyword_alter)
+        (keyword_column)
+        (identifier)
+        (keyword_unset)
+        (keyword_tag))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (alter_column_action
+        (keyword_modify)
+        (keyword_column)
+        (identifier)
+        (keyword_drop)
+        (keyword_default)))))
