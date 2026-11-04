@@ -2009,3 +2009,46 @@ ALTER TABLE t MODIFY COLUMN c DROP DEFAULT;
         (identifier)
         (keyword_drop)
         (keyword_default)))))
+
+================================================================================
+set and unset tag on tasks
+================================================================================
+
+ALTER TASK t SET TAG a.b.c = 'x', d = 'y';
+ALTER TASK t UNSET TAG a.b.c, d;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_task
+      (keyword_alter)
+      (keyword_task)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (alter_task
+      (keyword_alter)
+      (keyword_task)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (keyword_tag)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (object_reference
+        (identifier)))))

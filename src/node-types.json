@@ -1748,6 +1748,10 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_task",
           "named": true
         },
@@ -1757,6 +1761,10 @@
         },
         {
           "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         },
         {
