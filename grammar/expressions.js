@@ -372,7 +372,7 @@ export default {
   // A stage or path reference: @stage, @db.schema.stage/path, @%table,
   // @~, or a stage-relative path. One token because the internal dots and
   // slashes are not identifier separators.
-  stage_reference: (_) => /@[%~]?[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*([\/][^\s'",;)\]]*)?/,
+  stage_reference: (_) => /@(~|%?[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*)([\/][^\s'",;)\]]*)?/,
 
   // file://path — the local-file operand of PUT and GET, written unquoted
   // (the common form) or as a quoted string. One token for the same

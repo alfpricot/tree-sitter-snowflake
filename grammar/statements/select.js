@@ -27,6 +27,8 @@ export default {
             choice(
               seq($.keyword_union, optional($.keyword_all)),
               seq($.keyword_union, optional($.keyword_distinct)),
+              // UNION [ALL] BY NAME matches columns by name, not position.
+              seq($.keyword_union, optional($.keyword_all), $.keyword_by, $.keyword_name),
               $.keyword_except,
               $.keyword_minus,
               $.keyword_intersect,
@@ -39,7 +41,12 @@ export default {
 
   // SELECT ... FROM ... [WHERE] [GROUP BY] [HAVING] [QUALIFY]
   // [WINDOW] [ORDER BY] [LIMIT]
-  _select_statement: ($) => optional_parenthesis(seq($.select, optional($.from))),
+  // ORDER BY and LIMIT may follow the select list directly when there
+  // is no FROM clause.
+  _select_statement: ($) =>
+    optional_parenthesis(
+      seq($.select, choice($.from, seq(optional($.order_by), optional($.limit)))),
+    ),
 
   select: ($) =>
     seq(
@@ -327,6 +334,9 @@ export default {
   // MATCH_RECOGNIZE ( PARTITION BY ... ORDER BY ... MEASURES ...
   //   [ONE | ALL ROWS] PER MATCH [AFTER MATCH SKIP ...]
   //   PATTERN (...) DEFINE ... ) [AS] alias
+  _row_pattern_group: ($) =>
+    seq('(', repeat(choice(token(prec(-1, /[^()]+/)), $._row_pattern_group)), ')'),
+
   match_recognize: ($) =>
     prec.right(
       seq(
@@ -339,12 +349,20 @@ export default {
             optional(seq($.keyword_measures, comma_list($.measure_definition, true))),
             // [ONE | ALL ROWS] PER MATCH — ONE and ALL are not row-count
             // keywords everywhere else, so ONE stays an identifier here.
+            // ALL ROWS PER MATCH optionally says how empty and unmatched
+            // rows are reported: SHOW|OMIT EMPTY MATCHES or WITH UNMATCHED ROWS.
             optional(
               seq(
                 optional(choice($.keyword_all, $.identifier)),
                 choice($.keyword_row, $.keyword_rows),
                 $.keyword_per,
                 $.keyword_match,
+                optional(
+                  choice(
+                    seq(choice($.keyword_show, $.keyword_omit), $.keyword_empty, $.keyword_matches),
+                    seq($.keyword_with, $.keyword_unmatched, $.keyword_rows),
+                  ),
+                ),
               ),
             ),
             // AFTER MATCH SKIP {PAST LAST ROW | TO NEXT ROW |
@@ -369,8 +387,9 @@ export default {
             ),
             // The row pattern is a small regex-like language of its own
             // (symbol names with +, *, ?, |), opaque to this grammar: none
-            // of it is SQL the consumers measure.
-            seq($.keyword_pattern, wrapped_in_parenthesis(token(/[^)]*/))),
+            // of it is SQL the consumers measure. Its groups nest, so the
+            // parentheses are balanced rather than ending at the first `)`.
+            seq($.keyword_pattern, $._row_pattern_group),
             $.keyword_define,
             comma_list($.define_argument, true),
           ),

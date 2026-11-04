@@ -1488,12 +1488,11 @@ CREATE HYBRID TABLE my_hybrid (
           (identifier)
           (keyword_variant)))
       (table_option
-        (partition_by
+        (table_partition_by
           (keyword_partition)
           (keyword_by)
-          (parenthesized_expression
-            (field
-              (identifier)))))
+          (field
+            (identifier))))
       (table_option
         (option
           (identifier)
@@ -1575,3 +1574,72 @@ CREATE HYBRID TABLE my_hybrid (
           (keyword_primary)
           (keyword_key)
           (identifier))))))
+
+================================================================================
+multi-column table partition and local or global temporary tables
+================================================================================
+
+CREATE EXTERNAL TABLE ext (a INT, b INT) PARTITION BY (a, b) LOCATION = @stg FILE_FORMAT = (TYPE = PARQUET);
+CREATE LOCAL TEMPORARY TABLE t (x INT);
+CREATE GLOBAL TEMPORARY TABLE g (x INT);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_external)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int))
+        (column_definition
+          (identifier)
+          (keyword_int)))
+      (table_option
+        (table_partition_by
+          (keyword_partition)
+          (keyword_by)
+          (field
+            (identifier))
+          (field
+            (identifier))))
+      (table_option
+        (option
+          (identifier)
+          (stage_reference)))
+      (table_option
+        (option
+          (identifier)
+          (option
+            (identifier)
+            (object_reference
+              (identifier)))))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_local)
+      (keyword_temporary)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_global)
+      (keyword_temporary)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int))))))

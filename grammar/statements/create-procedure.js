@@ -169,7 +169,12 @@ export default {
     seq(
       $.keyword_execute_as,
       $.keyword_as,
-      choice($.keyword_caller, $.keyword_owner, alias($._single_quote_string, $.literal)),
+      choice(
+        $.keyword_caller,
+        seq($.keyword_restricted, $.keyword_caller),
+        $.keyword_owner,
+        alias($._single_quote_string, $.literal),
+      ),
     ),
 
   // name type [DEFAULT expr] — Snowflake procedure and function

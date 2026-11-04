@@ -1026,3 +1026,281 @@ SELECT prior, b FROM t WHERE prior = 1 ORDER BY prior;
         (order_target
           (field
             (identifier)))))))
+
+================================================================================
+match recognize with nested pattern groups and row-reporting options
+================================================================================
+
+SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ALL ROWS PER MATCH WITH UNMATCHED ROWS PATTERN (A (B|C)+ D) DEFINE A AS x > 0, B AS x > 1, C AS x > 2, D AS x > 3);
+SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ALL ROWS PER MATCH OMIT EMPTY MATCHES PATTERN (A+) DEFINE A AS x > 0);
+SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ALL ROWS PER MATCH SHOW EMPTY MATCHES PATTERN ((A B)* C?) DEFINE A AS x > 0);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (match_recognize
+        (keyword_match_recognize)
+        (order_by
+          (keyword_order)
+          (keyword_by)
+          (order_target
+            (field
+              (identifier))))
+        (keyword_all)
+        (keyword_rows)
+        (keyword_per)
+        (keyword_match)
+        (keyword_with)
+        (keyword_unmatched)
+        (keyword_rows)
+        (keyword_pattern)
+        (keyword_define)
+        (define_argument
+          (identifier)
+          (keyword_as)
+          (binary_expression
+            (field
+              (identifier))
+            (literal)))
+        (define_argument
+          (identifier)
+          (keyword_as)
+          (binary_expression
+            (field
+              (identifier))
+            (literal)))
+        (define_argument
+          (identifier)
+          (keyword_as)
+          (binary_expression
+            (field
+              (identifier))
+            (literal)))
+        (define_argument
+          (identifier)
+          (keyword_as)
+          (binary_expression
+            (field
+              (identifier))
+            (literal))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (match_recognize
+        (keyword_match_recognize)
+        (order_by
+          (keyword_order)
+          (keyword_by)
+          (order_target
+            (field
+              (identifier))))
+        (keyword_all)
+        (keyword_rows)
+        (keyword_per)
+        (keyword_match)
+        (keyword_omit)
+        (keyword_empty)
+        (keyword_matches)
+        (keyword_pattern)
+        (keyword_define)
+        (define_argument
+          (identifier)
+          (keyword_as)
+          (binary_expression
+            (field
+              (identifier))
+            (literal))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (match_recognize
+        (keyword_match_recognize)
+        (order_by
+          (keyword_order)
+          (keyword_by)
+          (order_target
+            (field
+              (identifier))))
+        (keyword_all)
+        (keyword_rows)
+        (keyword_per)
+        (keyword_match)
+        (keyword_show)
+        (keyword_empty)
+        (keyword_matches)
+        (keyword_pattern)
+        (keyword_define)
+        (define_argument
+          (identifier)
+          (keyword_as)
+          (binary_expression
+            (field
+              (identifier))
+            (literal)))))))
+
+================================================================================
+union by name and order by or limit without from
+================================================================================
+
+SELECT a, b FROM t1 UNION BY NAME SELECT b, a FROM t2;
+SELECT a FROM t1 UNION ALL BY NAME SELECT a FROM t2;
+SELECT 1 AS x ORDER BY x;
+SELECT 1 LIMIT 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (set_operation
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))
+      (keyword_union)
+      (keyword_by)
+      (keyword_name)
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))))
+  (statement
+    (set_operation
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))
+      (keyword_union)
+      (keyword_all)
+      (keyword_by)
+      (keyword_name)
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (literal)
+          (keyword_as)
+          (identifier))))
+    (order_by
+      (keyword_order)
+      (keyword_by)
+      (order_target
+        (field
+          (identifier)))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (literal))))
+    (limit
+      (keyword_limit)
+      (literal))))
+
+================================================================================
+new keywords still read as column names
+================================================================================
+
+SELECT name, local, global, empty, matches, omit, unmatched, restricted FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))

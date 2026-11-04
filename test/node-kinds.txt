@@ -206,6 +206,7 @@ keyword_drop
 keyword_dynamic
 keyword_else
 keyword_elseif
+keyword_empty
 keyword_enable
 keyword_end
 keyword_enforced
@@ -275,11 +276,13 @@ keyword_let
 keyword_like
 keyword_limit
 keyword_list
+keyword_local
 keyword_loop
 keyword_masking
 keyword_match
 keyword_match_recognize
 keyword_matched
+keyword_matches
 keyword_materialized
 keyword_materialized_view
 keyword_measures
@@ -288,6 +291,7 @@ keyword_metrics
 keyword_minus
 keyword_modify
 keyword_monitor
+keyword_name
 keyword_network
 keyword_next
 keyword_no
@@ -301,6 +305,7 @@ keyword_number
 keyword_object
 keyword_off
 keyword_offset
+keyword_omit
 keyword_on
 keyword_open
 keyword_operate
@@ -346,6 +351,7 @@ keyword_rename
 keyword_repeat
 keyword_replace
 keyword_restrict
+keyword_restricted
 keyword_resultset
 keyword_resume
 keyword_return
@@ -410,6 +416,7 @@ keyword_unbounded
 keyword_undrop
 keyword_union
 keyword_unique
+keyword_unmatched
 keyword_unpivot
 keyword_unset
 keyword_until
@@ -516,6 +523,7 @@ string_body
 subquery
 table_constraint
 table_option
+table_partition_by
 tag_assignment
 task_option
 term

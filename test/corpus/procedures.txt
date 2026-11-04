@@ -1281,3 +1281,35 @@ CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS $$$$;
       (keyword_as)
       (function_body
         (dollar_quoted_body)))))
+
+================================================================================
+execute as restricted caller
+================================================================================
+
+CREATE PROCEDURE p() RETURNS INT LANGUAGE JAVASCRIPT EXECUTE AS RESTRICTED CALLER AS $$ return 1; $$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_procedure
+      (keyword_create)
+      (keyword_procedure)
+      (object_reference
+        (identifier))
+      (function_arguments)
+      (keyword_returns)
+      (keyword_int)
+      (foreign_language
+        (keyword_language)
+        (keyword_javascript))
+      (module_option
+        (execute_as_clause
+          (keyword_execute_as)
+          (keyword_as)
+          (keyword_restricted)
+          (keyword_caller)))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_body
+          (body_content))))))
