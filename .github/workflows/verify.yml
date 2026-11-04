@@ -320,6 +320,43 @@ jobs:
         with:
           key: consumer-pin
 
+      # Each crate's `rust-version` is a promise to consumers on older
+      # toolchains; building the libraries at exactly those versions keeps
+      # it honest. Each crate is built from a throwaway consumer project
+      # whose own rust-version matches that floor, so dependencies resolve
+      # the way a consumer's would. Inside this workspace the resolver
+      # targets the lowest member floor (1.85) and the grammar crate's
+      # tree-sitter dev-dependency pulls in releases that need a newer
+      # compiler, neither of which a real consumer sees. The projects live
+      # in $RUNNER_TEMP, so they leave no Cargo.lock in the workspace for
+      # the floor test below to inherit.
+      - name: Check each crate builds at its declared minimum Rust version
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.85 1.90 --profile minimal --no-self-update
+          check_floor() {
+            local toolchain="$1" dependency="$2"
+            local consumer="$RUNNER_TEMP/msrv-$toolchain"
+            mkdir -p "$consumer/src"
+            : > "$consumer/src/lib.rs"
+            cat > "$consumer/Cargo.toml" <<EOF
+          [package]
+          name = "msrv-consumer"
+          version = "0.0.0"
+          edition = "2024"
+          rust-version = "$toolchain"
+          publish = false
+
+          [dependencies]
+          $dependency
+
+          [workspace]
+          EOF
+            (cd "$consumer" && cargo "+$toolchain" check)
+          }
+          check_floor 1.85 "tree-sitter-snowflake = { path = \"$GITHUB_WORKSPACE\" }"
+          check_floor 1.90 "snowflake-handlers = { path = \"$GITHUB_WORKSPACE/snowflake-handlers\", features = [\"java\", \"scala\"] }"
+
       # The dev-dependency tracks the latest tree-sitter, so the `verify`
       # job above covers the newest release. This job covers the other
       # end of the range: snowflake-handlers/Cargo.toml declares
@@ -333,35 +370,6 @@ jobs:
       # `tree-sitter-language` in [dependencies] has a different prefix.
       # Pin the companion's runtime dependency too, so its returned trees
       # use the same tree-sitter types as a build at that floor.
-      # Each crate's `rust-version` is a promise to consumers on older
-      # toolchains; building the libraries at exactly those versions keeps
-      # it honest. The grammar crate is built from a throwaway consumer
-      # project, because inside this workspace its tree-sitter
-      # dev-dependency pulls in a tree-sitter-language release that needs
-      # a newer compiler than a real consumer at the floor resolves.
-      - name: Check each crate builds at its declared minimum Rust version
-        run: |
-          set -euo pipefail
-          rustup toolchain install 1.85 1.90 --profile minimal --no-self-update
-          consumer="$RUNNER_TEMP/msrv-consumer"
-          mkdir -p "$consumer/src"
-          : > "$consumer/src/lib.rs"
-          cat > "$consumer/Cargo.toml" <<EOF
-          [package]
-          name = "msrv-consumer"
-          version = "0.0.0"
-          edition = "2024"
-          rust-version = "1.85"
-          publish = false
-
-          [dependencies]
-          tree-sitter-snowflake = { path = "$GITHUB_WORKSPACE" }
-
-          [workspace]
-          EOF
-          (cd "$consumer" && cargo +1.85 check)
-          cargo +1.90 check -p snowflake-handlers --all-features --lib
-
       - name: Pin tree-sitter to its declared floor and test
         run: |
           sed -i 's/^tree-sitter = .*/tree-sitter = "0.26"/' Cargo.toml
