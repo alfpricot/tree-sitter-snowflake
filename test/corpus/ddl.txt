@@ -2602,3 +2602,201 @@ ALTER SEQUENCE s SET TAG a = 'x';
 --------------------------------------------------------------------------------
 
 
+
+================================================================================
+stream sources, time travel, and clones
+================================================================================
+
+CREATE STREAM s ON VIEW v AT (TIMESTAMP => TO_TIMESTAMP_TZ('2024-01-01')) APPEND_ONLY = TRUE;
+CREATE STREAM s ON EXTERNAL TABLE t INSERT_ONLY = TRUE;
+CREATE STREAM s ON EVENT TABLE t COMMENT = 'c';
+CREATE STREAM s ON DYNAMIC TABLE d;
+CREATE STREAM s ON STAGE st;
+CREATE STREAM s ON TABLE t BEFORE (STREAM => 'old') SHOW_INITIAL_ROWS = TRUE;
+CREATE OR REPLACE STREAM s CLONE db.sch.s2 COPY GRANTS;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (time_travel
+        (keyword_at)
+        (named_argument
+          (identifier)
+          (invocation
+            (object_reference
+              (identifier))
+            (literal
+              (literal)))))
+      (option
+        (identifier)
+        (literal
+          (keyword_true)))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_external)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (keyword_true)))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_event)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_dynamic)
+      (keyword_table)
+      (object_reference
+        (identifier))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_stage)
+      (object_reference
+        (identifier))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (time_travel
+        (keyword_before)
+        (named_argument
+          (identifier)
+          (literal
+            (literal))))
+      (option
+        (identifier)
+        (literal
+          (keyword_true)))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_clone)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (option
+        (identifier))
+      (option
+        (identifier)))))
+
+================================================================================
+dynamic table column list
+================================================================================
+
+CREATE DYNAMIC TABLE d (a INT WITH MASKING POLICY m, b TAG (t = 'v') COMMENT 'x', c WITH CONTACT (support = s))
+  TARGET_LAG = '1 minute' WAREHOUSE = w
+  AS SELECT a, b, c FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_dynamic_table
+      (keyword_create)
+      (keyword_dynamic)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (dynamic_table_column
+        (identifier)
+        (keyword_int)
+        (keyword_with)
+        (keyword_masking)
+        (keyword_policy)
+        (object_reference
+          (identifier)))
+      (dynamic_table_column
+        (identifier)
+        (keyword_tag)
+        (tag_assignment
+          (object_reference
+            (identifier))
+          (literal))
+        (keyword_comment)
+        (literal))
+      (dynamic_table_column
+        (identifier)
+        (keyword_with)
+        (keyword_contact)
+        (option
+          (identifier)
+          (object_reference
+            (identifier))))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))))
