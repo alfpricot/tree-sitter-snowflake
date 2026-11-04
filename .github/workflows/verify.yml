@@ -12,10 +12,11 @@
 #                      node-kind snapshot, lint and format-check the
 #                      grammar and tooling JavaScript, run the tree-sitter
 #                      corpus and highlight tests, parse every fixture and fail on any
-#                      ERROR/MISSING/zero-width node, assert the fixtures
-#                      carry no source-corpus identifiers (skipped on pull
-#                      requests from forks, which cannot read the leak
-#                      check's key), probe both
+#                      ERROR/MISSING/zero-width node, assert no tracked
+#                      file carries a source-corpus identifier (on every
+#                      pull request, docs-only ones included; skipped on
+#                      pull requests from forks, which cannot read the
+#                      leak check's key), probe both
 #                      identifier slots for every keyword, build and test
 #                      the Rust binding (against the tree-sitter version
 #                      that is snowflake-handlers' declared floor, and
@@ -47,9 +48,11 @@ concurrency:
   cancel-in-progress: ${{ github.event.action != 'edited' }}
 
 jobs:
-  # Bundles the changed-paths check with two other small, checkout-only
-  # jobs (secret scanning, workflow/YAML linting) that each used to pay
-  # their own per-job minute for a few seconds of work.
+  # Bundles the changed-paths check with other small, checkout-only
+  # checks (secret scanning, workflow/YAML linting, the CI policy tests,
+  # and the source-corpus leak check) that each used to pay their own
+  # per-job minute for a few seconds of work. It runs on every pull
+  # request, so nothing here is skipped for a docs-only change.
   changes:
     name: Changed paths, secret scanning, and workflow/YAML checks
     runs-on: ubuntu-latest
