@@ -424,3 +424,49 @@ jobs:
           if [ -f test/node-kinds.txt ]; then
             gh release upload "$TAG" test/node-kinds.txt --clobber
           fi
+
+  # snowflake-handlers keeps its own version, and publish-crate ships it
+  # whenever that version is not on crates.io yet. Once it is live, tag
+  # snowflake-handlers-v<version> at the release commit and create its
+  # GitHub Release from that version's CHANGELOG section. A version that
+  # already has a release is left alone, so a re-run is safe.
+  handlers-release:
+    name: Create the snowflake-handlers GitHub Release
+    needs: [verify, publish-crate, github-release]
+    if: ${{ !cancelled() && needs.publish-crate.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.verify.outputs.commit }}
+          persist-credentials: false
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ needs.verify.outputs.commit }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' snowflake-handlers/Cargo.toml | head -1)
+          tag="snowflake-handlers-v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already has a release, skipping"
+            exit 0
+          fi
+          status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (${GITHUB_REPOSITORY})" "https://crates.io/api/v1/crates/snowflake-handlers/${version}")
+          if [ "$status" != "200" ]; then
+            echo "snowflake-handlers@${version} is not on crates.io (HTTP ${status})" >&2
+            exit 1
+          fi
+          notes=$(awk -v v="$version" 'index($0, "## [" v "]") == 1 { f = 1; next } f && /^## \[/ { exit } f' snowflake-handlers/CHANGELOG.md)
+          if [ -z "${notes//[[:space:]]/}" ]; then
+            echo "snowflake-handlers/CHANGELOG.md has no section for ${version}" >&2
+            exit 1
+          fi
+          if grep -qE "^## \[${version//./\\.}\].* - Unreleased\$" snowflake-handlers/CHANGELOG.md; then
+            echo "::warning file=snowflake-handlers/CHANGELOG.md::The ${version} heading still says Unreleased; date it in the next pull request."
+          fi
+          printf '%s\n' "$notes" | gh release create "$tag" --target "$COMMIT" --title "snowflake-handlers v${version}" --notes-file - --latest=false

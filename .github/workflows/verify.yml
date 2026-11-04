@@ -147,6 +147,18 @@ jobs:
       - name: Test CI policy
         run: node --test tools/*.test.mjs tools/parse-rate/*.test.mjs
 
+      # This job runs on every pull request, docs-only ones included: the
+      # repository-wide needles scan markdown too, so a docs-only change
+      # must not skip the check. The needles are keyed hashes; the key is a
+      # repository secret, which pull requests from forks cannot read, so
+      # the check is required only where the secret is available and skips
+      # on forks.
+      - name: Fail if any tracked file carries a source-corpus identifier
+        env:
+          FIXTURE_LEAK_KEY: ${{ secrets.FIXTURE_LEAK_KEY }}
+          FIXTURE_LEAK_REQUIRE_KEY: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: node tools/fixture-leak-grep.mjs
+
       - name: Check Cargo.toml, package.json, and tree-sitter.json agree
         # gala refuses to plan a release when they disagree; failing here
         # catches the drift on the pull request instead of on main.
@@ -281,15 +293,6 @@ jobs:
 
       - name: Parse every fixture and fail on ERROR/MISSING or zero-width nodes
         run: node tools/fixture-check.mjs
-
-      # The needles are keyed hashes; the key is a repository secret, which
-      # pull requests from forks cannot read, so the check is required
-      # only where the secret is available and skips on forks.
-      - name: Fail if any fixture carries a source-corpus identifier
-        env:
-          FIXTURE_LEAK_KEY: ${{ secrets.FIXTURE_LEAK_KEY }}
-          FIXTURE_LEAK_REQUIRE_KEY: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        run: node tools/fixture-leak-grep.mjs
 
       - name: Probe both identifier slots for every keyword
         run: node tools/keyword-probe.mjs

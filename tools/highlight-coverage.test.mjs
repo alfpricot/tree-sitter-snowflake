@@ -23,6 +23,13 @@ test('missingKeywordCaptures is silent when every keyword is captured', () => {
   assert.deepEqual(missingKeywordCaptures(nodeTypes, '(keyword_select) @keyword'), []);
 });
 
+test('missingKeywordCaptures ignores a keyword named only in a comment', () => {
+  const nodeTypes = [{ type: 'keyword_select', named: true }];
+  assert.deepEqual(missingKeywordCaptures(nodeTypes, '; (keyword_select) is colored elsewhere'), [
+    'keyword_select',
+  ]);
+});
+
 test('queries/highlights.scm captures every keyword the grammar exports', () => {
   const nodeTypes = JSON.parse(read('../src/node-types.json'));
   assert.deepEqual(missingKeywordCaptures(nodeTypes, read('../queries/highlights.scm')), []);
