@@ -112,7 +112,12 @@ jobs:
       - name: Cargo build & test
         run: |
           cargo test --workspace
-          cargo test -p snowflake-handlers --all-features
+          # Tags before v0.2.2 carry the companion crate as snowflake-bodies,
+          # which --workspace above already tests, and have no
+          # snowflake-handlers/.
+          if [ -f snowflake-handlers/Cargo.toml ]; then
+            cargo test -p snowflake-handlers --all-features
+          fi
 
   prebuild:
     name: Prebuild native addon (${{ matrix.os }})
@@ -201,6 +206,10 @@ jobs:
       contents: read
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
+    # The snowflake-handlers version now live on crates.io, empty when the
+    # release commit has no companion crate. handlers-release reads it.
+    outputs:
+      handlers_version: ${{ steps.publish.outputs.handlers_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -212,6 +221,7 @@ jobs:
       - name: Cache cargo registry and build artifacts
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Publish (skip if this version is already live)
+        id: publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
@@ -228,7 +238,13 @@ jobs:
           fi
 
           if [ -f "snowflake-handlers/Cargo.toml" ]; then
-            handlers_version=$(sed -n 's/^version = "\(.*\)"/\1/p' snowflake-handlers/Cargo.toml)
+            handlers_version=$(sed -n 's/^version = "\(.*\)"/\1/p' snowflake-handlers/Cargo.toml | head -1)
+            # An empty output tells handlers-release there is no companion
+            # crate, so a version this can't read must fail here instead.
+            if [ -z "$handlers_version" ]; then
+              echo "could not read the version from snowflake-handlers/Cargo.toml" >&2
+              exit 1
+            fi
             handlers_status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (${GITHUB_REPOSITORY})" "https://crates.io/api/v1/crates/snowflake-handlers/${handlers_version}")
             if [ "$handlers_status" = "200" ]; then
               echo "snowflake-handlers@${handlers_version} is already published, skipping"
@@ -251,6 +267,7 @@ jobs:
               echo "crates.io lookup for snowflake-handlers failed with HTTP ${handlers_status}" >&2
               exit 1
             fi
+            echo "handlers_version=${handlers_version}" >> "$GITHUB_OUTPUT"
           fi
 
   publish-npm:
@@ -426,14 +443,14 @@ jobs:
           fi
 
   # snowflake-handlers keeps its own version, and publish-crate ships it
-  # whenever that version is not on crates.io yet. Once it is live, tag
-  # snowflake-handlers-v<version> at the release commit and create its
-  # GitHub Release from that version's CHANGELOG section. A version that
-  # already has a release is left alone, so a re-run is safe.
+  # whenever that version is not on crates.io yet, then reports the live
+  # version. Tag snowflake-handlers-v<version> at the release commit and
+  # create its GitHub Release from that version's CHANGELOG section. A
+  # version that already has a release is left alone, so a re-run is safe.
   handlers-release:
     name: Create the snowflake-handlers GitHub Release
     needs: [verify, publish-crate, github-release]
-    if: ${{ !cancelled() && needs.publish-crate.result == 'success' }}
+    if: ${{ !cancelled() && needs.publish-crate.result == 'success' && needs.publish-crate.outputs.handlers_version != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -448,25 +465,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           COMMIT: ${{ needs.verify.outputs.commit }}
+          VERSION: ${{ needs.publish-crate.outputs.handlers_version }}
         run: |
           set -euo pipefail
-          version=$(sed -n 's/^version = "\(.*\)"/\1/p' snowflake-handlers/Cargo.toml | head -1)
-          tag="snowflake-handlers-v${version}"
+          tag="snowflake-handlers-v${VERSION}"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "$tag already has a release, skipping"
             exit 0
           fi
-          status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (${GITHUB_REPOSITORY})" "https://crates.io/api/v1/crates/snowflake-handlers/${version}")
-          if [ "$status" != "200" ]; then
-            echo "snowflake-handlers@${version} is not on crates.io (HTTP ${status})" >&2
-            exit 1
+          # The first line is the version's heading, the rest its notes.
+          section=$(awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 { print; f = 1; next } f && /^## \[/ { exit } f' snowflake-handlers/CHANGELOG.md)
+          heading=${section%%$'\n'*}
+          notes=""
+          if [ "$section" != "$heading" ]; then
+            notes=${section#*$'\n'}
           fi
-          notes=$(awk -v v="$version" 'index($0, "## [" v "]") == 1 { f = 1; next } f && /^## \[/ { exit } f' snowflake-handlers/CHANGELOG.md)
           if [ -z "${notes//[[:space:]]/}" ]; then
-            echo "snowflake-handlers/CHANGELOG.md has no section for ${version}" >&2
+            echo "snowflake-handlers/CHANGELOG.md has no section for ${VERSION}" >&2
             exit 1
           fi
-          if grep -qE "^## \[${version//./\\.}\].* - Unreleased\$" snowflake-handlers/CHANGELOG.md; then
-            echo "::warning file=snowflake-handlers/CHANGELOG.md::The ${version} heading still says Unreleased; date it in the next pull request."
+          if [[ "$heading" =~ Unreleased[[:space:]]*$ ]]; then
+            echo "::warning file=snowflake-handlers/CHANGELOG.md::The ${VERSION} heading still says Unreleased; date it in the next pull request."
           fi
-          printf '%s\n' "$notes" | gh release create "$tag" --target "$COMMIT" --title "snowflake-handlers v${version}" --notes-file - --latest=false
+          printf '%s\n' "$notes" | gh release create "$tag" --target "$COMMIT" --title "snowflake-handlers v${VERSION}" --notes-file - --latest=false
