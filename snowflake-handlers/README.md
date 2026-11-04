@@ -58,8 +58,7 @@ Only `Parsed` bodies have successfully parsed embedded syntax. `InvalidBody` ret
 partial tree and mapped errors but skips restriction checking. `InvalidSql` and
 `InvalidEncoding` have no reconstructed source; `UnavailableLanguage` has source but no tree.
 Inspect `sql_errors` too: a malformed SQL header may prevent a routine from being recognized.
-The current grammar also rejects a completely empty dollar body (`$$$$`); an empty single-quoted
-body is recognized. This library preserves that grammar behavior and reports the SQL error.
+An empty body in either form (`$$$$` or `''`) is a handler with empty source.
 None of these states means zero measured complexity. Consumers apply the appropriate language
 profile and attribute the result to the enclosing SQL file exactly once. Vocabulary consumers
 mask the decoded source with its language's own masking mode, then map findings back.

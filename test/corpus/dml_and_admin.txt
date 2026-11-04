@@ -1224,3 +1224,39 @@ EXPLAIN GRANT ROLE r TO USER u;
 --------------------------------------------------------------------------------
 
 
+
+================================================================================
+user, table, and named stage references
+================================================================================
+
+LIST @~;
+PUT file:///tmp/data.csv @~/staged;
+GET @~/f file:///tmp/;
+LIST @%orders;
+LIST @db.sch.stg/path/;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (list_statement
+      (keyword_list)
+      (stage_reference)))
+  (statement
+    (put_statement
+      (keyword_put)
+      (literal)
+      (stage_reference)))
+  (statement
+    (get_statement
+      (keyword_get)
+      (stage_reference)
+      (literal)))
+  (statement
+    (list_statement
+      (keyword_list)
+      (stage_reference)))
+  (statement
+    (list_statement
+      (keyword_list)
+      (stage_reference))))

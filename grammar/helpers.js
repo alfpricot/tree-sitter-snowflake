@@ -6,6 +6,22 @@ export function make_keyword(word) {
   return new RegExp(str);
 }
 
+// Merges rule modules into one rules object, refusing a key two modules
+// both define: a plain object spread lets the later module win silently,
+// which once hid one module's rule behind another's of the same name.
+export function merge_rules(...modules) {
+  const merged = {};
+  for (const module of modules) {
+    for (const [name, rule] of Object.entries(module)) {
+      if (Object.hasOwn(merged, name)) {
+        throw new Error(`grammar rule "${name}" is defined by more than one module`);
+      }
+      merged[name] = rule;
+    }
+  }
+  return merged;
+}
+
 export function optional_parenthesis(node) {
   return prec.right(choice(node, wrapped_in_parenthesis(node)));
 }
@@ -29,6 +45,16 @@ export function comma_list(field, requireFirst) {
 
 export function paren_list(field, requireFirst) {
   return wrapped_in_parenthesis(comma_list(field, requireFirst));
+}
+
+// The `SET TAG tag = 'value', ... | UNSET TAG tag, ...` pair the ALTER
+// statements for taggable objects share. Kept apart from
+// set_unset_properties because some ALTERs (SESSION) take no tags.
+export function set_unset_tags($) {
+  return [
+    seq($.keyword_set, $.keyword_tag, comma_list($.tag_assignment, true)),
+    seq($.keyword_unset, $.keyword_tag, comma_list($.object_reference, true)),
+  ];
 }
 
 // The `SET <options> | UNSET <names>` alternative pair every ALTER

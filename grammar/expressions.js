@@ -342,7 +342,10 @@ export default {
     ),
 
   _natural_number: (_) => /\d+/,
-  // Decimal and hexadecimal integers.
+  // Decimal and hexadecimal integers. queries/highlights.scm mirrors this
+  // regex and _decimal_number in its number and float patterns, and
+  // test/highlight/literals.sql asserts each shape; a new literal form
+  // needs both updated.
   _integer: (_) => /(0[xX][0-9A-Fa-f]*)|(\d+)/,
   _decimal_number: (_) => /((\d+\.\d*|\.\d+)([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)/,
 
@@ -372,7 +375,7 @@ export default {
   // A stage or path reference: @stage, @db.schema.stage/path, @%table,
   // @~, or a stage-relative path. One token because the internal dots and
   // slashes are not identifier separators.
-  stage_reference: (_) => /@[%~]?[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*([\/][^\s'",;)\]]*)?/,
+  stage_reference: (_) => /@(~|%?[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)*)([\/][^\s'",;)\]]*)?/,
 
   // file://path — the local-file operand of PUT and GET, written unquoted
   // (the common form) or as a quoted string. One token for the same

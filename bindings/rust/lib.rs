@@ -126,4 +126,32 @@ mod tests {
         }
         assert_eq!(captured, ["\ndef main():\n    return 'x'\n"]);
     }
+
+    /// A staged handler has no body, and the structure query still reports
+    /// the routine as a definition block with its name.
+    #[test]
+    fn test_structure_reports_staged_handlers() {
+        use tree_sitter::StreamingIterator;
+
+        let source = "CREATE FUNCTION g(x INT) RETURNS VARCHAR LANGUAGE JAVA \
+                      IMPORTS = ('@s/f.jar') HANDLER = 'F.run';";
+        let language: tree_sitter::Language = LANGUAGE.into();
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&language).unwrap();
+        let tree = parser.parse(source, None).unwrap();
+        assert!(!tree.root_node().has_error());
+
+        let query = tree_sitter::Query::new(&language, STRUCTURE_QUERY).unwrap();
+        let name = query.capture_index_for_name("definition.name").unwrap();
+        let mut cursor = tree_sitter::QueryCursor::new();
+        let mut matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+        let mut names = Vec::new();
+        while let Some(m) = matches.next() {
+            names.extend(
+                m.nodes_for_capture_index(name)
+                    .map(|node| &source[node.byte_range()]),
+            );
+        }
+        assert_eq!(names, ["g"]);
+    }
 }

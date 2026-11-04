@@ -1,31 +1,23 @@
 ; Structure query: the block, decision, name, parameter and body captures
-; measurement and linting tools (cadence, marlin) consume. The node names
+; measurement and linting tools (such as cadence) consume. The node names
 ; pinned here are the grammar's public API — create_procedure,
 ; create_function, if_statement, elseif_clause, case_statement,
 ; while_statement, for_statement, repeat_statement, loop_statement,
 ; exception_handler, object_reference, function_arguments, function_body.
 
 ; --- blocks: the function-like definitions -------------------------------
+; A foreign-language routine with a staged handler (no AS clause) has no
+; body, so the body capture is optional.
 
 (create_procedure
   name: (object_reference) @definition.name
   (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
+  body: (function_body)? @definition.body) @definition.block
 
 (create_function
   name: (object_reference) @definition.name
   (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
-
-(alter_procedure
-  name: (object_reference) @definition.name
-  (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
-
-(alter_function
-  name: (object_reference) @definition.name
-  (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
+  body: (function_body)? @definition.body) @definition.block
 
 (create_policy
   name: (object_reference) @definition.name

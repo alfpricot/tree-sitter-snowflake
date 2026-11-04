@@ -27,9 +27,11 @@ key = "version"
 path = "tree-sitter.json"
 key = "metadata.version"
 
-# snowflake-handlers keeps its own version (bumped by hand, tagged
-# snowflake-handlers-v*), but its path dependency on this crate must accept
-# the new version or cargo cannot resolve the workspace after a minor bump.
+# snowflake-handlers keeps its own version, bumped by hand; release.yml
+# publishes it when that version is new and then tags and releases it as
+# snowflake-handlers-v<version>. Its path dependency on this crate must
+# accept the new version or cargo cannot resolve the workspace after a
+# minor bump.
 [[versionFile]]
 path = "snowflake-handlers/Cargo.toml"
 pattern = '(?m)^tree-sitter-snowflake = \{ version = "([^"]+)"'

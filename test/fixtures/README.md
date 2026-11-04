@@ -18,7 +18,10 @@ the construct), `P1`..`P5` (procedures), `F1`..`F3` (functions),
 directory resembles a real warehouse. `tools/fixture-leak-grep.mjs` asserts
 that: it greps every fixture for the identifiers and names observed in the
 source repositories the shapes were mined from, and fails on any hit. Run
-it whenever a fixture is added or edited.
+it whenever a fixture is added or edited. The identifiers are stored as
+keyed hashes, so the check needs the `FIXTURE_LEAK_KEY` key (a repository
+secret CI passes in): without it the check prints a skip line and exits 0,
+which is not a pass, and with a wrong key it refuses to run.
 
 A fixture parsing clean is not proof it is valid Snowflake — a parser has
 no semantic layer. Shapes not verified against a real engine are marked
@@ -67,5 +70,5 @@ no semantic layer. Shapes not verified against a real engine are marked
 
 ```bash
 node tools/fixture-check.mjs       # parse every fixture; fail on ERROR/MISSING/zero-width
-node tools/fixture-leak-grep.mjs   # fail on any source-corpus identifier
+FIXTURE_LEAK_KEY="$KEY" node tools/fixture-leak-grep.mjs   # fail on any source-corpus identifier; needs the key
 ```

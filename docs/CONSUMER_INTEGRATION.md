@@ -12,7 +12,8 @@ Configure a Snowflake profile using the grammar's named nodes:
 
 | Purpose | Node kinds |
 |---|---|
-| Procedure and function definitions | `create_procedure`, `create_function`, `alter_procedure`, `alter_function` |
+| Procedure and function definitions | `create_procedure`, `create_function` (including `CREATE OR ALTER`) |
+| Procedure and function changes | `alter_procedure`, `alter_function` — a `name` field and the `function_argument_types` signature, no body |
 | Control-flow constructs | `if_statement`, `elseif_clause`, `case_statement`, `while_statement`, `for_statement`, `repeat_statement`, `loop_statement`, `exception_handler` |
 | Routine name | `object_reference`, available through the definition's `name` field |
 | Parameters | `function_arguments` |
@@ -136,9 +137,12 @@ in reports so an unsupported handler cannot appear to be an empty, low-complexit
 
 ## Node kinds are the public API
 
-Consumers often compare node-kind strings at runtime. Renaming or removing a node can therefore
-compile successfully while silently changing analysis results. `test/node-kinds.txt` is the
-committed, CI-checked snapshot; a node rename or removal requires a major version bump.
+Consumers often compare node-kind and field-name strings at runtime. Renaming or removing a node
+or a field can therefore compile successfully while silently changing analysis results.
+`test/node-kinds.txt` is the committed, CI-checked snapshot of every named node kind and, as
+`kind.field` lines, every field each kind carries. A node or field rename or removal is a breaking
+change; while the crate is below 1.0 it ships as a new minor version, which Cargo and npm caret
+ranges do not pick up automatically.
 
 After upgrading, run `node tools/node-kinds.mjs` and compare the output with the previous
 release's snapshot before updating a structural profile.

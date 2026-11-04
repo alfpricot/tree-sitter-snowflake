@@ -4,6 +4,7 @@ import column_list_rules from './grammar/column-lists.js';
 import expression_rules from './grammar/expressions.js';
 import scripting_rules from './grammar/scripting.js';
 import statement_rules from './grammar/statements/index.js';
+import { merge_rules } from './grammar/helpers.js';
 
 export default grammar({
   name: 'snowflake',
@@ -16,6 +17,9 @@ export default grammar({
   // before it can settle; tree-sitter reports any that stop being needed
   // as "unnecessary conflicts" on generate, and those are removed.
   conflicts: ($) => [
+    // `CREATE TEMPORARY ...` — the modifier list belongs to a table or a
+    // routine; settled by the object keyword that follows it.
+    [$.create_table, $.create_procedure, $.create_function],
     // `a.b` — the prefix of a qualified column vs. an object reference.
     [$.object_reference, $._qualified_field],
     // `a.b.c` — how many parts belong to the reference.
@@ -74,27 +78,28 @@ export default grammar({
 
   word: ($) => $._identifier,
 
-  rules: {
-    // A Snowflake script: statements separated by a mandatory `;`, with
-    // the terminator optional only on the final statement. Snowflake
-    // requires the separator between statements, and keeping it mandatory
-    // is what keeps statement-initial keywords from contending with the
-    // AS-less alias slot — do not make it optional for convenience.
-    program: ($) => seq(repeat(seq($.statement, ';')), optional($.statement)),
+  rules: merge_rules(
+    {
+      // A Snowflake script: statements separated by a mandatory `;`, with
+      // the terminator optional only on the final statement. Snowflake
+      // requires the separator between statements, and keeping it mandatory
+      // is what keeps statement-initial keywords from contending with the
+      // AS-less alias slot — do not make it optional for convenience.
+      program: ($) => seq(repeat(seq($.statement, ';')), optional($.statement)),
 
-    // `--` and `//` line comments; Snowflake accepts both spellings.
-    comment: (_) => token(choice(/--[^\n]*/, /\/\/[^\n]*/)),
-    // The block comment is a plain regex because Snowflake's block
-    // comments do NOT nest — the first `*/` closes the comment — unlike
-    // T-SQL's, which is why this grammar needs no external scanner for
-    // them. (Verified against Snowflake's documentation.)
-    marginalia: (_) => token(/\/\*([^*]|\*+[^*/])*\*+\//),
-
-    ...keyword_rules,
-    ...type_rules,
-    ...column_list_rules,
-    ...expression_rules,
-    ...scripting_rules,
-    ...statement_rules,
-  },
+      // `--` and `//` line comments; Snowflake accepts both spellings.
+      comment: (_) => token(choice(/--[^\n]*/, /\/\/[^\n]*/)),
+      // The block comment is a plain regex because Snowflake's block
+      // comments do NOT nest — the first `*/` closes the comment — unlike
+      // T-SQL's, which is why this grammar needs no external scanner for
+      // them. (Verified against Snowflake's documentation.)
+      marginalia: (_) => token(/\/\*([^*]|\*+[^*/])*\*+\//),
+    },
+    keyword_rules,
+    type_rules,
+    column_list_rules,
+    expression_rules,
+    scripting_rules,
+    statement_rules,
+  ),
 });

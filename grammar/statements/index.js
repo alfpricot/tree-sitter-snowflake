@@ -10,9 +10,9 @@ import grant_rules from './grant.js';
 import admin_rules from './admin.js';
 import semantic_rules from './semantic.js';
 import clause_rules from '../clauses.js';
-import { optional_parenthesis } from '../helpers.js';
+import { merge_rules, optional_parenthesis } from '../helpers.js';
 
-export default {
+const statement_rules = {
   // A Snowflake script: statements separated by mandatory `;`, with the
   // final statement's terminator optional. Snowflake requires the
   // separator between statements, which keeps statement-initial keywords
@@ -76,17 +76,20 @@ export default {
 
   _dml_read: ($) =>
     optional_parenthesis(seq(optional($._cte), choice($._select_statement, $.set_operation))),
-
-  ...create_rules,
-  ...procedure_rules,
-  ...task_rules,
-  ...alter_rules,
-  ...drop_rules,
-  ...select_rules,
-  ...dml_rules,
-  ...copy_rules,
-  ...grant_rules,
-  ...admin_rules,
-  ...semantic_rules,
-  ...clause_rules,
 };
+
+export default merge_rules(
+  statement_rules,
+  create_rules,
+  procedure_rules,
+  task_rules,
+  alter_rules,
+  drop_rules,
+  select_rules,
+  dml_rules,
+  copy_rules,
+  grant_rules,
+  admin_rules,
+  semantic_rules,
+  clause_rules,
+);

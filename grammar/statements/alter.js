@@ -8,10 +8,13 @@ import {
   comma_list,
   paren_list,
   set_unset_properties,
+  set_unset_tags,
   wrapped_in_parenthesis,
 } from '../helpers.js';
 
-function alter_object(keyword, actions = []) {
+// `tags: false` leaves out SET TAG / UNSET TAG for an object Snowflake
+// doesn't tag.
+function alter_object(keyword, actions = [], { tags = true } = {}) {
   return ($) =>
     seq(
       $.keyword_alter,
@@ -20,6 +23,7 @@ function alter_object(keyword, actions = []) {
       field('name', $.object_reference),
       choice(
         ...actions.map((action) => action($)),
+        ...(tags ? set_unset_tags($) : []),
         ...set_unset_properties($),
         seq($.keyword_rename, $.keyword_to, $.object_reference),
       ),
@@ -66,6 +70,7 @@ export default {
             seq($.keyword_swap, $.keyword_with, $.object_reference),
             seq($.keyword_add, $.keyword_search, $.keyword_optimization, optional($.keyword_on)),
             seq($.keyword_drop, $.keyword_search, $.keyword_optimization),
+            ...set_unset_tags($),
             ...set_unset_properties($),
           ),
         ),
@@ -91,12 +96,13 @@ export default {
   rename_column_action: ($) =>
     seq($.keyword_rename, $.keyword_column, $.identifier, $.keyword_to, $.identifier),
 
-  // ALTER COLUMN name {SET DATA TYPE t | UNSET DATA TYPE |
+  // {ALTER | MODIFY} COLUMN name {SET DATA TYPE t | UNSET DATA TYPE |
   //   SET DEFAULT expr | DROP DEFAULT | [SET] NOT NULL | DROP NOT NULL |
-  //   SET MASKING POLICY p [USING (...)] | UNSET MASKING POLICY}
+  //   SET MASKING POLICY p [USING (...)] | UNSET MASKING POLICY |
+  //   SET TAG t = 'v', ... | UNSET TAG [t, ...]}
   alter_column_action: ($) =>
     seq(
-      $.keyword_alter,
+      choice($.keyword_alter, $.keyword_modify),
       $.keyword_column,
       optional($._if_exists_clause),
       $.identifier,
@@ -116,7 +122,8 @@ export default {
         ),
         seq($.keyword_unset, $.keyword_masking, $.keyword_policy),
         seq($.keyword_with, $.keyword_tag, paren_list($.tag_assignment, true)),
-        seq($.keyword_unset, $.keyword_tag),
+        seq($.keyword_set, $.keyword_tag, comma_list($.tag_assignment, true)),
+        seq($.keyword_unset, $.keyword_tag, optional(comma_list($.object_reference, true))),
       ),
     ),
 
@@ -145,6 +152,7 @@ export default {
         repeat1(
           choice(
             seq($.keyword_rename, $.keyword_to, $.object_reference),
+            ...set_unset_tags($),
             ...set_unset_properties($),
             seq(
               $.keyword_add,
@@ -185,7 +193,7 @@ export default {
 
   alter_stage: alter_object(($) => $.keyword_stage, []),
   alter_stream: alter_object(($) => $.keyword_stream, []),
-  alter_sequence: alter_object(($) => $.keyword_sequence, []),
+  alter_sequence: alter_object(($) => $.keyword_sequence, [], { tags: false }),
   alter_role: alter_object(($) => $.keyword_role, []),
   alter_user: alter_object(($) => $.keyword_user, []),
   alter_pipe: alter_object(
@@ -206,7 +214,13 @@ export default {
   // ALTER ACCOUNT SET <parameter> = value [, ...] — the account-level
   // parameter statements Snowflake scripts as one-liners.
   alter_account: ($) =>
-    prec.right(seq($.keyword_alter, $.keyword_account, choice(...set_unset_properties($)))),
+    prec.right(
+      seq(
+        $.keyword_alter,
+        $.keyword_account,
+        choice(...set_unset_tags($), ...set_unset_properties($)),
+      ),
+    ),
 
   alter_policy: ($) =>
     prec.right(
@@ -230,8 +244,11 @@ export default {
         field('name', $.object_reference),
         choice(
           seq($.keyword_set, optional($.keyword_body), '->', field('body', $.policy_body)),
-          seq($.keyword_set, seq($.keyword_tag, paren_list($.tag_assignment, true))),
-          seq($.keyword_unset, seq($.keyword_tag, paren_list($.identifier, true))),
+          // A parenthesized tag list is kept for input that already uses
+          // it; Snowflake documents the bare list set_unset_tags covers.
+          seq($.keyword_set, $.keyword_tag, paren_list($.tag_assignment, true)),
+          seq($.keyword_unset, $.keyword_tag, paren_list($.object_reference, true)),
+          ...set_unset_tags($),
           ...set_unset_properties($),
           seq($.keyword_rename, $.keyword_to, $.object_reference),
         ),
@@ -255,6 +272,7 @@ export default {
               seq($.keyword_action, field('action', $.statement)),
             ),
           ),
+          ...set_unset_tags($),
           ...set_unset_properties($),
           seq($.keyword_rename, $.keyword_to, $.object_reference),
         ),

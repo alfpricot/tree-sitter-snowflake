@@ -7,9 +7,10 @@
 //     [session-parameter options ...]
 //     AS <single sql statement>
 //
-//   ALTER TASK name {RESUME | SUSPEND | SET ... | UNSET ... |
+//   ALTER TASK name {RESUME | SUSPEND | SET TAG ... | UNSET TAG ... |
+//     SET ... | UNSET ... |
 //     MODIFY AS <statement> | ADD AFTER t | REMOVE AFTER t}
-import { comma_list } from '../helpers.js';
+import { comma_list, set_unset_tags } from '../helpers.js';
 
 export default {
   create_task: ($) =>
@@ -20,7 +21,7 @@ export default {
         $.keyword_task,
         optional($._if_not_exists),
         field('name', $.object_reference),
-        repeat($.task_option),
+        repeat(choice($._with_tag, $._with_contact, $.task_option)),
         $.keyword_as,
         field('body', $.statement),
       ),
@@ -54,6 +55,7 @@ export default {
           seq($.keyword_modify, $.keyword_as, field('body', $.statement)),
           seq($.keyword_add, $.keyword_after, comma_list($.object_reference, true)),
           seq($.keyword_remove, $.keyword_after, $.object_reference),
+          ...set_unset_tags($),
           seq($.keyword_set, repeat($.task_option)),
           seq($.keyword_unset, comma_list($.identifier, true)),
         ),

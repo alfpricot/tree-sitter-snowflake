@@ -10,6 +10,9 @@
 (cast
   name: [(keyword_cast) (keyword_try_cast)] @function.call)
 
+; EXTRACT(part FROM expr) is the same kind of function form as CAST.
+(extract_expression (keyword_extract) @function.call)
+
 (identifier_function (keyword_identifier) @function.call)
 
 (relation
@@ -34,11 +37,14 @@
 (doubled_quote) @string.escape
 (escape) @string.escape
 
+; The number and float patterns mirror _integer and _decimal_number in
+; grammar/expressions.js; update them and test/highlight/literals.sql
+; together when a literal form changes.
 ((literal) @number
-   (#match? @number "^[-+]?%d+$"))
+   (#match? @number "^[-+]?([0-9]+|0[xX][0-9A-Fa-f]*)$"))
 
 ((literal) @float
-   (#match? @float "^[-+]?%d*\.%d*$"))
+   (#match? @float "^[-+]?(([0-9]+[.][0-9]*|[.][0-9]+)([eE][-+]?[0-9]+)?|[0-9]+[eE][-+]?[0-9]+)$"))
 
 [
   (keyword_asc)
@@ -221,6 +227,9 @@
   (keyword_hybrid)
   (keyword_aggregation)
   (keyword_projection)
+  (keyword_managed)
+  (keyword_contact)
+  (keyword_entity)
   (keyword_network)
   (keyword_password)
   (keyword_authentication)
@@ -293,6 +302,95 @@
   "=>"
   ":="
 ] @operator
+
+; Keywords not covered by a more specific group above.
+[
+  (keyword_access)
+  (keyword_account)
+  (keyword_agent)
+  (keyword_ai_verified_queries)
+  (keyword_api)
+  (keyword_at)
+  (keyword_before)
+  (keyword_caller)
+  (keyword_cascade)
+  (keyword_changes)
+  (keyword_check)
+  (keyword_comment)
+  (keyword_connect)
+  (keyword_cortex)
+  (keyword_cursor)
+  (keyword_data)
+  (keyword_define)
+  (keyword_dimensions)
+  (keyword_disable)
+  (keyword_empty)
+  (keyword_enable)
+  (keyword_evolve)
+  (keyword_execute_as)
+  (keyword_explain)
+  (keyword_facts)
+  (keyword_failsafe)
+  (keyword_file_format)
+  (keyword_global)
+  (keyword_granted)
+  (keyword_imported)
+  (keyword_increment)
+  (keyword_local)
+  (keyword_match)
+  (keyword_match_recognize)
+  (keyword_matched)
+  (keyword_matches)
+  (keyword_materialized_view)
+  (keyword_measures)
+  (keyword_metrics)
+  (keyword_monitor)
+  (keyword_name)
+  (keyword_next)
+  (keyword_no)
+  (keyword_none)
+  (keyword_not_enforced)
+  (keyword_notification)
+  (keyword_off)
+  (keyword_omit)
+  (keyword_operate)
+  (keyword_optimization)
+  (keyword_option)
+  (keyword_other)
+  (keyword_overwrite)
+  (keyword_owner)
+  (keyword_ownership)
+  (keyword_past)
+  (keyword_pattern)
+  (keyword_per)
+  (keyword_prior)
+  (keyword_refresh)
+  (keyword_relationships)
+  (keyword_restrict)
+  (keyword_restricted)
+  (keyword_reverse)
+  (keyword_roles)
+  (keyword_row)
+  (keyword_search)
+  (keyword_secondary)
+  (keyword_security)
+  (keyword_semantic)
+  (keyword_service)
+  (keyword_session)
+  (keyword_skip)
+  (keyword_specification)
+  (keyword_starts)
+  (keyword_storage)
+  (keyword_streamlit)
+  (keyword_suspended)
+  (keyword_tables)
+  (keyword_terse)
+  (keyword_truncate)
+  (keyword_type)
+  (keyword_undrop)
+  (keyword_unmatched)
+  (keyword_usage)
+] @keyword
 
 (bind_variable) @variable.parameter
 

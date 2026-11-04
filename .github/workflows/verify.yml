@@ -12,8 +12,11 @@
 #                      node-kind snapshot, lint and format-check the
 #                      grammar and tooling JavaScript, run the tree-sitter
 #                      corpus and highlight tests, parse every fixture and fail on any
-#                      ERROR/MISSING/zero-width node, assert the fixtures
-#                      carry no source-corpus identifiers, probe both
+#                      ERROR/MISSING/zero-width node, assert no tracked
+#                      file carries a source-corpus identifier (on every
+#                      pull request, docs-only ones included; skipped on
+#                      pull requests from forks, which cannot read the
+#                      leak check's key), probe both
 #                      identifier slots for every keyword, build and test
 #                      the Rust binding (against the tree-sitter version
 #                      that is snowflake-handlers' declared floor, and
@@ -45,9 +48,11 @@ concurrency:
   cancel-in-progress: ${{ github.event.action != 'edited' }}
 
 jobs:
-  # Bundles the changed-paths check with two other small, checkout-only
-  # jobs (secret scanning, workflow/YAML linting) that each used to pay
-  # their own per-job minute for a few seconds of work.
+  # Bundles the changed-paths check with other small, checkout-only
+  # checks (secret scanning, workflow/YAML linting, the CI policy tests,
+  # and the source-corpus leak check) that each used to pay their own
+  # per-job minute for a few seconds of work. It runs on every pull
+  # request, so nothing here is skipped for a docs-only change.
   changes:
     name: Changed paths, secret scanning, and workflow/YAML checks
     runs-on: ubuntu-latest
@@ -144,6 +149,18 @@ jobs:
 
       - name: Test CI policy
         run: node --test tools/*.test.mjs tools/parse-rate/*.test.mjs
+
+      # This job runs on every pull request, docs-only ones included: the
+      # repository-wide needles scan markdown too, so a docs-only change
+      # must not skip the check. The needles are keyed hashes; the key is a
+      # repository secret, which pull requests from forks cannot read, so
+      # the check is required only where the secret is available and skips
+      # on forks.
+      - name: Fail if any tracked file carries a source-corpus identifier
+        env:
+          FIXTURE_LEAK_KEY: ${{ secrets.FIXTURE_LEAK_KEY }}
+          FIXTURE_LEAK_REQUIRE_KEY: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: node tools/fixture-leak-grep.mjs
 
       - name: Check Cargo.toml, package.json, and tree-sitter.json agree
         # gala refuses to plan a release when they disagree; failing here
@@ -280,9 +297,6 @@ jobs:
       - name: Parse every fixture and fail on ERROR/MISSING or zero-width nodes
         run: node tools/fixture-check.mjs
 
-      - name: Fail if any fixture carries a source-corpus identifier
-        run: node tools/fixture-leak-grep.mjs
-
       - name: Probe both identifier slots for every keyword
         run: node tools/keyword-probe.mjs
 
@@ -320,13 +334,50 @@ jobs:
         with:
           key: consumer-pin
 
+      # Each crate's `rust-version` is a promise to consumers on older
+      # toolchains; building the libraries at exactly those versions keeps
+      # it honest. Each crate is built from a throwaway consumer project
+      # whose own rust-version matches that floor, so dependencies resolve
+      # the way a consumer's would. Inside this workspace the resolver
+      # targets the lowest member floor (1.85) and the grammar crate's
+      # tree-sitter dev-dependency pulls in releases that need a newer
+      # compiler, neither of which a real consumer sees. The projects live
+      # in $RUNNER_TEMP, so they leave no Cargo.lock in the workspace for
+      # the floor test below to inherit.
+      - name: Check each crate builds at its declared minimum Rust version
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.85 1.90 --profile minimal --no-self-update
+          check_floor() {
+            local toolchain="$1" dependency="$2"
+            local consumer="$RUNNER_TEMP/msrv-$toolchain"
+            mkdir -p "$consumer/src"
+            : > "$consumer/src/lib.rs"
+            cat > "$consumer/Cargo.toml" <<EOF
+          [package]
+          name = "msrv-consumer"
+          version = "0.0.0"
+          edition = "2024"
+          rust-version = "$toolchain"
+          publish = false
+
+          [dependencies]
+          $dependency
+
+          [workspace]
+          EOF
+            (cd "$consumer" && cargo "+$toolchain" check)
+          }
+          check_floor 1.85 "tree-sitter-snowflake = { path = \"$GITHUB_WORKSPACE\" }"
+          check_floor 1.90 "snowflake-handlers = { path = \"$GITHUB_WORKSPACE/snowflake-handlers\", features = [\"java\", \"scala\"] }"
+
       # The dev-dependency tracks the latest tree-sitter, so the `verify`
       # job above covers the newest release. This job covers the other
       # end of the range: snowflake-handlers/Cargo.toml declares
       # `tree-sitter = ">=0.26, <0.28"`, and the generated parser's ABI
-      # must stay one that floor accepts. cadence and marlin both moved to
-      # `tree-sitter = "0.27"` (verified 2026-09-26), so 0.26 no longer
-      # matches any consumer's own pin — this job now exists solely to
+      # must stay one that floor accepts. Every known consumer has moved to
+      # `tree-sitter = "0.27"` (cadence verified 2026-09-26), so no known
+      # consumer pins 0.26 — this job now exists solely to
       # keep the companion's declared floor honest, not to track a
       # consumer. Edit the manifest in-job and test there. The
       # `^tree-sitter = ` anchor matches only the dev-dependency —

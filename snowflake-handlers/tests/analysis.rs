@@ -77,13 +77,12 @@ fn numeric_and_unknown_escapes_and_empty_bodies() {
     assert_eq!(&input[source.source_range(0..1).unwrap()], r"\101");
     assert_eq!(&input[source.source_range(1..2).unwrap()], r"\x41");
 
-    // The grammar rejects a completely empty dollar body with no content at
-    // all between the delimiters (unlike "$$ $$", which has whitespace) —
-    // see the README's "Only Parsed bodies..." paragraph. This library
-    // preserves that grammar behavior rather than working around it.
+    // A completely empty dollar body, with nothing between the delimiters,
+    // is a handler with empty source.
     let input = "CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS $$$$;";
     let analysis = Analyzer::new().unwrap().analyze(input).unwrap();
-    assert!(!analysis.sql_errors.is_empty());
+    assert!(analysis.sql_errors.is_empty());
+    assert_eq!(analysis.handlers[0].source.as_ref().unwrap().text(), "");
 }
 
 #[test]
@@ -299,4 +298,17 @@ fn scala_queries_and_tasks() {
     assert_eq!(result.findings.len(), 1);
     assert_eq!(result.findings[0].rule_id, "scala-task-warehouse");
     assert_eq!(&input[result.findings[0].range.clone()], "CALL p()");
+}
+
+#[test]
+fn owner_rights_flag_temporary_routines() {
+    let mut analyzer = Analyzer::new().unwrap();
+    for statement in [
+        "CREATE TEMPORARY FUNCTION f(x INT) RETURNS INT AS 'x + 1'",
+        "CREATE OR REPLACE TEMP SECURE PROCEDURE p() RETURNS INT LANGUAGE SQL AS 'BEGIN RETURN 1; END'",
+    ] {
+        let content = format!("session.sql(\"{statement}\")");
+        let result = analyzer.analyze(&sql("PYTHON", &content)).unwrap();
+        assert_eq!(ids(&result), ["owner-temp-object"], "{statement}");
+    }
 }

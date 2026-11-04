@@ -346,7 +346,7 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding
     let mut result = Vec::new();
     let declarations: Vec<_> = descendants(tree.root_node())
         .into_iter()
-        .filter(|n| matches!(n.kind(), "create_procedure" | "alter_procedure"))
+        .filter(|n| n.kind() == "create_procedure")
         .filter_map(|n| n.child_by_field_name("name"))
         .map(|n| canonical_name(&sql[n.byte_range()]))
         .collect();
