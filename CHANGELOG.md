@@ -55,7 +55,7 @@ All notable changes to this project will be documented in this file.
 - sync dev from main ([#19](https://github.com/alfpricot/tree-sitter-snowflake/pull/19))
 - *(deps)* bump actions/upload-artifact
 
-## [0.1.1](https://github.com/meloncholic/tree-sitter-snowflake/compare/v0.1.0...v0.1.1) - 2026-09-26
+## [0.1.1](https://github.com/alfpricot/tree-sitter-snowflake/compare/v0.1.0...v0.1.1) - 2026-09-26
 
 ### Fixed
 
@@ -63,10 +63,10 @@ All notable changes to this project will be documented in this file.
 
 ### Other
 
-- remove .npmrc from the tree ([#16](https://github.com/meloncholic/tree-sitter-snowflake/pull/16))
-- scope gitattributes and editorconfig to tracked file types ([#15](https://github.com/meloncholic/tree-sitter-snowflake/pull/15))
-- sync .gitattributes and .editorconfig with org template ([#14](https://github.com/meloncholic/tree-sitter-snowflake/pull/14))
-- harden release and verification workflows ([#10](https://github.com/meloncholic/tree-sitter-snowflake/pull/10))
+- remove .npmrc from the tree ([#16](https://github.com/alfpricot/tree-sitter-snowflake/pull/16))
+- scope gitattributes and editorconfig to tracked file types ([#15](https://github.com/alfpricot/tree-sitter-snowflake/pull/15))
+- sync .gitattributes and .editorconfig with org template ([#14](https://github.com/alfpricot/tree-sitter-snowflake/pull/14))
+- harden release and verification workflows ([#10](https://github.com/alfpricot/tree-sitter-snowflake/pull/10))
 
 ## 0.1.0
 

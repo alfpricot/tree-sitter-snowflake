@@ -24,9 +24,9 @@
 #                      node-gyp-build prefers a matching prebuild over a
 #                      source build. A WASM build is attached to the GitHub
 #                      Release for web-tree-sitter consumers, along with
-#                      test/node-kinds.txt and versions.json as the node-kind
-#                      stability surface (only the files the checkout has —
-#                      an older tag re-dispatched by hand can predate them).
+#                      test/node-kinds.txt as the node-kind stability surface
+#                      (only when the checkout has it — an older tag
+#                      re-dispatched by hand can predate it).
 #
 #                      The workflow_dispatch trigger exists because the
 #                      skip-ci marker in gala's release commit can suppress
@@ -110,7 +110,9 @@ jobs:
       - name: Verify package contents
         run: node "$RUNNER_TEMP/release-package-check.mjs"
       - name: Cargo build & test
-        run: cargo test
+        run: |
+          cargo test --workspace
+          cargo test -p snowflake-handlers --all-features
 
   prebuild:
     name: Prebuild native addon (${{ matrix.os }})
@@ -416,13 +418,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # A manual re-dispatch can target a tag cut before these files
-          # existed; upload only what the checkout has, so a recovery run
-          # against an old tag does not fail the whole job.
-          assets=()
-          for f in test/node-kinds.txt versions.json; do
-            [ -f "$f" ] && assets+=("$f")
-          done
-          if [ "${#assets[@]}" -gt 0 ]; then
-            gh release upload "$TAG" "${assets[@]}" --clobber
+          # A manual re-dispatch can target a tag cut before the snapshot
+          # existed; upload it only when the checkout has it, so a recovery
+          # run against an old tag does not fail the whole job.
+          if [ -f test/node-kinds.txt ]; then
+            gh release upload "$TAG" test/node-kinds.txt --clobber
           fi

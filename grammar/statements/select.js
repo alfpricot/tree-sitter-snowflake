@@ -70,8 +70,7 @@ export default {
     ),
 
   // prec.right: a `,` after a term extends the select list rather than
-  // ending the SELECT (the comma-separated DECLARE list around a cursor
-  // declaration makes both readings reachable).
+  // ending the SELECT.
   select_expression: ($) => prec.right(seq($.term, repeat(seq(',', $.term)))),
 
   term: ($) => seq(field('value', choice($.all_fields, $._expression)), optional($._alias)),

@@ -35,10 +35,10 @@
 (escape) @string.escape
 
 ((literal) @number
-   (#match? @number "^[-+]?%d+$"))
+   (#match? @number "^[-+]?[0-9]+$"))
 
 ((literal) @float
-   (#match? @float "^[-+]?%d*\.%d*$"))
+   (#match? @float "^[-+]?[0-9]*[.][0-9]+$"))
 
 [
   (keyword_asc)
