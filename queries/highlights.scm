@@ -10,6 +10,9 @@
 (cast
   name: [(keyword_cast) (keyword_try_cast)] @function.call)
 
+; EXTRACT(part FROM expr) is the same kind of function form as CAST.
+(extract_expression (keyword_extract) @function.call)
+
 (identifier_function (keyword_identifier) @function.call)
 
 (relation
@@ -326,7 +329,6 @@
   (keyword_evolve)
   (keyword_execute_as)
   (keyword_explain)
-  (keyword_extract)
   (keyword_facts)
   (keyword_failsafe)
   (keyword_file_format)
