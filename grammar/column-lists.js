@@ -66,13 +66,8 @@ export default {
         seq($.keyword_comment, alias($._single_quote_string, $.literal)),
         // AS (expr) — the virtual (computed) column, which follows the type.
         seq($.keyword_as, field('expression', wrapped_in_parenthesis($._expression))),
-        seq(
-          $.keyword_masking,
-          $.keyword_policy,
-          $.object_reference,
-          optional(seq($.keyword_using, paren_list($.identifier, true))),
-        ),
-        seq($.keyword_with, $.keyword_tag, paren_list($.tag_assignment, true)),
+        $._with_column_policy,
+        $._with_tag,
         $.keyword_not_enforced,
       ),
     ),

@@ -2052,3 +2052,407 @@ ALTER TASK t UNSET TAG a.b.c, d;
         (identifier))
       (object_reference
         (identifier)))))
+
+================================================================================
+tags on roles, users, tasks, streams, and dynamic tables
+================================================================================
+
+CREATE ROLE r WITH TAG (a = 'x') COMMENT = 'c';
+CREATE USER u TAG (a.b.c = 'x') DEFAULT_ROLE = r;
+CREATE TASK tk WAREHOUSE = w SCHEDULE = '5 MINUTE' TAG (a = 'x') AS SELECT 1;
+CREATE STREAM s ON TABLE t WITH TAG (a = 'x');
+CREATE DYNAMIC TABLE d TARGET_LAG = '1 minute' WAREHOUSE = w TAG (a = 'x') AS SELECT 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_role
+      (keyword_create)
+      (keyword_role)
+      (identifier)
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_user
+      (keyword_create)
+      (keyword_user)
+      (identifier)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))))
+  (statement
+    (create_task
+      (keyword_create)
+      (keyword_task)
+      (object_reference
+        (identifier))
+      (task_option
+        (keyword_warehouse)
+        (object_reference
+          (identifier)))
+      (task_option
+        (keyword_schedule)
+        (literal))
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))
+      (keyword_as)
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (literal)))))))
+  (statement
+    (create_stream
+      (keyword_create)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_on)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (create_dynamic_table
+      (keyword_create)
+      (keyword_dynamic)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (literal))))))))
+
+================================================================================
+column tags and column policies
+================================================================================
+
+CREATE TABLE t (c INT TAG (a = 'x'), d INT WITH TAG (b = 'y') MASKING POLICY m);
+CREATE TABLE t (c INT WITH MASKING POLICY m USING (c, d), e INT PROJECTION POLICY p);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (keyword_tag)
+          (tag_assignment
+            (object_reference
+              (identifier))
+            (literal)))
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (keyword_with)
+          (keyword_tag)
+          (tag_assignment
+            (object_reference
+              (identifier))
+            (literal))
+          (keyword_masking)
+          (keyword_policy)
+          (object_reference
+            (identifier))))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (keyword_with)
+          (keyword_masking)
+          (keyword_policy)
+          (object_reference
+            (identifier))
+          (keyword_using)
+          (identifier)
+          (identifier))
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (keyword_projection)
+          (keyword_policy)
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+schema managed access and contacts
+================================================================================
+
+CREATE SCHEMA s WITH MANAGED ACCESS DATA_RETENTION_TIME_IN_DAYS = 1;
+CREATE TRANSIENT SCHEMA IF NOT EXISTS s WITH MANAGED ACCESS WITH TAG (a = 'x');
+CREATE DATABASE d WITH CONTACT (support = c, approver = db.sch.c2);
+CREATE WAREHOUSE w WITH WAREHOUSE_SIZE = 'XSMALL' WITH CONTACT (support = c);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_schema
+      (keyword_create)
+      (keyword_schema)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (keyword_managed)
+      (keyword_access)
+      (option
+        (identifier)
+        (literal))))
+  (statement
+    (create_schema
+      (keyword_create)
+      (keyword_transient)
+      (keyword_schema)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (keyword_managed)
+      (keyword_access)
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (keyword_contact)
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier)))))
+  (statement
+    (create_warehouse
+      (keyword_create)
+      (keyword_warehouse)
+      (object_reference
+        (identifier))
+      (keyword_with)
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_contact)
+      (option
+        (identifier)
+        (object_reference
+          (identifier))))))
+
+================================================================================
+stage directory option after WITH
+================================================================================
+
+CREATE STAGE st URL = 's3://b/p' WITH DIRECTORY = (ENABLE = TRUE);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_stage
+      (keyword_create)
+      (keyword_stage)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (option
+        (identifier)
+        (option
+          (identifier)
+          (literal
+            (keyword_true)))))))
+
+================================================================================
+row access and aggregation policies on views and tables
+================================================================================
+
+CREATE VIEW v WITH ROW ACCESS POLICY p ON (a) AS SELECT a FROM t;
+CREATE VIEW v (a WITH MASKING POLICY m, b COMMENT 'x' TAG (t1 = 'y')) AGGREGATION POLICY ap ENTITY KEY (a) AS SELECT a, b FROM t;
+CREATE TABLE t (a INT) WITH ROW ACCESS POLICY p ON (a) WITH AGGREGATION POLICY ap;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_view
+      (keyword_create)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (view_option
+        (keyword_with)
+        (keyword_row)
+        (keyword_access)
+        (keyword_policy)
+        (object_reference
+          (identifier))
+        (keyword_on)
+        (identifier))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier)))))))
+  (statement
+    (create_view
+      (keyword_create)
+      (keyword_view)
+      (object_reference
+        (identifier))
+      (view_column
+        (identifier)
+        (keyword_with)
+        (keyword_masking)
+        (keyword_policy)
+        (object_reference
+          (identifier)))
+      (view_column
+        (identifier)
+        (keyword_comment)
+        (literal)
+        (keyword_tag)
+        (tag_assignment
+          (object_reference
+            (identifier))
+          (literal)))
+      (view_option
+        (keyword_aggregation)
+        (keyword_policy)
+        (object_reference
+          (identifier))
+        (keyword_entity)
+        (keyword_key)
+        (identifier))
+      (keyword_as)
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier)))))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)))
+      (table_option
+        (keyword_with)
+        (keyword_row)
+        (keyword_access)
+        (keyword_policy)
+        (object_reference
+          (identifier))
+        (keyword_on)
+        (identifier))
+      (table_option
+        (keyword_with)
+        (keyword_aggregation)
+        (keyword_policy)
+        (object_reference
+          (identifier))))))
+
+================================================================================
+ALTER SEQUENCE has no tag clause
+:error
+================================================================================
+
+ALTER SEQUENCE s SET TAG a = 'x';
+
+--------------------------------------------------------------------------------
+

@@ -1335,10 +1335,6 @@
           "named": true
         },
         {
-          "type": "keyword_tag",
-          "named": true
-        },
-        {
           "type": "keyword_to",
           "named": true
         },
@@ -1352,10 +1348,6 @@
         },
         {
           "type": "option",
-          "named": true
-        },
-        {
-          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -4459,6 +4451,10 @@
           "named": true
         },
         {
+          "type": "keyword_projection",
+          "named": true
+        },
+        {
           "type": "keyword_start",
           "named": true
         },
@@ -5152,6 +5148,10 @@
       "required": true,
       "types": [
         {
+          "type": "keyword_contact",
+          "named": true
+        },
+        {
           "type": "keyword_create",
           "named": true
         },
@@ -5250,7 +5250,19 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -6227,7 +6239,19 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -6253,6 +6277,14 @@
       "required": true,
       "types": [
         {
+          "type": "keyword_access",
+          "named": true
+        },
+        {
+          "type": "keyword_contact",
+          "named": true
+        },
+        {
           "type": "keyword_create",
           "named": true
         },
@@ -6262,6 +6294,10 @@
         },
         {
           "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_managed",
           "named": true
         },
         {
@@ -6282,6 +6318,10 @@
         },
         {
           "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_transient",
           "named": true
         },
         {
@@ -6563,11 +6603,23 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_temporary",
           "named": true
         },
         {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -6865,7 +6917,19 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_task",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         },
         {
@@ -6919,11 +6983,23 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
           "type": "keyword_user",
           "named": true
         },
         {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -7018,6 +7094,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "keyword_contact",
+          "named": true
+        },
         {
           "type": "keyword_create",
           "named": true
@@ -15545,11 +15625,43 @@
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_access",
+          "named": true
+        },
+        {
+          "type": "keyword_aggregation",
+          "named": true
+        },
+        {
           "type": "keyword_copy",
           "named": true
         },
         {
+          "type": "keyword_entity",
+          "named": true
+        },
+        {
           "type": "keyword_grants",
+          "named": true
+        },
+        {
+          "type": "keyword_key",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_row",
           "named": true
         },
         {
@@ -15558,6 +15670,10 @@
         },
         {
           "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "object_reference",
           "named": true
         },
         {
@@ -16835,11 +16951,47 @@
       "required": false,
       "types": [
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
           "type": "keyword_comment",
           "named": true
         },
         {
+          "type": "keyword_masking",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_projection",
+          "named": true
+        },
+        {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_using",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "literal",
+          "named": true
+        },
+        {
+          "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]
@@ -16854,11 +17006,43 @@
       "required": true,
       "types": [
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "keyword_access",
+          "named": true
+        },
+        {
+          "type": "keyword_aggregation",
+          "named": true
+        },
+        {
           "type": "keyword_copy",
           "named": true
         },
         {
+          "type": "keyword_entity",
+          "named": true
+        },
+        {
           "type": "keyword_grants",
+          "named": true
+        },
+        {
+          "type": "keyword_key",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_policy",
+          "named": true
+        },
+        {
+          "type": "keyword_row",
           "named": true
         },
         {
@@ -16867,6 +17051,10 @@
         },
         {
           "type": "keyword_with",
+          "named": true
+        },
+        {
+          "type": "object_reference",
           "named": true
         },
         {
@@ -17672,6 +17860,10 @@
     "named": true
   },
   {
+    "type": "keyword_contact",
+    "named": true
+  },
+  {
     "type": "keyword_copy",
     "named": true
   },
@@ -17777,6 +17969,10 @@
   },
   {
     "type": "keyword_enforced",
+    "named": true
+  },
+  {
+    "type": "keyword_entity",
     "named": true
   },
   {
@@ -18029,6 +18225,10 @@
   },
   {
     "type": "keyword_loop",
+    "named": true
+  },
+  {
+    "type": "keyword_managed",
     "named": true
   },
   {
