@@ -342,7 +342,10 @@ export default {
     ),
 
   _natural_number: (_) => /\d+/,
-  // Decimal and hexadecimal integers.
+  // Decimal and hexadecimal integers. queries/highlights.scm mirrors this
+  // regex and _decimal_number in its number and float patterns, and
+  // test/highlight/literals.sql asserts each shape; a new literal form
+  // needs both updated.
   _integer: (_) => /(0[xX][0-9A-Fa-f]*)|(\d+)/,
   _decimal_number: (_) => /((\d+\.\d*|\.\d+)([eE][+-]?\d+)?)|(\d+[eE][+-]?\d+)/,
 
