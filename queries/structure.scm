@@ -1,5 +1,5 @@
 ; Structure query: the block, decision, name, parameter and body captures
-; measurement and linting tools (cadence, marlin) consume. The node names
+; measurement and linting tools (such as cadence) consume. The node names
 ; pinned here are the grammar's public API — create_procedure,
 ; create_function, if_statement, elseif_clause, case_statement,
 ; while_statement, for_statement, repeat_statement, loop_statement,
