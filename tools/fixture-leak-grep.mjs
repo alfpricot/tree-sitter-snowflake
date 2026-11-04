@@ -118,6 +118,19 @@ function keyedHash(text) {
   return createHmac('sha256', key).update(text).digest('hex');
 }
 
+// The keyed hash of a fixed public string under the key the needles were
+// computed with. A wrong key (a rotated secret, a stray newline, a
+// placeholder) would make every needle miss and the scan report clean, so
+// the check refuses to run unless the key reproduces this value. Rotating
+// the key means recomputing every needle and this line together.
+const CANARY_HASH = 'bab0c17a72479dd627d21381c4dab9d2d1008aa15f0dde38e516d3b25c53eef9';
+if (keyedHash('fixture-leak-key-check') !== CANARY_HASH) {
+  console.error(
+    'FIXTURE_LEAK_KEY is not the key the needles were computed with, so the leak check cannot run.',
+  );
+  process.exit(1);
+}
+
 function isBinary(buffer) {
   return buffer.subarray(0, 8000).includes(0);
 }
