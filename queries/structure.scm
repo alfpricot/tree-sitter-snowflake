@@ -6,16 +6,18 @@
 ; exception_handler, object_reference, function_arguments, function_body.
 
 ; --- blocks: the function-like definitions -------------------------------
+; A foreign-language routine with a staged handler (no AS clause) has no
+; body, so the body capture is optional.
 
 (create_procedure
   name: (object_reference) @definition.name
   (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
+  body: (function_body)? @definition.body) @definition.block
 
 (create_function
   name: (object_reference) @definition.name
   (function_arguments) @definition.parameters
-  body: (function_body) @definition.body) @definition.block
+  body: (function_body)? @definition.body) @definition.block
 
 (create_policy
   name: (object_reference) @definition.name
