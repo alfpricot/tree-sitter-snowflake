@@ -89,12 +89,13 @@ export default {
   // Scripting CASE: branches are statement lists, not expressions — a SQL
   // CASE expression is `case` in grammar/expressions.js. The two share the
   // CASE token; the branch contents settle which is which a token later.
-  // The simple form names the value to match after CASE, and each WHEN
-  // then holds a value rather than a condition.
+  // The simple form names an input after CASE, and each WHEN's condition
+  // is then a value compared against it — the same fields the expression
+  // form uses.
   case_statement: ($) =>
     seq(
       $.keyword_case,
-      optional(field('value', $._expression)),
+      optional(field('input', $._expression)),
       repeat1($.case_when_clause),
       optional($.else_clause),
       $.keyword_end,

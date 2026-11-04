@@ -40,7 +40,7 @@ function dollar_script_body($) {
 //     Snowflake Scripting.
 //   - `dollar_quoted_body` — `$$ ... $$` after a foreign LANGUAGE: the
 //     content is a single opaque `body_content` node an injected parser
-//     can be pointed at.
+//     can be pointed at (absent when the body is empty).
 //   - `string_body` — `AS '...'` in either language: the content is a
 //     sequence of `body_content` chunks with every doubled apostrophe and
 //     backslash escape visible as its own node, so a consumer can

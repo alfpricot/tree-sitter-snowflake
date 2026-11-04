@@ -3109,7 +3109,7 @@
     "type": "case_statement",
     "named": true,
     "fields": {
-      "value": {
+      "input": {
         "multiple": false,
         "required": false,
         "types": [

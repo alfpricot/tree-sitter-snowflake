@@ -84,8 +84,12 @@ bool tree_sitter_snowflake_external_scanner_scan(void *payload, TSLexer *lexer, 
   }
 
   if (valid_symbols[DOLLAR_QUOTE_END]) {
-    while (is_space(lexer->lookahead)) {
-      lexer->advance(lexer, true);
+    // Where content may also follow (a body that can be empty), leading
+    // whitespace belongs to the content, so it is not skipped here.
+    if (!valid_symbols[DOLLAR_QUOTE_CONTENT]) {
+      while (is_space(lexer->lookahead)) {
+        lexer->advance(lexer, true);
+      }
     }
     if (scan_dollar_dollar(lexer)) {
       lexer->result_symbol = DOLLAR_QUOTE_END;
