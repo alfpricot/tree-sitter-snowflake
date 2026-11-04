@@ -6,6 +6,22 @@ export function make_keyword(word) {
   return new RegExp(str);
 }
 
+// Merges rule modules into one rules object, refusing a key two modules
+// both define: a plain object spread lets the later module win silently,
+// which once hid one module's rule behind another's of the same name.
+export function merge_rules(...modules) {
+  const merged = {};
+  for (const module of modules) {
+    for (const [name, rule] of Object.entries(module)) {
+      if (Object.hasOwn(merged, name)) {
+        throw new Error(`grammar rule "${name}" is defined by more than one module`);
+      }
+      merged[name] = rule;
+    }
+  }
+  return merged;
+}
+
 export function optional_parenthesis(node) {
   return prec.right(choice(node, wrapped_in_parenthesis(node)));
 }

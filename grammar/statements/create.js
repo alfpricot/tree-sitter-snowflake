@@ -104,6 +104,8 @@ export default {
             $.keyword_transient,
             $.keyword_volatile,
             $.keyword_temporary,
+            $.keyword_local,
+            $.keyword_global,
             $.keyword_external,
             $.keyword_iceberg,
             $.keyword_event,
@@ -141,15 +143,17 @@ export default {
     prec.left(
       choice(
         $.cluster_by,
-        $.partition_by,
+        $.table_partition_by,
         seq($.keyword_copy, $.keyword_grants),
         seq($.keyword_with, $.keyword_tag, paren_list($.tag_assignment, true)),
         $.option,
       ),
     ),
 
-  partition_by: ($) =>
-    seq($.keyword_partition, $.keyword_by, paren_list(choice($.identifier, $._expression), true)),
+  // PARTITION BY (col, ...) — a table's partition columns. Distinct from
+  // the window and MATCH_RECOGNIZE `partition_by`, which takes a bare list.
+  table_partition_by: ($) =>
+    seq($.keyword_partition, $.keyword_by, paren_list($._expression, true)),
 
   cluster_by: ($) => seq($.keyword_cluster, $.keyword_by, paren_list($._expression, true)),
 
