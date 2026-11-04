@@ -120,8 +120,10 @@ export default {
       ),
     ),
 
+  // tag = 'value' — the tag is a schema object, so its name may be
+  // qualified (db.schema.tag).
   tag_assignment: ($) =>
-    seq(field('name', $.identifier), '=', alias($._single_quote_string, $.literal)),
+    seq(field('name', $.object_reference), '=', alias($._single_quote_string, $.literal)),
 
   // The option list most Snowflake DDL takes, parenthesized:
   // `COPY_OPTIONS = (ON_ERROR = 'ABORT', PURGE = TRUE)` or a file

@@ -1643,3 +1643,98 @@ CREATE GLOBAL TEMPORARY TABLE g (x INT);
         (column_definition
           (identifier)
           (keyword_int))))))
+
+================================================================================
+qualified tag names
+================================================================================
+
+ALTER FUNCTION f(NUMBER) SET TAG governance.tags.owner = 'data', cost_center = 'x';
+CREATE TABLE t (id INT) WITH TAG (governance.tags.owner = 'data');
+ALTER MASKING POLICY p SET TAG governance.tags.owner = 'data';
+ALTER MASKING POLICY p UNSET TAG governance.tags.owner, cost_center;
+ALTER MASKING POLICY p UNSET TAG (cost_center);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_function
+      (keyword_alter)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (number
+          (keyword_number)))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)))
+      (table_option
+        (keyword_with)
+        (keyword_tag)
+        (tag_assignment
+          (object_reference
+            (identifier)
+            (identifier)
+            (identifier))
+          (literal)))))
+  (statement
+    (alter_policy
+      (keyword_alter)
+      (keyword_masking)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (literal))))
+  (statement
+    (alter_policy
+      (keyword_alter)
+      (keyword_masking)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (keyword_tag)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (object_reference
+        (identifier))))
+  (statement
+    (alter_policy
+      (keyword_alter)
+      (keyword_masking)
+      (keyword_policy)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (keyword_tag)
+      (object_reference
+        (identifier)))))
