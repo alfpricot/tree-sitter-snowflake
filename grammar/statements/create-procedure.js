@@ -1,7 +1,7 @@
 import {
-  comma_list,
   paren_list,
   set_unset_properties,
+  set_unset_tags,
   statement_list,
   wrapped_in_parenthesis,
 } from '../helpers.js';
@@ -101,8 +101,7 @@ function alter_routine($, keyword, actions) {
     $.function_argument_types,
     choice(
       seq($.keyword_rename, $.keyword_to, $.object_reference),
-      seq($.keyword_set, $.keyword_tag, comma_list($.tag_assignment, true)),
-      seq($.keyword_unset, $.keyword_tag, comma_list($.object_reference, true)),
+      ...set_unset_tags($),
       ...set_unset_properties($),
       ...actions,
     ),

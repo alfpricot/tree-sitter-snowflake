@@ -145,7 +145,7 @@ export default {
         $.cluster_by,
         $.table_partition_by,
         seq($.keyword_copy, $.keyword_grants),
-        seq($.keyword_with, $.keyword_tag, paren_list($.tag_assignment, true)),
+        $._with_tag,
         $.option,
       ),
     ),
@@ -215,7 +215,12 @@ export default {
       ),
     ),
 
-  view_option: ($) => choice(seq($.keyword_copy, $.keyword_grants), $.option),
+  view_option: ($) => choice(seq($.keyword_copy, $.keyword_grants), $._with_tag, $.option),
+
+  // [WITH] TAG (tag = 'value', ...) — object tags at creation. WITH is
+  // optional, as Snowflake documents it.
+  _with_tag: ($) =>
+    seq(optional($.keyword_with), $.keyword_tag, paren_list($.tag_assignment, true)),
 
   // CREATE [OR REPLACE] [TEMPORARY] STAGE name
   //   [URL = ''] [STORAGE_INTEGRATION = x] [CREDENTIALS = (...)]
@@ -230,7 +235,7 @@ export default {
         $.keyword_stage,
         optional($._if_not_exists),
         field('name', $.object_reference),
-        repeat($.option),
+        repeat(choice($._with_tag, $.option)),
       ),
     ),
 
@@ -293,8 +298,10 @@ export default {
         $.keyword_warehouse,
         optional($._if_not_exists),
         field('name', $.object_reference),
-        optional($.keyword_with),
-        repeat($.option),
+        // The leading WITH introduces the properties; a WITH right before
+        // TAG belongs to the tag clause instead.
+        optional(seq($.keyword_with, $.option)),
+        repeat(choice($._with_tag, $.option)),
       ),
     ),
 
@@ -309,7 +316,7 @@ export default {
         $.keyword_database,
         optional($._if_not_exists),
         field('name', $.object_reference),
-        repeat($.option),
+        repeat(choice($._with_tag, $.option)),
       ),
     ),
 
@@ -322,7 +329,7 @@ export default {
         $.keyword_schema,
         optional($._if_not_exists),
         field('name', $.object_reference),
-        repeat($.option),
+        repeat(choice($._with_tag, $.option)),
       ),
     ),
 

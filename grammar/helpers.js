@@ -47,6 +47,16 @@ export function paren_list(field, requireFirst) {
   return wrapped_in_parenthesis(comma_list(field, requireFirst));
 }
 
+// The `SET TAG tag = 'value', ... | UNSET TAG tag, ...` pair the ALTER
+// statements for taggable objects share. Kept apart from
+// set_unset_properties because some ALTERs (SESSION) take no tags.
+export function set_unset_tags($) {
+  return [
+    seq($.keyword_set, $.keyword_tag, comma_list($.tag_assignment, true)),
+    seq($.keyword_unset, $.keyword_tag, comma_list($.object_reference, true)),
+  ];
+}
+
 // The `SET <options> | UNSET <names>` alternative pair every ALTER
 // object shares. A plain function, not a named rule, so callers can
 // spread it alongside their own alternatives in one surrounding
