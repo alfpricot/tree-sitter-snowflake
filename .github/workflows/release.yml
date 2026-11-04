@@ -112,8 +112,9 @@ jobs:
       - name: Cargo build & test
         run: |
           cargo test --workspace
-          # A tag cut before the companion crate existed has no
-          # snowflake-handlers/ to test.
+          # Tags before v0.2.2 carry the companion crate as snowflake-bodies,
+          # which --workspace above already tests, and have no
+          # snowflake-handlers/.
           if [ -f snowflake-handlers/Cargo.toml ]; then
             cargo test -p snowflake-handlers --all-features
           fi
@@ -238,6 +239,12 @@ jobs:
 
           if [ -f "snowflake-handlers/Cargo.toml" ]; then
             handlers_version=$(sed -n 's/^version = "\(.*\)"/\1/p' snowflake-handlers/Cargo.toml | head -1)
+            # An empty output tells handlers-release there is no companion
+            # crate, so a version this can't read must fail here instead.
+            if [ -z "$handlers_version" ]; then
+              echo "could not read the version from snowflake-handlers/Cargo.toml" >&2
+              exit 1
+            fi
             handlers_status=$(curl -s -o /dev/null -w '%{http_code}' -A "tree-sitter-snowflake-release (${GITHUB_REPOSITORY})" "https://crates.io/api/v1/crates/snowflake-handlers/${handlers_version}")
             if [ "$handlers_status" = "200" ]; then
               echo "snowflake-handlers@${handlers_version} is already published, skipping"
