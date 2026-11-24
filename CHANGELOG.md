@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.3.1 (2026-11-24)
+
+### Bug Fixes
+
+* **grammar:** accept inline REFERENCES and foreign key properties (#86) (#85)
+
 ## 0.3.0 (2026-11-04)
 
 ### Features
