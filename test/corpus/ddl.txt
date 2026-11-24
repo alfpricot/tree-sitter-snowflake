@@ -2798,3 +2798,102 @@ CREATE DYNAMIC TABLE d (a INT WITH MASKING POLICY m, b TAG (t = 'v') COMMENT 'x'
           (relation
             (object_reference
               (identifier))))))))
+
+================================================================================
+inline REFERENCES without FOREIGN KEY
+================================================================================
+
+CREATE TABLE t (a INT REFERENCES u (id), b INT CONSTRAINT fk_b REFERENCES v);
+
+---
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (referential_clause
+            (keyword_references)
+            (object_reference
+              (identifier))
+            (identifier)))
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (keyword_constraint)
+          (identifier)
+          (referential_clause
+            (keyword_references)
+            (object_reference
+              (identifier))))))))
+
+================================================================================
+foreign key match and referential actions
+================================================================================
+
+CREATE TABLE t (
+  a INT,
+  FOREIGN KEY (a) REFERENCES r (k) MATCH FULL ON UPDATE SET NULL ON DELETE CASCADE,
+  CONSTRAINT fk2 FOREIGN KEY (a) REFERENCES r (k) ON UPDATE RESTRICT DELETE NO ACTION NOT ENFORCED
+);
+
+---
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int))
+        (table_constraint
+          (keyword_foreign)
+          (keyword_key)
+          (identifier)
+          (referential_clause
+            (keyword_references)
+            (object_reference
+              (identifier))
+            (identifier)
+            (keyword_match)
+            (keyword_full)
+            (referential_action
+              (keyword_on)
+              (keyword_update)
+              (keyword_set)
+              (keyword_null))
+            (referential_action
+              (keyword_on)
+              (keyword_delete)
+              (keyword_cascade))))
+        (table_constraint
+          (keyword_constraint)
+          (identifier)
+          (keyword_foreign)
+          (keyword_key)
+          (identifier)
+          (referential_clause
+            (keyword_references)
+            (object_reference
+              (identifier))
+            (identifier)
+            (referential_action
+              (keyword_on)
+              (keyword_update)
+              (keyword_restrict)
+              (keyword_delete)
+              (keyword_no)
+              (keyword_action))
+            (keyword_not_enforced
+              (keyword_not)
+              (keyword_enforced))))))))

@@ -43,6 +43,9 @@ export default {
               optional(wrapped_in_parenthesis(comma_list($.identifier, true))),
               optional($.referential_clause),
             ),
+            // FOREIGN KEY is optional in an inline constraint:
+            // `a INT REFERENCES u (id)`.
+            $.referential_clause,
           ),
         ),
         seq(
@@ -76,20 +79,41 @@ export default {
 
   keyword_not_enforced: ($) => seq($.keyword_not, $.keyword_enforced),
 
-  // REFERENCES t [(cols)] [[NOT] ENFORCED] [RELY | NORELY]
+  // REFERENCES t [(cols)] [MATCH {FULL | SIMPLE | PARTIAL}]
+  //   [ON UPDATE action] [ON DELETE action] [[NOT] ENFORCED] [RELY | NORELY]
   // Snowflake accepts and ignores referential constraints; it never
   // enforces them, and CHECK constraints are not part of the dialect at
   // all, so they are deliberately absent. prec.right keeps the trailing
-  // ENFORCED/RELY suffixes with the clause.
+  // suffixes with the clause.
   referential_clause: ($) =>
     prec.right(
       seq(
         $.keyword_references,
         $.object_reference,
         optional(paren_list($.identifier, true)),
+        optional(seq($.keyword_match, choice($.keyword_full, $.keyword_simple, $.keyword_partial))),
+        repeat($.referential_action),
         optional($.keyword_not_enforced),
         optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
       ),
+    ),
+
+  // ON UPDATE / ON DELETE, in either order, each with its action. Snowflake
+  // also documents `ON UPDATE action DELETE action` under one ON, so a
+  // second event may follow the first action without repeating ON.
+  referential_action: ($) =>
+    seq($.keyword_on, $._referential_event, optional($._referential_event)),
+
+  _referential_event: ($) =>
+    seq(choice($.keyword_update, $.keyword_delete), $._referential_action_kind),
+
+  _referential_action_kind: ($) =>
+    choice(
+      $.keyword_cascade,
+      $.keyword_restrict,
+      seq($.keyword_set, $.keyword_null),
+      seq($.keyword_set, $.keyword_default),
+      seq($.keyword_no, $.keyword_action),
     ),
 
   // Table-level constraint, also the shape ALTER TABLE ... ADD accepts.
