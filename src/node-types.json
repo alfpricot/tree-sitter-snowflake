@@ -4431,6 +4431,10 @@
           "named": true
         },
         {
+          "type": "keyword_no",
+          "named": true
+        },
+        {
           "type": "keyword_not",
           "named": true
         },
@@ -4452,6 +4456,10 @@
         },
         {
           "type": "keyword_projection",
+          "named": true
+        },
+        {
+          "type": "keyword_rely",
           "named": true
         },
         {
@@ -13437,6 +13445,57 @@
     }
   },
   {
+    "type": "referential_action",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_action",
+          "named": true
+        },
+        {
+          "type": "keyword_cascade",
+          "named": true
+        },
+        {
+          "type": "keyword_default",
+          "named": true
+        },
+        {
+          "type": "keyword_delete",
+          "named": true
+        },
+        {
+          "type": "keyword_no",
+          "named": true
+        },
+        {
+          "type": "keyword_null",
+          "named": true
+        },
+        {
+          "type": "keyword_on",
+          "named": true
+        },
+        {
+          "type": "keyword_restrict",
+          "named": true
+        },
+        {
+          "type": "keyword_set",
+          "named": true
+        },
+        {
+          "type": "keyword_update",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "referential_clause",
     "named": true,
     "fields": {},
@@ -13449,11 +13508,23 @@
           "named": true
         },
         {
+          "type": "keyword_full",
+          "named": true
+        },
+        {
+          "type": "keyword_match",
+          "named": true
+        },
+        {
           "type": "keyword_no",
           "named": true
         },
         {
           "type": "keyword_not_enforced",
+          "named": true
+        },
+        {
+          "type": "keyword_partial",
           "named": true
         },
         {
@@ -13465,7 +13536,15 @@
           "named": true
         },
         {
+          "type": "keyword_simple",
+          "named": true
+        },
+        {
           "type": "object_reference",
+          "named": true
+        },
+        {
+          "type": "referential_action",
           "named": true
         }
       ]
@@ -18650,6 +18729,10 @@
     "named": true
   },
   {
+    "type": "keyword_partial",
+    "named": true
+  },
+  {
     "type": "keyword_partition",
     "named": true
   },
@@ -18899,6 +18982,10 @@
   },
   {
     "type": "keyword_show",
+    "named": true
+  },
+  {
+    "type": "keyword_simple",
     "named": true
   },
   {

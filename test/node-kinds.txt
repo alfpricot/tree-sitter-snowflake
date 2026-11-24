@@ -437,6 +437,7 @@ keyword_over
 keyword_overwrite
 keyword_owner
 keyword_ownership
+keyword_partial
 keyword_partition
 keyword_password
 keyword_past
@@ -500,6 +501,7 @@ keyword_set
 keyword_sets
 keyword_share
 keyword_show
+keyword_simple
 keyword_skip
 keyword_specification
 keyword_sql
@@ -623,6 +625,7 @@ put_statement
 qualify
 qualify.predicate
 raise_statement
+referential_action
 referential_clause
 relation
 relation.alias

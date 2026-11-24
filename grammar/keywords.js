@@ -231,6 +231,8 @@ export default {
   keyword_check: (_) => make_keyword('check'),
   keyword_enforced: (_) => make_keyword('enforced'),
   keyword_rely: (_) => make_keyword('rely'),
+  keyword_simple: (_) => make_keyword('simple'),
+  keyword_partial: (_) => make_keyword('partial'),
   keyword_no: (_) => make_keyword('no'),
   keyword_cascade: (_) => make_keyword('cascade'),
   keyword_restrict: (_) => make_keyword('restrict'),
