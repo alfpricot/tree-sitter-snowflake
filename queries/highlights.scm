@@ -125,6 +125,8 @@
   (keyword_left)
   (keyword_right)
   (keyword_full)
+  (keyword_simple)
+  (keyword_partial)
   (keyword_outer)
   (keyword_cross)
   (keyword_lateral)
