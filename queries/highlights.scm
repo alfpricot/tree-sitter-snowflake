@@ -54,6 +54,8 @@
   (keyword_autoincrement)
   (keyword_enforced)
   (keyword_rely)
+  (keyword_simple)
+  (keyword_partial)
   (keyword_preceding)
   (keyword_following)
   (keyword_unbounded)

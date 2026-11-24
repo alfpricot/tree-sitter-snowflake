@@ -5,6 +5,24 @@ import {
   wrapped_in_parenthesis,
 } from './helpers.js';
 
+// REFERENCES t [(cols)] [MATCH {FULL | SIMPLE | PARTIAL}]
+//   [ON UPDATE action] [ON DELETE action] [[NOT] ENFORCED] [RELY | NORELY]
+// `not_enforced` says whether the clause takes the NOT ENFORCED suffix
+// itself. prec.right keeps the trailing suffixes with the clause.
+function referential_clause($, not_enforced) {
+  return prec.right(
+    seq(
+      $.keyword_references,
+      $.object_reference,
+      optional(paren_list($.identifier, true)),
+      optional(seq($.keyword_match, choice($.keyword_full, $.keyword_simple, $.keyword_partial))),
+      repeat($.referential_action),
+      ...(not_enforced ? [optional($.keyword_not_enforced)] : []),
+      optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
+    ),
+  );
+}
+
 // Column definitions, constraints and option lists, shared by CREATE
 // TABLE, ALTER TABLE ... ADD, and the option-driven DDL (stages, tasks,
 // warehouses, file formats, copy options, session parameters).
@@ -45,7 +63,7 @@ export default {
             ),
             // FOREIGN KEY is optional in an inline constraint:
             // `a INT REFERENCES u (id)`.
-            $.referential_clause,
+            alias($._inline_referential_clause, $.referential_clause),
           ),
         ),
         seq(
@@ -71,7 +89,12 @@ export default {
         seq($.keyword_as, field('expression', wrapped_in_parenthesis($._expression))),
         $._with_column_policy,
         $._with_tag,
-        $.keyword_not_enforced,
+        // NOT ENFORCED [RELY | NORELY] after an inline REFERENCES, which
+        // leaves these suffixes to the constraint list.
+        seq(
+          $.keyword_not_enforced,
+          optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
+        ),
       ),
     ),
 
@@ -79,24 +102,18 @@ export default {
 
   keyword_not_enforced: ($) => seq($.keyword_not, $.keyword_enforced),
 
-  // REFERENCES t [(cols)] [MATCH {FULL | SIMPLE | PARTIAL}]
-  //   [ON UPDATE action] [ON DELETE action] [[NOT] ENFORCED] [RELY | NORELY]
   // Snowflake accepts and ignores referential constraints; it never
   // enforces them, and CHECK constraints are not part of the dialect at
-  // all, so they are deliberately absent. prec.right keeps the trailing
-  // suffixes with the clause.
-  referential_clause: ($) =>
-    prec.right(
-      seq(
-        $.keyword_references,
-        $.object_reference,
-        optional(paren_list($.identifier, true)),
-        optional(seq($.keyword_match, choice($.keyword_full, $.keyword_simple, $.keyword_partial))),
-        repeat($.referential_action),
-        optional($.keyword_not_enforced),
-        optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
-      ),
-    ),
+  // all, so they are deliberately absent. The clause's shape is in the
+  // referential_clause function at the top of this file.
+  referential_clause: ($) => referential_clause($, true),
+
+  // The bare inline form (`a INT REFERENCES u (id)`) leaves a trailing
+  // NOT ENFORCED to the column-constraint list, where it is a constraint of
+  // its own. Inside the clause, a NOT right after the referenced columns
+  // would always be read as the start of NOT ENFORCED, so the common
+  // `a INT REFERENCES u (id) NOT NULL` would fail at NULL.
+  _inline_referential_clause: ($) => referential_clause($, false),
 
   // ON UPDATE / ON DELETE, in either order, each with its action. Snowflake
   // also documents `ON UPDATE action DELETE action` under one ON, so a

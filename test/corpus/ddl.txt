@@ -2897,3 +2897,41 @@ CREATE TABLE t (
             (keyword_not_enforced
               (keyword_not)
               (keyword_enforced))))))))
+
+================================================================================
+inline REFERENCES followed by NOT NULL and NOT ENFORCED
+================================================================================
+
+CREATE TABLE t (a INT REFERENCES u (id) NOT NULL, b INT REFERENCES v NOT ENFORCED RELY);
+
+---
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (referential_clause
+            (keyword_references)
+            (object_reference
+              (identifier))
+            (identifier))
+          (keyword_not)
+          (keyword_null))
+        (column_definition
+          (identifier)
+          (keyword_int)
+          (referential_clause
+            (keyword_references)
+            (object_reference
+              (identifier)))
+          (keyword_not_enforced
+            (keyword_not)
+            (keyword_enforced))
+          (keyword_rely))))))

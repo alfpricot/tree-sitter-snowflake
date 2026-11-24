@@ -4431,6 +4431,10 @@
           "named": true
         },
         {
+          "type": "keyword_no",
+          "named": true
+        },
+        {
           "type": "keyword_not",
           "named": true
         },
@@ -4452,6 +4456,10 @@
         },
         {
           "type": "keyword_projection",
+          "named": true
+        },
+        {
+          "type": "keyword_rely",
           "named": true
         },
         {
