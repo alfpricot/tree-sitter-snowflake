@@ -74,6 +74,72 @@ impl HandlerSource {
         Some(start..end)
     }
 
+    /// The ranges of `sql` that spell [`text`](Self::text) exactly, for
+    /// [`Parser::set_included_ranges`](tree_sitter::Parser::set_included_ranges).
+    /// An embedded parser given them reads the SQL text itself, so its tree has
+    /// SQL offsets and an editor can highlight the body in place: each doubled
+    /// apostrophe contributes one apostrophe, and an escape such as `\'` only
+    /// the character after its backslash.
+    ///
+    /// Returns `None` when the body cannot be spelled that way, because an
+    /// escape such as `\n` or `\u0041` stands for text it does not contain;
+    /// parse [`text`](Self::text) and map the results with
+    /// [`source_range`](Self::source_range) instead. Also `None` for an empty
+    /// body, since an empty list of ranges selects the whole text, and when
+    /// `sql` is not the text this body was read from.
+    #[must_use]
+    pub fn included_ranges(&self, sql: &str) -> Option<Vec<tree_sitter::Range>> {
+        let mut spans: Vec<Range<usize>> = Vec::new();
+        let mut keep = |span: Range<usize>| match spans.last_mut() {
+            Some(last) if last.end == span.start => last.end = span.end,
+            _ if span.is_empty() => {}
+            _ => spans.push(span),
+        };
+        let mut next = self.start;
+        for escape in &self.escapes {
+            let decoded = &self.text[escape.output.clone()];
+            if !sql.get(escape.source.clone())?.ends_with(decoded) {
+                return None;
+            }
+            keep(next..escape.source.start);
+            keep(escape.source.end - decoded.len()..escape.source.end);
+            next = escape.source.end;
+        }
+        keep(next..self.end);
+        let spelled = spans.iter().try_fold(0, |at, span| {
+            let part = sql.get(span.clone())?;
+            self.text[at..].starts_with(part).then(|| at + part.len())
+        })?;
+        if spans.is_empty() || spelled != self.text.len() {
+            return None;
+        }
+        // The spans ascend, so one pass over the text places all of them.
+        let mut point = tree_sitter::Point::new(0, 0);
+        let mut at = 0;
+        let mut advance = |offset: usize| {
+            for &byte in &sql.as_bytes()[at..offset] {
+                if byte == b'\n' {
+                    point = tree_sitter::Point::new(point.row + 1, 0);
+                } else {
+                    point.column += 1;
+                }
+            }
+            at = offset;
+            point
+        };
+        Some(
+            spans
+                .into_iter()
+                .map(|span| tree_sitter::Range {
+                    start_byte: span.start,
+                    end_byte: span.end,
+                    start_point: advance(span.start),
+                    end_point: advance(span.end),
+                })
+                .collect(),
+        )
+    }
+
     // The SQL bytes behind one output byte: the whole escape that produced it,
     // or the single byte it was copied from.
     fn origin(&self, offset: usize) -> Option<Range<usize>> {

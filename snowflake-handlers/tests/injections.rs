@@ -2,7 +2,7 @@
 //! this crate links.
 
 use snowflake_handlers::{
-    Language,
+    Analyzer, Language, source_point,
     tree_sitter::{self, Parser, Query, QueryCursor, Range, StreamingIterator},
 };
 use tree_sitter_snowflake::{INJECTIONS_QUERY, LANGUAGE};
@@ -58,6 +58,8 @@ fn each_plain_single_quoted_body_is_injected_on_its_own() {
     for (name, first, second) in [
         ("JAVASCRIPT", "return a", "return b"),
         ("PYTHON", "def f(a):\n  return a", "def g(b):\n  return b"),
+        ("JAVA", "class A {}", "class B {}"),
+        ("SCALA", "object A", "object B"),
     ] {
         let sql = format!(
             "CREATE FUNCTION f(a FLOAT) RETURNS FLOAT LANGUAGE {name} AS '{first}';
@@ -70,7 +72,7 @@ CREATE FUNCTION g(b FLOAT) RETURNS FLOAT LANGUAGE {name} AS '{second}';"
 
 #[test]
 fn a_body_that_needs_decoding_is_not_injected() {
-    for name in ["JAVASCRIPT", "PYTHON"] {
+    for name in ["JAVASCRIPT", "PYTHON", "JAVA", "SCALA"] {
         for body in ["a = ''x''", r"a = \'x\'", r"return a\n", "x''", ""] {
             let sql = format!("CREATE PROCEDURE p() RETURNS STRING LANGUAGE {name} AS '{body}';");
             let documents = injected(&sql, &name.to_lowercase());
@@ -99,9 +101,62 @@ fn an_injected_single_quoted_body_parses_as_its_language() {
     );
 }
 
+/// A body the query cannot inject parses from the ranges the crate gives for
+/// it, with its string literals intact.
 #[test]
-fn java_single_quoted_bodies_are_not_injected() {
-    let sql = "CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVA AS 'class A {}';";
-    let documents = injected(sql, "java");
-    assert!(documents.is_empty(), "{documents:?}");
+fn a_body_with_doubled_apostrophes_parses_from_its_included_ranges() {
+    let sql = "-- é
+CREATE PROCEDURE p() RETURNS STRING LANGUAGE JAVASCRIPT AS '
+  var a = ''x'';
+  var b = \\'y\\';
+  return a + b + ''\\\\n'';
+';";
+    let analysis = Analyzer::new().unwrap().analyze(sql).unwrap();
+    let source = analysis.handlers[0].source.as_ref().unwrap();
+    let ranges = source.included_ranges(sql).unwrap();
+    let joined: String = ranges
+        .iter()
+        .map(|r| &sql[r.start_byte..r.end_byte])
+        .collect();
+    assert_eq!(joined, source.text());
+    for range in &ranges {
+        assert_eq!(source_point(sql, range.start_byte), Some(range.start_point));
+        assert_eq!(source_point(sql, range.end_byte), Some(range.end_point));
+    }
+    let mut parser = Parser::new();
+    parser
+        .set_language(&Language::JavaScript.grammar().unwrap())
+        .unwrap();
+    parser.set_included_ranges(&ranges).unwrap();
+    let tree = parser.parse(sql, None).unwrap();
+    assert!(
+        !tree.root_node().has_error(),
+        "{}",
+        tree.root_node().to_sexp()
+    );
+}
+
+#[test]
+fn a_body_with_rewritten_text_has_no_included_ranges() {
+    for body in [r"return 1;\n", r"a = \u0041", r"a = \101", ""] {
+        let sql = format!("CREATE PROCEDURE p() RETURNS STRING LANGUAGE JAVASCRIPT AS '{body}';");
+        let analysis = Analyzer::new().unwrap().analyze(&sql).unwrap();
+        let source = analysis.handlers[0].source.as_ref().unwrap();
+        assert_eq!(source.included_ranges(&sql), None, "{body:?}");
+    }
+}
+
+#[test]
+fn a_dollar_quoted_body_is_one_included_range() {
+    let sql = "CREATE PROCEDURE p() RETURNS STRING LANGUAGE JAVASCRIPT AS $$\nreturn 'a';\n$$;";
+    let analysis = Analyzer::new().unwrap().analyze(sql).unwrap();
+    let source = analysis.handlers[0].source.as_ref().unwrap();
+    let ranges = source.included_ranges(sql).unwrap();
+    assert_eq!(ranges.len(), 1, "{ranges:?}");
+    assert_eq!(
+        &sql[ranges[0].start_byte..ranges[0].end_byte],
+        source.text()
+    );
+    // Ranges are meaningless against any other text.
+    assert_eq!(source.included_ranges("short"), None);
 }

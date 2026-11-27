@@ -23,6 +23,7 @@ Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree 
 - **Breaking:** a handler that cannot be analyzed reports `HandlerStatus::AnalysisFailed` and no longer fails the whole `analyze` call.
 - The `summary` feature adds `summary::summary`, which lists a SQL text's statement kinds, structure-query definitions with their decision counts, routines with their languages, decision points, object names (without column qualifiers or common table expression uses), and syntax errors; the `serde` feature makes the result serializable.
 - `Analyzer::with_limits` sets an optional maximum body size and parse timeout.
+- `HandlerSource::included_ranges` returns the SQL ranges that spell a decoded body, so an embedded parser can read the SQL text directly.
 - A decoded body's offset map stores only its escapes and doubled quotes, in place of a range for every byte.
 - **Breaking:** requires tree-sitter-snowflake 0.4. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.
 - `ALTER TABLE ... RENAME TO`, `COMMIT WORK`, object constants, `NATURAL` joins, joins without a condition, routine `DROP` signatures, and many multi-word `DROP`, `GRANT`, and `REVOKE` kinds no longer appear in `Analysis::sql_errors`.

@@ -1,6 +1,6 @@
 # Contributing to tree-sitter-snowflake
 
-A tree-sitter grammar for Snowflake SQL, with Rust and Node bindings and the `snowflake-handlers` companion crate.
+A tree-sitter grammar for Snowflake SQL, with Rust, Node, Python, and Go bindings and the `snowflake-handlers` companion crate.
 
 ## Before you start
 
@@ -41,7 +41,7 @@ npm run lint
 npm run format:check
 ```
 
-These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the manifests, and Rust and JavaScript style. `npm run lint` also type-checks `tools/` and `bindings/node/`. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. When a path a crate builds from changes, it also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. CI compiles `src/scanner.c` with `-Wall -Wextra -Wpedantic -Werror` and fuzzes the parser when the scanner changes. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting. The Python binding tests run with `pip install . pytest "tree-sitter~=0.25"` in a virtual environment, then `pytest bindings/python/tests`.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the manifests, and Rust and JavaScript style. `npm run lint` also type-checks `tools/` and `bindings/node/`. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. When a path a crate builds from changes, it also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. CI compiles `src/scanner.c` with `-Wall -Wextra -Wpedantic -Werror` and fuzzes the parser when the scanner changes. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting. The Go binding test runs with `go test ./bindings/go` and needs cgo. The Python binding tests run with `pip install . pytest "tree-sitter~=0.25"` in a virtual environment, then `pytest bindings/python/tests`.
 
 ## Pull requests
 

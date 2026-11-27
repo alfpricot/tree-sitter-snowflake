@@ -1,6 +1,6 @@
 # tree-sitter-snowflake architecture
 
-tree-sitter-snowflake is a tree-sitter grammar for Snowflake SQL with Rust and Node bindings, plus a companion crate that extracts the JavaScript, Python, Java, and Scala handlers embedded in procedure and function definitions. The grammar is written in JavaScript, and the generated C parser is committed so consumers never need the tree-sitter CLI.
+tree-sitter-snowflake is a tree-sitter grammar for Snowflake SQL with Rust, Node, Python, and Go bindings, plus a companion crate that extracts the JavaScript, Python, Java, and Scala handlers embedded in procedure and function definitions. The grammar is written in JavaScript, and the generated C parser is committed so consumers never need the tree-sitter CLI.
 
 The main design choice is that the grammar parses Snowflake only and reports what it cannot parse as `ERROR` or `MISSING` nodes. It is not a validator, so a clean tree makes no claim that the SQL runs.
 
@@ -15,10 +15,10 @@ The grammar source: shared rules, expressions, column lists, scripting, types, k
 The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the hand-written `scanner.c`, which lexes `$$`-delimited bodies. The scanner must be compiled alongside the parser; vendoring one without the other produces a link error or a parser that cannot lex a dollar-quoted body.
 
 ### [queries/](queries)
-`highlights.scm`, `injections.scm` (dollar-quoted bodies, and single-quoted JavaScript and Python bodies that need no decoding), `locals.scm`, `structure.scm`, `tags.scm`, `folds.scm`, and `indents.scm` (nvim-treesitter capture names). `tree-sitter.json` has no key for the last two, so consumers load them directly or through the bindings.
+`highlights.scm`, `injections.scm` (dollar-quoted bodies, and single-quoted bodies that need no decoding), `locals.scm`, `structure.scm`, `tags.scm`, `folds.scm`, and `indents.scm` (nvim-treesitter capture names). `tree-sitter.json` has no key for the last two, so consumers load them directly or through the bindings.
 
 ### [bindings/](bindings)
-`bindings/rust` exposes `LANGUAGE`, the node-type JSON (`NODE_TYPES`), and one constant per query file (`HIGHLIGHTS_QUERY`, `INJECTIONS_QUERY`, `LOCALS_QUERY`, `STRUCTURE_QUERY`, `TAGS_QUERY`, `FOLDS_QUERY`, `INDENTS_QUERY`). `bindings/node` loads the native addon and adds `nodeTypeInfo` and the same query strings. `bindings/python`, built by `pyproject.toml` and `setup.py`, exposes `language()` and the query strings.
+`bindings/rust` exposes `LANGUAGE`, the node-type JSON (`NODE_TYPES`), and one constant per query file (`HIGHLIGHTS_QUERY`, `INJECTIONS_QUERY`, `LOCALS_QUERY`, `STRUCTURE_QUERY`, `TAGS_QUERY`, `FOLDS_QUERY`, `INDENTS_QUERY`). `bindings/node` loads the native addon and adds `nodeTypeInfo` and the same query strings. `bindings/python`, built by `pyproject.toml` and `setup.py`, exposes `language()` and the query strings. `bindings/go`, in the module `go.mod` declares at the repository root, exposes `Language()`.
 
 ### [snowflake-handlers/](snowflake-handlers)
 A separate crate that decodes handler bodies, maps offsets back to the SQL file, parses JavaScript and Python (Java and Scala behind Cargo features), and runs advisory restriction checks. Its `summary` feature lists a SQL text's statements, definitions, object names, and syntax errors.
@@ -44,7 +44,7 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 - the scanner compiled with warnings as errors, and a fuzz run when the scanner or `verify.yml` changes
 - Rust format, lint, and tests
 - each crate's minimum Rust version and a run against tree-sitter 0.26, the companion's declared floor, when a path a crate builds from changes
-- package contents, the Node binding, and the Python binding when a path it builds from changes
+- package contents, the Go binding, the Node binding, and the Python binding when a path it builds from changes
 - Python wheels on Linux and Windows when the package build changes, and on pull requests to `main`
 
 A pull request that changes only docs, `NOTICE`, `CODEOWNERS`, or the Dependabot config skips the build jobs, and a draft fails the final check. That aggregate job, named `Verify`, is the required check on `dev` and `main`.
@@ -76,7 +76,7 @@ crates.io, npm, and PyPI are published through trusted publishing (OIDC), so the
 | `grammar.js`, `grammar/` | Grammar source |
 | `src/` | Generated parser and external scanner |
 | `queries/` | Highlight, injection, locals, structure, tags, folds, and indents queries |
-| `bindings/` | Rust and Node bindings |
+| `bindings/` | Rust, Node, Python, and Go bindings |
 | `snowflake-handlers/` | Embedded handler extraction crate |
 | `test/`, `tools/` | Corpus, fixtures, and verification scripts |
 | `docs/` | Reference documents |
