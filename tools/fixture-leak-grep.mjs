@@ -89,7 +89,6 @@ const broadNeedleHashes = new Set([
   '9e2b3a9e886166fb87fb8913f6a4739cade05eca9c50ebd658d40e68f06122f1',
   '2f9329cbeb8670551a9dd462783493c6621ee19464b6f850a113f19883db3b7c',
   '74dbff3e39677ccc3bc90428f235180547c6d65fc38689bf02e91e4536dc8b20',
-  '158b7c8d9f609ab1692e472b55201b8e1c2e4fdec081fcc3424f5a7ca158e39c',
 ]);
 
 // Generated files (regenerated wholesale from grammar/ source on every
