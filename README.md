@@ -9,13 +9,16 @@ A [tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for Snowflak
 ```sh
 cargo add tree-sitter-snowflake tree-sitter
 npm install tree-sitter-snowflake
+pip install "tree-sitter-snowflake[core]"
 ```
+
+The Python package is published to PyPI starting with the release after 0.3.1.
 
 The optional [`snowflake-handlers`](snowflake-handlers/README.md) companion, for extracting and parsing embedded procedure and function bodies, is on crates.io as well: `cargo add snowflake-handlers`.
 
 ### Requirements
 
-The Rust crate compiles the committed C parser through `cc`, so it needs a C compiler and Rust 1.85 or later; the `snowflake-handlers` crate needs Rust 1.90 or later. The Node package declares `tree-sitter` ^0.25 as an optional peer dependency. It ships prebuilt addons for Linux and Windows on x64; where none matches, the install builds from source and needs a C/C++ toolchain.
+The Rust crate compiles the committed C parser through `cc`, so it needs a C compiler and Rust 1.85 or later; the `snowflake-handlers` crate needs Rust 1.90 or later. The Python package needs Python 3.10 or later and ships wheels for 64-bit Linux and Windows. The Node package declares `tree-sitter` ^0.25 as an optional peer dependency. It ships prebuilt addons for Linux and Windows on x64; where none matches, the install builds from source and needs a C/C++ toolchain.
 
 ## Usage
 
@@ -30,6 +33,14 @@ import Snowflake from 'tree-sitter-snowflake';
 
 const program = Snowflake.nodeTypeInfo?.find((node) => node.type === 'program');
 console.log(program?.children?.types);
+```
+
+```python
+import tree_sitter_snowflake
+from tree_sitter import Language, Parser
+
+parser = Parser(Language(tree_sitter_snowflake.language()))
+tree = parser.parse(b"SELECT 1;")
 ```
 
 `nodeTypeInfo` holds the entries from `src/node-types.json`, or is `undefined` where that file cannot be read; an entry's optional `children` property is an object with `multiple`, `required`, and `types` properties, not an array, and leaf entries can omit both `fields` and `children`.

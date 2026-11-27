@@ -14,6 +14,8 @@ import {
   runCommand,
 } from './release-policy.mjs';
 
+const writePython = (root, version) =>
+  writeFileSync(join(root, 'pyproject.toml'), `[project]\nversion = "${version}"\n`);
 const writeRelease = (root, cargo, npm = cargo, treeSitter = cargo) => {
   writeFileSync(join(root, 'Cargo.toml'), `[package]\nname = "example"\nversion = "${cargo}"\n`);
   writeFileSync(join(root, 'package.json'), `{"name":"example","version":"${npm}"}`);
@@ -50,6 +52,11 @@ test('package.json and tree-sitter.json must carry the Cargo version', () => {
     assert.throws(() => checkVersions(url), /package\.json/);
     writeRelease(root, '0.1.2', '0.1.2', '0.1.1');
     assert.throws(() => checkVersions(url), /tree-sitter\.json/);
+    writeRelease(root, '0.1.2');
+    writePython(root, '0.1.2');
+    assert.equal(checkVersions(url), '0.1.2');
+    writePython(root, '0.1.1');
+    assert.throws(() => checkVersions(url), /pyproject\.toml/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

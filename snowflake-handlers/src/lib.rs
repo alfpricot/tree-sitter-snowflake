@@ -8,6 +8,8 @@
 mod checks;
 mod extract;
 mod source;
+#[cfg(feature = "summary")]
+pub mod summary;
 
 pub use checks::{Finding, RULES, Rule, Severity};
 pub use source::{EncodingError, HandlerSource, source_point};
