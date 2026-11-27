@@ -114,7 +114,8 @@ pub enum HandlerStatus {
     Parsed,
     /// The body decoded, but this build has no parser for its language.
     UnavailableLanguage,
-    /// The routine has SQL syntax errors, or no inline body that can be read.
+    /// The routine has SQL syntax errors, so its body was not decoded. A routine
+    /// with no inline body, such as a staged handler, is skipped instead.
     InvalidSql,
     /// A single-quoted body holds an escape or apostrophe that cannot be decoded.
     InvalidEncoding(EncodingError),
