@@ -18,12 +18,12 @@
 //
 // Anything else failing is a regression: a new keyword is eating an
 // identifier position. Run this whenever a keyword is added.
-import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
-import { resolveTreeSitterCli, stripAnsi } from './fixture-result.mjs';
+import { resolveTreeSitterCli } from './fixture-result.mjs';
+import { batchParse } from './lib/parse-batch.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const cli = resolveTreeSitterCli(repo);
@@ -77,59 +77,24 @@ cases.forEach((c, i) => {
   writeFileSync(c.file, c.sql);
 });
 
-// Batched through `parse -x` (one process for many files, XML output)
-// rather than one `parse` process per case — the same pattern
-// tools/parse-rate/parse-rate.mjs uses, and for the same reason: 612
-// serial process spawns dominate this probe's run time.
-const BATCH = 40;
 const failures = [];
-for (let i = 0; i < cases.length; i += BATCH) {
-  const batch = cases.slice(i, i + BATCH);
-  const proc = spawnSync(cli, ['parse', '-x', ...batch.map((c) => c.file)], {
-    cwd: repo,
-    encoding: 'utf8',
-    maxBuffer: 1 << 28,
-    env: { ...process.env, CC: 'gcc', CXX: 'g++' },
-  });
-  if (proc.error) {
-    throw new Error(`keyword-probe: could not run ${cli}: ${proc.error.message}`);
-  }
-  const xml = stripAnsi(proc.stdout);
-  const chunks = xml.split('<source name="');
-  const matched = new Set();
-  for (let ci = 1; ci < chunks.length; ci++) {
-    const nl = chunks[ci].indexOf('\n');
-    const name = chunks[ci].slice(0, nl).replace(/"?>?$/, '');
-    const body = chunks[ci].slice(nl);
-    const c =
-      batch.find((f) => f.file === name) ||
-      batch.find((f) => name.replace(/\\/g, '/').endsWith(f.file.replace(/\\/g, '/')));
-    if (!c) {
-      throw new Error(
-        `keyword-probe: could not match XML <source name="${name}"> to a case in this batch`,
-      );
-    }
-    matched.add(c);
-    const err = /ERROR|MISSING/.test(body);
-    const ids = (body.match(/<identifier[ >]/g) || []).length;
-    if (err || ids !== c.wantIdentifiers) {
-      failures.push({
-        ...c,
-        err,
-        ids,
-        expected: reserved.has(c.word.toUpperCase()) || clauseKeywords.has(c.word),
-      });
-    }
-  }
-  // A CLI or grammar-load failure can exit non-zero with empty stdout
-  // (0 chunks) while still not throwing above — a batch that silently
-  // matched fewer cases than it was given is a false pass, not a clean
-  // run, even though a parse ERROR/MISSING batch is expected to exit
-  // non-zero and must not be flagged here.
-  if (matched.size !== batch.length) {
-    throw new Error(
-      `keyword-probe: only matched ${matched.size}/${batch.length} cases in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`,
-    );
+const parsed = batchParse({
+  tool: 'keyword-probe',
+  cli,
+  cwd: repo,
+  items: cases,
+  path: (c) => c.file,
+});
+for (const { item: c, body } of parsed) {
+  const err = /ERROR|MISSING/.test(body);
+  const ids = (body.match(/<identifier[ >]/g) || []).length;
+  if (err || ids !== c.wantIdentifiers) {
+    failures.push({
+      ...c,
+      err,
+      ids,
+      expected: reserved.has(c.word.toUpperCase()) || clauseKeywords.has(c.word),
+    });
   }
 }
 

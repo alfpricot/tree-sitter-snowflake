@@ -9,7 +9,7 @@ A tree-sitter grammar for Snowflake SQL, with Rust and Node bindings and the `sn
 
 ## Local setup
 
-You need Node 24, Rust 1.90 or later, and a C compiler. `tools/fixture-check.mjs` and `tools/keyword-probe.mjs` call `gcc` on every platform.
+You need Node 24, Rust 1.90 or later, and a C compiler. On Windows the parse tools under `tools/` build the parser with `gcc`; elsewhere they use the default compiler.
 
 ```sh
 npm ci --ignore-scripts
