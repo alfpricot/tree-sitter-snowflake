@@ -7,6 +7,9 @@ import {
   canSkipEditedBuild,
   changedPaths,
   docsOnly,
+  handlersChangelogDated,
+  needsRustFloor,
+  needsScannerFuzz,
   needsWindowsBinding,
   verifyResults,
   versionsAgree,
@@ -34,8 +37,18 @@ test('renames include the removed source path when classifying prose', () => {
   assert(!docsOnly(files));
 });
 
-test('only explicit prose paths skip builds', () => {
+test('only explicit prose and metadata paths skip builds', () => {
   assert(docsOnly(['README.md', 'docs/CONSUMER_INTEGRATION.md']));
+  assert(
+    docsOnly([
+      'LICENSE',
+      'NOTICE',
+      '.editorconfig',
+      '.gitattributes',
+      '.github/CODEOWNERS',
+      '.github/dependabot.yml',
+    ]),
+  );
   for (const files of [
     [],
     ['grammar.js'],
@@ -43,21 +56,57 @@ test('only explicit prose paths skip builds', () => {
     ['snowflake-handlers/README.md'],
     ['test/fixtures/README.md'],
     ['.github/workflows/verify.yml'],
+    ['bindings/node/LICENSE'],
+    ['LICENSE', 'binding.gyp'],
   ])
     assert(!docsOnly(files));
 });
 
-function results(build = 'true', event = 'pull_request') {
+test('the Rust floor build runs only for paths a crate builds from', () => {
+  for (const path of [
+    'grammar.js',
+    'grammar/types.js',
+    'src/parser.c',
+    'queries/tags.scm',
+    'Cargo.toml',
+    'bindings/rust/lib.rs',
+    'snowflake-handlers/src/lib.rs',
+    '.github/workflows/verify.yml',
+  ])
+    assert(needsRustFloor([path]), path);
+  assert(
+    !needsRustFloor(['tools/ci-policy.mjs', 'bindings/node/index.js', 'package.json', 'README.md']),
+  );
+});
+
+test('the scanner is fuzzed when it or the fuzz step changes', () => {
+  assert(needsScannerFuzz(['src/scanner.c']));
+  assert(needsScannerFuzz(['.github/workflows/verify.yml']));
+  assert(!needsScannerFuzz(['src/parser.c', 'grammar.js']));
+});
+
+test('a promotion needs a dated section for the handlers version', () => {
+  const cargo = '[package]\nversion = "0.4.0"\n';
+  handlersChangelogDated(cargo, '## [Unreleased]\n\n## [0.4.0](url) - 2026-01-02\n');
+  assert.throws(
+    () => handlersChangelogDated(cargo, '## [0.4.0](url) - Unreleased\n'),
+    /Unreleased/,
+  );
+  assert.throws(() => handlersChangelogDated(cargo, '## [Unreleased]\n'), /no section/);
+});
+
+function results(build = 'true', event = 'pull_request', rust = build) {
   return Object.fromEntries(
     ['changes', 'verify', 'consumer-pin', 'node-binding', 'pr-title'].map((job) => [
       job,
       {
         result:
           (job === 'pr-title' && event !== 'pull_request') ||
-          (['verify', 'consumer-pin', 'node-binding'].includes(job) && build === 'false')
+          (['verify', 'consumer-pin', 'node-binding'].includes(job) && build === 'false') ||
+          (job === 'consumer-pin' && rust === 'false')
             ? 'skipped'
             : 'success',
-        ...(job === 'changes' ? { outputs: { build } } : {}),
+        ...(job === 'changes' ? { outputs: { build, rust } } : {}),
       },
     ]),
   );
@@ -65,8 +114,12 @@ function results(build = 'true', event = 'pull_request') {
 
 test('aggregate accepts only deliberate skips', () => {
   for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
-    for (const build of ['true', 'false']) {
-      const valid = results(build, event);
+    for (const [build, rust] of [
+      ['true', 'true'],
+      ['true', 'false'],
+      ['false', 'false'],
+    ]) {
+      const valid = results(build, event, rust);
       verifyResults(valid, event, false);
       assert.throws(() => verifyResults(valid, event, true));
       for (const job of Object.keys(valid)) {
