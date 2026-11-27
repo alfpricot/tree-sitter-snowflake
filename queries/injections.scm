@@ -6,16 +6,19 @@
 ; grammars as `javascript`). A host that has not linked a grammar simply
 ; does not inject — the tree shape never depends on what the host has.
 ;
-; Only the dollar-quoted body is injectable, and the capture is its
+; A dollar-quoted body is verbatim source, and the capture is its
 ; `body_content` child rather than the whole `dollar_quoted_body`, so the
 ; injected parse starts after the opening `$$` and stops before the
-; closing one. Tree-sitter parses a range of the original source, and
-; the single-quoted body's `''` doubling means its byte range is not the
-; embedded language's source. Those bodies (the common single-quoted
-; form for foreign-language bodies) are reconstructed by the consumer:
-; collapse the `doubled_quote` and `escape` nodes, then parse the
-; result with a position-mapping table.
-; See docs/CONSUMER_INTEGRATION.md.
+; closing one.
+;
+; A single-quoted body (the common form) is not the embedded language's
+; source, so its injection is approximate and only for highlighting
+; JavaScript and Python. The `body_content` and `escape` nodes are combined
+; into one injected document: escapes appear undecoded, each `''` is left
+; out, and with `injection.combined` every single-quoted body of one
+; language in a file shares that document. To analyze such a body, decode it
+; first and keep a position-mapping table, as the snowflake-handlers crate
+; does. See docs/CONSUMER_INTEGRATION.md.
 ;
 ; The wildcard parent matches every routine node that carries a foreign
 ; `language` and an inline body: `create_procedure` and `create_function`
@@ -41,3 +44,15 @@
    (foreign_language (keyword_scala))
    body: (function_body (dollar_quoted_body (body_content) @injection.content)))
  (#set! injection.language "scala"))
+
+((_
+   (foreign_language (keyword_javascript))
+   body: (function_body (string_body [(body_content) (escape)] @injection.content)))
+ (#set! injection.language "javascript")
+ (#set! injection.combined))
+
+((_
+   (foreign_language (keyword_python))
+   body: (function_body (string_body [(body_content) (escape)] @injection.content)))
+ (#set! injection.language "python")
+ (#set! injection.combined))

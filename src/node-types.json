@@ -10834,6 +10834,92 @@
     "type": "join",
     "named": true,
     "fields": {
+      "match_condition": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "array_constructor",
+            "named": true
+          },
+          {
+            "type": "between_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "bind_variable",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "cast",
+            "named": true
+          },
+          {
+            "type": "cast_expression",
+            "named": true
+          },
+          {
+            "type": "exists",
+            "named": true
+          },
+          {
+            "type": "extract_expression",
+            "named": true
+          },
+          {
+            "type": "field",
+            "named": true
+          },
+          {
+            "type": "identifier_function",
+            "named": true
+          },
+          {
+            "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "lambda_expression",
+            "named": true
+          },
+          {
+            "type": "literal",
+            "named": true
+          },
+          {
+            "type": "object_constructor",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "semi_structured",
+            "named": true
+          },
+          {
+            "type": "subquery",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "window_function",
+            "named": true
+          }
+        ]
+      },
       "predicate": {
         "multiple": false,
         "required": false,
@@ -10934,6 +11020,10 @@
           "named": true
         },
         {
+          "type": "keyword_asof",
+          "named": true
+        },
+        {
           "type": "keyword_full",
           "named": true
         },
@@ -10947,6 +11037,10 @@
         },
         {
           "type": "keyword_left",
+          "named": true
+        },
+        {
+          "type": "keyword_match_condition",
           "named": true
         },
         {
@@ -14196,6 +14290,10 @@
           "named": true
         },
         {
+          "type": "sample_clause",
+          "named": true
+        },
+        {
           "type": "semi_structured",
           "named": true
         },
@@ -14725,6 +14823,232 @@
         },
         {
           "type": "keyword_work",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "sample_clause",
+    "named": true,
+    "fields": {
+      "method": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "keyword_bernoulli",
+            "named": true
+          },
+          {
+            "type": "keyword_block",
+            "named": true
+          },
+          {
+            "type": "keyword_row",
+            "named": true
+          },
+          {
+            "type": "keyword_system",
+            "named": true
+          }
+        ]
+      },
+      "seed": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "array_constructor",
+            "named": true
+          },
+          {
+            "type": "between_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "bind_variable",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "cast",
+            "named": true
+          },
+          {
+            "type": "cast_expression",
+            "named": true
+          },
+          {
+            "type": "exists",
+            "named": true
+          },
+          {
+            "type": "extract_expression",
+            "named": true
+          },
+          {
+            "type": "field",
+            "named": true
+          },
+          {
+            "type": "identifier_function",
+            "named": true
+          },
+          {
+            "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "lambda_expression",
+            "named": true
+          },
+          {
+            "type": "literal",
+            "named": true
+          },
+          {
+            "type": "object_constructor",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "semi_structured",
+            "named": true
+          },
+          {
+            "type": "subquery",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "window_function",
+            "named": true
+          }
+        ]
+      },
+      "size": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "array_constructor",
+            "named": true
+          },
+          {
+            "type": "between_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "bind_variable",
+            "named": true
+          },
+          {
+            "type": "case",
+            "named": true
+          },
+          {
+            "type": "cast",
+            "named": true
+          },
+          {
+            "type": "cast_expression",
+            "named": true
+          },
+          {
+            "type": "exists",
+            "named": true
+          },
+          {
+            "type": "extract_expression",
+            "named": true
+          },
+          {
+            "type": "field",
+            "named": true
+          },
+          {
+            "type": "identifier_function",
+            "named": true
+          },
+          {
+            "type": "invocation",
+            "named": true
+          },
+          {
+            "type": "lambda_expression",
+            "named": true
+          },
+          {
+            "type": "literal",
+            "named": true
+          },
+          {
+            "type": "object_constructor",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "semi_structured",
+            "named": true
+          },
+          {
+            "type": "subquery",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "window_function",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_repeatable",
+          "named": true
+        },
+        {
+          "type": "keyword_rows",
+          "named": true
+        },
+        {
+          "type": "keyword_sample",
+          "named": true
+        },
+        {
+          "type": "keyword_seed",
+          "named": true
+        },
+        {
+          "type": "keyword_tablesample",
           "named": true
         }
       ]
@@ -18439,7 +18763,19 @@
           "named": true
         },
         {
+          "type": "keyword_ignore",
+          "named": true
+        },
+        {
+          "type": "keyword_nulls",
+          "named": true
+        },
+        {
           "type": "keyword_over",
+          "named": true
+        },
+        {
+          "type": "keyword_respect",
           "named": true
         },
         {
@@ -18677,6 +19013,10 @@
     "named": true
   },
   {
+    "type": "keyword_asof",
+    "named": true
+  },
+  {
     "type": "keyword_at",
     "named": true
   },
@@ -18693,7 +19033,15 @@
     "named": true
   },
   {
+    "type": "keyword_bernoulli",
+    "named": true
+  },
+  {
     "type": "keyword_between",
+    "named": true
+  },
+  {
+    "type": "keyword_block",
     "named": true
   },
   {
@@ -19037,6 +19385,10 @@
     "named": true
   },
   {
+    "type": "keyword_ignore",
+    "named": true
+  },
+  {
     "type": "keyword_ilike",
     "named": true
   },
@@ -19150,6 +19502,10 @@
   },
   {
     "type": "keyword_match",
+    "named": true
+  },
+  {
+    "type": "keyword_match_condition",
     "named": true
   },
   {
@@ -19425,7 +19781,15 @@
     "named": true
   },
   {
+    "type": "keyword_repeatable",
+    "named": true
+  },
+  {
     "type": "keyword_replace",
+    "named": true
+  },
+  {
+    "type": "keyword_respect",
     "named": true
   },
   {
@@ -19497,6 +19861,10 @@
     "named": true
   },
   {
+    "type": "keyword_sample",
+    "named": true
+  },
+  {
     "type": "keyword_scala",
     "named": true
   },
@@ -19526,6 +19894,10 @@
   },
   {
     "type": "keyword_security",
+    "named": true
+  },
+  {
+    "type": "keyword_seed",
     "named": true
   },
   {
@@ -19617,11 +19989,19 @@
     "named": true
   },
   {
+    "type": "keyword_system",
+    "named": true
+  },
+  {
     "type": "keyword_table",
     "named": true
   },
   {
     "type": "keyword_tables",
+    "named": true
+  },
+  {
+    "type": "keyword_tablesample",
     "named": true
   },
   {

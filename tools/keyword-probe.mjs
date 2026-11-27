@@ -11,7 +11,7 @@
 //      either).
 //   2. Clause and function keywords that REQUIRE more tokens after them
 //      (LIMIT n, PIVOT (...), EXCEPT <query>, MATCH_RECOGNIZE (...),
-//      WINDOW w AS (...), TOP n, EXTRACT(...), IDENTIFIER(...),
+//      WINDOW w AS (...), ASOF JOIN, TOP n, EXTRACT(...), IDENTIFIER(...),
 //      INTERVAL 'n' DAY, AT/BEFORE/CHANGES (...) after a table).
 //      Snowflake itself rejects these words bare in the slot, so the grammar erroring is faithful behavior; the corpus
 //      has been grepped and none is used as a bare column or alias.
@@ -44,6 +44,7 @@ const reserved = new Set(
 
 // Clause/function keywords that need more tokens after them (class 2).
 const clauseKeywords = new Set([
+  'asof',
   'except',
   'limit',
   'match_recognize',
