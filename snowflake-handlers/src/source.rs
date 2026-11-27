@@ -23,9 +23,21 @@ impl std::error::Error for EncodingError {}
 #[derive(Debug, Clone)]
 pub struct HandlerSource {
     text: String,
-    // Each output byte maps to the entire input character/escape that produced it.
-    origins: Vec<Range<usize>>,
+    // The SQL byte offset of the first body byte.
+    start: usize,
+    // Only the decoded runs that differ from their source, in output order.
+    // Every other byte sits at a fixed distance from the escape before it, or
+    // from `start`, so a dollar-quoted body needs no entries at all.
+    escapes: Vec<Escape>,
     end: usize,
+}
+
+/// One escape or doubled apostrophe: the output bytes it decoded to and the
+/// SQL bytes it was written as.
+#[derive(Debug, Clone)]
+struct Escape {
+    output: Range<usize>,
+    source: Range<usize>,
 }
 
 impl HandlerSource {
@@ -42,7 +54,7 @@ impl HandlerSource {
         if offset == self.text.len() {
             Some(self.end)
         } else {
-            self.origins.get(offset).map(|range| range.start)
+            self.origin(offset).map(|range| range.start)
         }
     }
 
@@ -57,15 +69,31 @@ impl HandlerSource {
         let end = if range.is_empty() {
             start
         } else {
-            self.origins.get(range.end - 1)?.end
+            self.origin(range.end - 1)?.end
         };
         Some(start..end)
+    }
+
+    // The SQL bytes behind one output byte: the whole escape that produced it,
+    // or the single byte it was copied from.
+    fn origin(&self, offset: usize) -> Option<Range<usize>> {
+        if offset >= self.text.len() {
+            return None;
+        }
+        let after = self.escapes.partition_point(|e| e.output.start <= offset);
+        let start = match self.escapes[..after].last() {
+            Some(escape) if offset < escape.output.end => return Some(escape.source.clone()),
+            Some(escape) => escape.source.end + (offset - escape.output.end),
+            None => self.start + offset,
+        };
+        Some(start..start + 1)
     }
 
     pub(crate) fn verbatim(text: &str, start: usize) -> Self {
         Self {
             text: text.to_owned(),
-            origins: (start..start + text.len()).map(|i| i..i + 1).collect(),
+            start,
+            escapes: Vec::new(),
             end: start + text.len(),
         }
     }
@@ -75,7 +103,8 @@ impl HandlerSource {
     pub(crate) fn quoted(text: &str, start: usize) -> Result<Self, EncodingError> {
         let mut result = Self {
             text: String::with_capacity(text.len()),
-            origins: Vec::with_capacity(text.len()),
+            start,
+            escapes: Vec::new(),
             end: start + text.len(),
         };
         let mut i = 0;
@@ -159,18 +188,18 @@ impl HandlerSource {
                 result.push(decoded, start + begin..start + i);
             } else {
                 result.text.push(c);
-                result
-                    .origins
-                    .extend((start + begin..start + i).map(|j| j..j + 1));
             }
         }
         Ok(result)
     }
 
-    fn push(&mut self, c: char, origin: Range<usize>) {
+    fn push(&mut self, c: char, source: Range<usize>) {
+        let begin = self.text.len();
         self.text.push(c);
-        self.origins
-            .extend(std::iter::repeat_n(origin, c.len_utf8()));
+        self.escapes.push(Escape {
+            output: begin..self.text.len(),
+            source,
+        });
     }
 }
 
@@ -269,6 +298,15 @@ mod tests {
         assert_eq!(source.text(), "aé\\n");
         assert_eq!(source.source_range(1..3), Some(START + 1..START + 3));
         assert_eq!(source.source_offset(5), Some(START + 5));
+    }
+
+    #[test]
+    fn only_escapes_take_an_entry_in_the_offset_map() {
+        assert!(
+            HandlerSource::verbatim("a''b", START).escapes.is_empty(),
+            "a dollar-quoted body maps by offset alone"
+        );
+        assert_eq!(decode(r"abc''def\ng").unwrap().escapes.len(), 2);
     }
 
     /// The offset map's invariant: the SQL slice behind any run of whole

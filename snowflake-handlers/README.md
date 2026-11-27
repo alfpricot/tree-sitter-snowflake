@@ -25,15 +25,33 @@ This crate requires Rust 1.90 and supports tree-sitter 0.26 and 0.27. Consumers 
 
 ## Source and measurement contract
 
-`Analyzer` reuses its compiled parsers and queries across files. `analyze(&str)` returns the SQL tree, SQL syntax-error ranges, extracted foreign-language bodies, and advisory findings. Each body includes its name, routine kind, execution rights, SQL ranges, decoded source, parse status, optional embedded tree, and mapped syntax errors. SQL-language bodies remain in the SQL tree and are not returned a second time. A staged handler, with no inline body, is skipped. No handler code is executed.
+`Analyzer` reuses its compiled parsers and queries across files. `analyze(&str)` returns the SQL tree, SQL syntax-error ranges, extracted foreign-language bodies, and advisory findings. Each body includes its name, routine kind, execution rights, SQL ranges, decoded source, parse status, optional embedded tree, and mapped syntax errors. SQL-language bodies remain in the SQL tree and are not returned a second time. A routine with no inline body, such as one with a staged handler, is returned with status `Staged`, an empty `body_range` at the end of its statement, and no source or tree. A routine with syntax errors and no readable body is skipped. `handler` and `runtime_version` hold the `HANDLER` and `RUNTIME_VERSION` options without their quotes. No handler code is executed.
 
-`Error` says why construction or analysis failed: a grammar that would not load, a query that would not compile, a canceled parse, or an overflowing restriction query. It, `HandlerStatus`, `Language`, `RoutineKind`, and `ExecutionRights` can gain variants, so a `match` on any of them needs a wildcard arm.
+`Error` says why construction or analysis failed: a grammar that would not load, a query that would not compile, or a canceled parse of the SQL text. A failure confined to one handler is its status instead, `AnalysisFailed`, and the other handlers are still analyzed. `Error`, `AnalysisFailure`, `HandlerStatus`, `Language`, `RoutineKind`, and `ExecutionRights` can gain variants, so a `match` on any of them needs a wildcard arm.
 
 `HandlerSource::text()` excludes delimiters. Dollar bodies preserve every byte. Single-quoted bodies decode doubled quotes and Snowflake backslash escapes, including `\0`, three-digit ASCII octal, two-digit ASCII hexadecimal, and four-digit Unicode escapes. Numeric escapes can cross the SQL grammar's child-node boundaries, so the decoder consumes the complete content of the validated body node. Malformed numeric escapes, non-ASCII byte escapes, and non-scalar Unicode values produce `InvalidEncoding` rather than guessed text, with the message and the SQL byte range of the offending text. Unknown nonnumeric escapes discard the backslash. Details are based on [Snowflake's string specification](https://docs.snowflake.com/en/sql-reference/data-types-text).
 
 Embedded tree offsets refer to decoded UTF-8 text. Map them with `source_offset` or `source_range`; ranges are half-open and expand to include each original escape in full. EOF maps immediately before the closing SQL delimiter. Invalid offsets/ranges return `None`. `source_point` returns zero-based rows and UTF-8 byte columns, including CRLF and Unicode. Call it on the original SQL text. Input must already be decoded to UTF-8: these offsets do not refer to the original encoded bytes of a UTF-16 file.
 
-Only `Parsed` bodies have successfully parsed embedded syntax. `InvalidBody` retains the partial tree and mapped errors but skips restriction checking. `InvalidSql` and `InvalidEncoding` have no reconstructed source; `UnavailableLanguage` has source but no tree. Inspect `sql_errors` too: a malformed SQL header may prevent a routine from being recognized. An empty body in either form (`$$$$` or `''`) is a handler with empty source. None of these states means zero measured complexity. Consumers apply the appropriate language profile and attribute the result to the enclosing SQL file exactly once. Vocabulary consumers mask the decoded source with its language's own masking mode, then map findings back.
+Only `Parsed` bodies have successfully parsed embedded syntax. `InvalidBody` retains the partial tree and mapped errors but skips restriction checking. `Staged`, `InvalidSql`, and `InvalidEncoding` have no reconstructed source; `UnavailableLanguage` has source but no tree. Inspect `sql_errors` too: a malformed SQL header may prevent a routine from being recognized. An empty body in either form (`$$$$` or `''`) is a handler with empty source. None of these states means zero measured complexity. Consumers apply the appropriate language profile and attribute the result to the enclosing SQL file exactly once. Vocabulary consumers mask the decoded source with its language's own masking mode, then map findings back.
+
+## Limits
+
+`Analyzer::with_limits` bounds the work spent on untrusted or very large input. Both limits are off by default.
+
+```rust
+use snowflake_handlers::{Analyzer, Limits};
+use std::time::Duration;
+
+let limits = Limits::default()
+    .with_max_body_bytes(1024 * 1024)
+    .with_parse_timeout(Duration::from_secs(5));
+let analyzer = Analyzer::new()?.with_limits(limits);
+# let _ = analyzer;
+# Ok::<(), snowflake_handlers::Error>(())
+```
+
+`max_body_bytes` counts the SQL bytes between a body's delimiters; a longer body is not decoded and reports `AnalysisFailed(BodyTooLarge)`. It does not bound the SQL text itself, which is parsed before any body is measured. `parse_timeout` applies to each parse separately: a body, or SQL text inside it, that runs longer reports `AnalysisFailed(TimedOut)`, while a SQL text that runs longer fails the call with `Error::Canceled`. The parser checks the clock periodically, so a parse can run somewhat past the timeout. A restriction query that overflows the match limit reports `AnalysisFailed(MatchLimitExceeded)`. A failed handler has no findings, which does not mean it has none to find.
 
 ## Restriction catalog
 

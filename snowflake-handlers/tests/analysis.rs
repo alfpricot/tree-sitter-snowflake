@@ -1,8 +1,10 @@
 //! Integration tests for extraction, offset mapping, and the restriction checks.
 
 use snowflake_handlers::{
-    Analyzer, ExecutionRights, HandlerStatus, Language, Severity, source_point,
+    AnalysisFailure, Analyzer, Error, ExecutionRights, HandlerStatus, Language, Limits, Severity,
+    source_point,
 };
+use std::time::Duration;
 
 fn sql(language: &str, content: &str) -> String {
     format!("CREATE PROCEDURE p() RETURNS STRING LANGUAGE {language} AS $${content}$$;")
@@ -325,4 +327,101 @@ fn owner_rights_flag_temporary_routines() {
         let result = analyzer.analyze(&sql("PYTHON", &content)).unwrap();
         assert_eq!(ids(&result), ["owner-temp-object"], "{statement}");
     }
+}
+
+#[test]
+fn reports_the_entry_point_and_runtime_version() {
+    let input = "CREATE FUNCTION f() RETURNS STRING LANGUAGE PYTHON RUNTIME_VERSION = '3.11' handler = 'mod.it''s' AS $$x = 1$$;
+CREATE FUNCTION g() RETURNS STRING LANGUAGE PYTHON RUNTIME_VERSION = 3.12 AS 'x = 1';
+CREATE FUNCTION h() RETURNS STRING LANGUAGE JAVASCRIPT AS 'return 1;';";
+    let result = Analyzer::new().unwrap().analyze(input).unwrap();
+    assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
+    let metadata: Vec<_> = result
+        .handlers
+        .iter()
+        .map(|h| (h.handler.as_deref(), h.runtime_version.as_deref()))
+        .collect();
+    assert_eq!(
+        metadata,
+        [
+            (Some("mod.it's"), Some("3.11")),
+            (None, Some("3.12")),
+            (None, None),
+        ]
+    );
+}
+
+#[test]
+fn records_a_staged_handler() {
+    let input = "CREATE PROCEDURE p() RETURNS STRING LANGUAGE PYTHON RUNTIME_VERSION = '3.11' IMPORTS = ('@s/m.py') HANDLER = 'm.run' EXECUTE AS CALLER;";
+    let result = Analyzer::new().unwrap().analyze(input).unwrap();
+    assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
+    let staged = &result.handlers[0];
+    assert_eq!(staged.status, HandlerStatus::Staged);
+    assert_eq!(staged.handler.as_deref(), Some("m.run"));
+    assert_eq!(staged.rights, ExecutionRights::Caller);
+    assert_eq!(&input[staged.body_range.clone()], "");
+    assert_eq!(staged.body_range.start, staged.routine_range.end);
+    assert!(
+        staged.source.is_none() && staged.tree.is_none(),
+        "{staged:?}"
+    );
+}
+
+#[test]
+fn an_oversized_body_fails_alone() {
+    let input = format!(
+        "{}\n{}",
+        sql("JAVASCRIPT", "eval('a long body');"),
+        sql("JAVASCRIPT", "eval(1);")
+    );
+    let mut analyzer = Analyzer::new()
+        .unwrap()
+        .with_limits(Limits::default().with_max_body_bytes(8));
+    let result = analyzer.analyze(&input).unwrap();
+    assert_eq!(
+        result.handlers[0].status,
+        HandlerStatus::AnalysisFailed(AnalysisFailure::BodyTooLarge)
+    );
+    assert!(
+        result.handlers[0].source.is_none(),
+        "{:?}",
+        result.handlers[0]
+    );
+    assert_eq!(result.handlers[1].status, HandlerStatus::Parsed);
+    assert_eq!(ids(&result), ["js-eval"]);
+}
+
+#[test]
+fn a_timed_out_body_fails_alone_and_leaves_the_parser_usable() {
+    // The parser consults the clock only every so many steps, so with no time at
+    // all a short parse still completes and a long one is canceled.
+    let long = "let a = [1, 2, 3];\n".repeat(2_000);
+    let input = format!(
+        "{}\n{}",
+        sql("JAVASCRIPT", &long),
+        sql("JAVASCRIPT", "eval(1);")
+    );
+    let mut analyzer = Analyzer::new()
+        .unwrap()
+        .with_limits(Limits::default().with_parse_timeout(Duration::ZERO));
+    for _ in 0..2 {
+        let result = analyzer.analyze(&input).unwrap();
+        assert_eq!(
+            result.handlers[0].status,
+            HandlerStatus::AnalysisFailed(AnalysisFailure::TimedOut)
+        );
+        assert!(
+            result.handlers[0].tree.is_none(),
+            "{:?}",
+            result.handlers[0]
+        );
+        assert_eq!(result.handlers[1].status, HandlerStatus::Parsed);
+        assert_eq!(ids(&result), ["js-eval"]);
+    }
+    let statements = "SELECT 1;\n".repeat(2_000);
+    assert!(matches!(
+        analyzer.analyze(&statements),
+        Err(Error::Canceled)
+    ));
 }

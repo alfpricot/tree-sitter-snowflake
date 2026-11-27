@@ -1,6 +1,9 @@
 use crate::extract::Statements;
-use crate::{Error, ExecutionRights, Handler, Language, RoutineKind, descendants};
-use std::ops::Range;
+use crate::{
+    AnalysisFailure, ExecutionRights, Handler, HandlerStatus, Language, RoutineKind, descendants,
+    parse,
+};
+use std::{ops::Range, time::Duration};
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
 /// How firmly a rule's match points at a problem.
@@ -176,7 +179,8 @@ pub(crate) fn check(
     tree: &Tree,
     query: &Query,
     sql_parser: &mut Parser,
-) -> Result<Vec<Finding>, Error> {
+    timeout: Option<Duration>,
+) -> Result<Vec<Finding>, AnalysisFailure> {
     let source = body.source.as_ref().unwrap();
     let text = source.text();
     let mut cursor = QueryCursor::new();
@@ -207,7 +211,9 @@ pub(crate) fn check(
             match name {
                 "sql" => {
                     if let Some(sql) = literal(node, text, body.language) {
-                        check_sql(&sql, body, range, sql_parser, &mut findings)?;
+                        let tree =
+                            parse(sql_parser, &sql, timeout).ok_or(AnalysisFailure::TimedOut)?;
+                        check_sql(&sql, &tree, body, range, &mut findings);
                     }
                 }
                 "stage-path" => {
@@ -227,7 +233,7 @@ pub(crate) fn check(
         }
     }
     if cursor.did_exceed_match_limit() {
-        return Err(Error::MatchLimitExceeded);
+        return Err(AnalysisFailure::MatchLimitExceeded);
     }
     findings.sort_by_key(|f| (f.range.start, f.range.end, f.rule_id));
     findings.dedup();
@@ -236,14 +242,13 @@ pub(crate) fn check(
 
 fn check_sql(
     sql: &str,
+    tree: &Tree,
     body: &Handler,
     range: Range<usize>,
-    parser: &mut Parser,
     findings: &mut Vec<Finding>,
-) -> Result<(), Error> {
-    let tree = parser.parse(sql, None).ok_or(Error::Canceled)?;
+) {
     if tree.root_node().has_error() {
-        return Ok(());
+        return;
     }
     for node in descendants(tree.root_node()) {
         if matches!(node.kind(), "put_statement" | "get_statement") {
@@ -271,7 +276,6 @@ fn check_sql(
             }
         }
     }
-    Ok(())
 }
 
 fn within_tmp(path: &str) -> bool {
@@ -393,7 +397,9 @@ pub(crate) fn tasks(sql: &str, statements: &Statements<'_>, handlers: &[Handler]
                 .collect();
             if candidates.len() == 1
                 && candidates[0].language == Language::Scala
-                && candidates[0].source.is_some()
+                // A body that exceeded a limit still declares the procedure.
+                && (candidates[0].source.is_some()
+                    || matches!(candidates[0].status, HandlerStatus::AnalysisFailed(_)))
                 && declarations.iter().filter(|n| **n == name).count() == 1
             {
                 result.push(finding_by_rule(SCALA_TASK_WAREHOUSE, call.byte_range()));
