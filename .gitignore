@@ -2,9 +2,9 @@
 
 tmp/
 .tmp/
-# The tree-sitter CLI is vendored at the repo root rather than reached
-# through `npx`, but it is a ~10 MB platform-specific binary that every
-# developer downloads for their own platform — not repository content.
+# The tree-sitter CLI comes from the devDependency in package.json. A copy
+# downloaded to the repo root is a ~10 MB platform-specific binary, not
+# repository content.
 /tree-sitter.exe
 /tree-sitter
 Cargo.lock

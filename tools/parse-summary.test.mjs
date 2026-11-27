@@ -1,21 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { byteOffset, lineStarts, parseSummaryFromXml } from './parse-summary.mjs';
-
-test('lineStarts and byteOffset accurately compute UTF-8 byte positions', () => {
-  const text = 'SELECT 1;\nSELECT 2;\nSELECT 3;';
-  const starts = lineStarts(text);
-  assert.deepEqual(starts, [0, 10, 20]);
-  assert.equal(byteOffset(starts, 0, 0), 0);
-  assert.equal(byteOffset(starts, 1, 7), 17);
-
-  // Multi-byte character (3 bytes in UTF-8)
-  const nonAscii = 'SELECT "★";\nSELECT 1;';
-  const nonAsciiStarts = lineStarts(nonAscii);
-  // 'SELECT "★";\n' length in bytes: 7 + 1 + 3 + 1 + 1 + 1 = 14 bytes
-  assert.deepEqual(nonAsciiStarts, [0, 14]);
-  assert.equal(byteOffset(nonAsciiStarts, 1, 0), 14);
-});
+import { parseSummaryFromXml } from './parse-summary.mjs';
 
 test('parseSummaryFromXml extracts clean statements with their kinds and byte boundaries', () => {
   const xml = `

@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { fixtureResult, resolveTreeSitterCli } from './fixture-result.mjs';
+import { treeSitterEnv } from './lib/parse-batch.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const cli = resolveTreeSitterCli(repo);
@@ -22,7 +23,7 @@ for (const f of fixtures) {
     cwd: repo,
     encoding: 'utf8',
     maxBuffer: 1 << 26,
-    env: { ...process.env, CC: 'gcc', CXX: 'g++' },
+    env: treeSitterEnv(),
   });
   try {
     const { errors, zeroWidth } = fixtureResult(proc);
