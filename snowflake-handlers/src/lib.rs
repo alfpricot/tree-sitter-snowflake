@@ -183,7 +183,7 @@ impl fmt::Display for Error {
         match self {
             Self::Language(_) => f.write_str("Could not load a grammar"),
             Self::Query(_) => f.write_str("Could not compile a restriction query"),
-            Self::Canceled => f.write_str("Parse cancelled"),
+            Self::Canceled => f.write_str("Parse canceled"),
             Self::MatchLimitExceeded => f.write_str("Restriction query match limit exceeded"),
         }
     }
