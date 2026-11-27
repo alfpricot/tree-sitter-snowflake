@@ -39,7 +39,7 @@ test('findUnusedKeywords reports a keyword no rule refers to', () => {
 test('every declared keyword is referenced by a grammar rule', () => {
   const root = new URL('../', import.meta.url);
   const read = (path) => readFileSync(new URL(path, root), 'utf8');
-  const sources = readdirSync(new URL('grammar/', root), { recursive: true })
+  const sources = readdirSync(new URL('grammar/', root), { encoding: 'utf8', recursive: true })
     .filter((name) => name.endsWith('.js'))
     .map((name) => read(`grammar/${name}`));
   assert.deepEqual(

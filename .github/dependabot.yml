@@ -1,3 +1,5 @@
+# This is the reference copy shared with other tree-sitter grammar repositories.
+# A fix made here should be carried over to them.
 version: 2
 
 updates:

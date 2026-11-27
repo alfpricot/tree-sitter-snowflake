@@ -1,5 +1,8 @@
+// This is the reference copy shared with other tree-sitter grammar repositories.
+// A fix made here should be carried over to them.
+
 import assert from 'node:assert/strict';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Strips ANSI color codes from `tree-sitter parse`'s terminal output.
@@ -21,12 +24,20 @@ export function resolveTreeSitterCli(...dirs) {
   return 'tree-sitter';
 }
 
-export function fixtureResult(proc) {
+// The grammar's start rule, which tree-sitter takes to be the first rule.
+export function rootNodeName(repo) {
+  const grammar = JSON.parse(readFileSync(join(repo, 'src/grammar.json'), 'utf8'));
+  const [root] = Object.keys(grammar.rules);
+  assert(root, 'src/grammar.json lists no rules');
+  return root;
+}
+
+export function fixtureResult(proc, root) {
   assert(!proc.error, `Could not run parser: ${proc.error?.message}`);
   assert.equal(proc.signal, null, `Parser terminated by ${proc.signal}`);
   assert.equal(proc.status, 0, `Parser exited ${proc.status}: ${proc.stderr}`);
   const tree = stripAnsi(proc.stdout);
-  assert(/^\(program\s/m.test(tree), 'Parser did not return a program tree');
+  assert(new RegExp(`^\\(${root}\\s`, 'm').test(tree), `Parser did not return a ${root} tree`);
   return {
     errors: (tree.match(/ERROR|MISSING/g) || []).length,
     zeroWidth: (tree.match(/\[([0-9]+), ([0-9]+)\] - \[\1, \2\]/g) || []).length,

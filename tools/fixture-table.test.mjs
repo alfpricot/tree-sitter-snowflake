@@ -8,5 +8,5 @@ test('the fixture table lists exactly the fixtures in the directory', () => {
   const readme = readFileSync(new URL('README.md', fixtures), 'utf8');
   const listed = [...readme.matchAll(/^\| `([^`]+\.sql)` \|/gm)].map((match) => match[1]);
   const present = readdirSync(fixtures).filter((name) => name.endsWith('.sql'));
-  assert.deepEqual(listed.sort(), present.sort());
+  assert.deepEqual(listed.toSorted(), present.toSorted());
 });

@@ -41,6 +41,15 @@ export function byteOffset(starts, row, col) {
 // CLI or the grammar failed to load, so it throws before yielding any of
 // that batch. A generator, so only one batch of XML is held at a time on a
 // large corpus.
+/**
+ * @param {object} options
+ * @param {string} options.tool
+ * @param {string} options.cli
+ * @param {string} options.cwd
+ * @param {any[]} options.items
+ * @param {(item: any) => string} options.path
+ * @param {(command: string, args: string[], options: object) => any} [options.run]
+ */
 export function* batchParse({ tool, cli, cwd, items, path, run = spawnSync }) {
   for (let i = 0; i < items.length; i += BATCH) {
     const batch = items.slice(i, i + BATCH);
