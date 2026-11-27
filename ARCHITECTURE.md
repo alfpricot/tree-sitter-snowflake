@@ -60,6 +60,8 @@ Feature pull requests go to `dev`. A promotion pull request from `dev` to `main`
 
 The workflow then dispatches `release.yml`. From the verified commit, it publishes the crate to crates.io and the npm package to npm and GitHub Packages, with prebuilt native addons for Linux and Windows. It also attaches a WASM build and the node-kind snapshot to the GitHub Release.
 
+crates.io and npm are published through trusted publishing (OIDC), so the repository stores no registry token. Each crate and the npm package name `release.yml` and the `publish` environment as their trusted publisher on the registry; update those settings if the file, environment, or repository is renamed. A new package needs its first version published by hand before a trusted publisher can be set. GitHub Packages uses the job's `GITHUB_TOKEN`.
+
 `snowflake-handlers` keeps its own version. Bump it by hand in `snowflake-handlers/Cargo.toml` and add its `CHANGELOG.md` section, headed `## [<version>](<release URL>) - <date>`, in the pull request that changes it. `release.yml` publishes it with the grammar when that version is not on crates.io yet. It then tags `snowflake-handlers-v<version>` at the release commit and creates its GitHub Release from that section. A missing or empty section fails that job, and so does a heading still marked `Unreleased`. Verify rejects an `Unreleased` heading on every pull request to `main`, because by the time the release job runs the crate is already published.
 
 ### Maintenance
