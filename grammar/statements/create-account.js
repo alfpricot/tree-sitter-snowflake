@@ -112,11 +112,7 @@ export default {
     ),
 
   _comment_option: ($) =>
-    seq(
-      field('name', alias($.keyword_comment, $.identifier)),
-      '=',
-      field('value', $.literal),
-    ),
+    seq(field('name', alias($.keyword_comment, $.identifier)), '=', field('value', $.literal)),
 
   _ignore_edition_check: ($) => seq($.keyword_ignore, $.identifier, $.identifier),
 
