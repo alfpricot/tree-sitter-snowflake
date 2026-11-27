@@ -25,15 +25,18 @@
 #                      this repo's rulesets require a pull request for every
 #                      change to main and dev and block creating v* tags, and
 #                      a deploy key is the bypass actor available to a
-#                      workflow on a personal-account repository. The key
-#                      reaches only the Release step: checkout keeps no
+#                      workflow on a personal-account repository. Only the
+#                      Release step is given the key: checkout keeps no
 #                      credential, so the dependency installs and the
-#                      tree-sitter CLI download run before the key is on the
-#                      runner. That step writes it to a temporary file,
-#                      removes the file on exit, and uses it for pushes only.
-#                      Commands gala runs inside the step (lockfile refresh,
-#                      parser regeneration) can still reach it. The job runs
-#                      in the release environment.
+#                      tree-sitter CLI download find it neither on disk nor
+#                      in their environment. That step writes it to a
+#                      temporary file, removes the file on exit, and uses it
+#                      for pushes only. This is not full isolation: the
+#                      runner receives the job's secrets when the job starts,
+#                      so a malicious earlier step could still capture the
+#                      key, and commands gala runs inside the Release step
+#                      (lockfile refresh, parser regeneration) can reach it.
+#                      The job runs in the release environment.
 #
 #                      The skip-ci marker in the release commit body can also
 #                      suppress release.yml's push-tag trigger, so this
