@@ -25,7 +25,15 @@
 #                      this repo's rulesets require a pull request for every
 #                      change to main and dev and block creating v* tags, and
 #                      a deploy key is the bypass actor available to a
-#                      workflow on a personal-account repository.
+#                      workflow on a personal-account repository. The key
+#                      reaches only the Release step: checkout keeps no
+#                      credential, so the dependency installs and the
+#                      tree-sitter CLI download run before the key is on the
+#                      runner. That step writes it to a temporary file,
+#                      removes the file on exit, and uses it for pushes only.
+#                      Commands gala runs inside the step (lockfile refresh,
+#                      parser regeneration) can still reach it. The job runs
+#                      in the release environment.
 #
 #                      The skip-ci marker in the release commit body can also
 #                      suppress release.yml's push-tag trigger, so this
@@ -57,6 +65,7 @@ permissions:
 jobs:
   release:
     if: github.ref == 'refs/heads/main'
+    environment: release
     # Job-level elevation: the git pushes use the deploy key, so the only
     # write GITHUB_TOKEN needs is dispatching release.yml (actions: write).
     permissions:
@@ -70,9 +79,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          # origin becomes an SSH remote authenticated by the deploy key, so
-          # gala's atomic push and dev sync use the ruleset bypass.
-          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+          persist-credentials: false
       - name: Configure git identity
         run: |
           git config user.name "github-actions[bot]"
@@ -109,7 +116,24 @@ jobs:
         id: gala
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: gala release
+          RELEASE_DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
+        # gala's atomic push and dev sync go over SSH with the deploy key, so
+        # they use the ruleset bypass. The host key is GitHub's published
+        # ed25519 key (https://api.github.com/meta).
+        run: |
+          set -euo pipefail
+          if [ -z "$RELEASE_DEPLOY_KEY" ]; then
+            echo "RELEASE_DEPLOY_KEY is empty" >&2
+            exit 1
+          fi
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/release-ssh.XXXXXX")
+          trap 'rm -rf "$ssh_dir"' EXIT
+          (umask 077 && printf '%s\n' "$RELEASE_DEPLOY_KEY" > "$ssh_dir/key")
+          unset RELEASE_DEPLOY_KEY
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$ssh_dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -F /dev/null -i '$ssh_dir/key' -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='$ssh_dir/known_hosts'"
+          git remote set-url --push origin "git@github.com:${GITHUB_REPOSITORY}.git"
+          gala release
       - name: Dispatch the publish workflow for the new tag
         if: steps.gala.outputs.released == 'true'
         env:

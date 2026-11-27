@@ -55,7 +55,7 @@ Feature pull requests go to `dev`. A promotion pull request from `dev` to `main`
 1. Computes the next version from Conventional Commits.
 2. Bumps it in `Cargo.toml`, `package.json`, `tree-sitter.json`, and `snowflake-handlers`' dependency on the grammar crate.
 3. Refreshes the lockfiles and regenerates the parser, whose metadata embeds the `tree-sitter.json` version.
-4. Writes `CHANGELOG.md`, commits, tags `v<version>`, and pushes with a deploy key.
+4. Writes `CHANGELOG.md`, commits, tags `v<version>`, and pushes with a deploy key that only the release step receives.
 5. Fast-forwards `dev` to the release commit.
 
 The workflow then dispatches `release.yml`. From the verified commit, it publishes the crate to crates.io and the npm package to npm and GitHub Packages, with prebuilt native addons for Linux and Windows. It also attaches a WASM build and the node-kind snapshot to the GitHub Release.
