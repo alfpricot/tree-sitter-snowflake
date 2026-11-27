@@ -425,3 +425,24 @@ fn a_timed_out_body_fails_alone_and_leaves_the_parser_usable() {
         Err(Error::Canceled)
     ));
 }
+
+#[test]
+fn a_body_lost_to_a_syntax_error_is_not_staged() {
+    let header = "CREATE FUNCTION f() RETURNS INT LANGUAGE PYTHON HANDLER = 'h'";
+    let mut analyzer = Analyzer::new().unwrap();
+    for broken in [" AS ;", " AS ; SELECT 1;", " /* note */ AS ;"] {
+        let result = analyzer.analyze(&format!("{header}{broken}")).unwrap();
+        assert!(!result.sql_errors.is_empty(), "{broken}");
+        assert!(
+            result.handlers.is_empty(),
+            "{broken}: {:?}",
+            result.handlers
+        );
+    }
+    // An error in a later statement says nothing about this one.
+    for staged in ["", ";", " -- note\n;", "; SELECT FROM WHERE;"] {
+        let result = analyzer.analyze(&format!("{header}{staged}")).unwrap();
+        assert_eq!(result.handlers.len(), 1, "{staged}");
+        assert_eq!(result.handlers[0].status, HandlerStatus::Staged, "{staged}");
+    }
+}

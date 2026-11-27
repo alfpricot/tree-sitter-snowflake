@@ -51,7 +51,7 @@ pub(crate) fn handlers(sql: &str, routines: &[Node<'_>], limits: Limits) -> Vec<
         let wrapper = routine.child_by_field_name("body");
         // Without a body, only a routine that parsed cleanly is known to be
         // staged; a syntax error may be what hid the body.
-        if wrapper.is_none() && routine.has_error() {
+        if wrapper.is_none() && (routine.has_error() || followed_by_error(routine)) {
             continue;
         }
         let form = wrapper.and_then(|wrapper| {
@@ -128,6 +128,29 @@ pub(crate) fn handlers(sql: &str, routines: &[Node<'_>], limits: Limits) -> Vec<
         result.push(body);
     }
     result
+}
+
+/// Whether a syntax error starts right after `routine`, where a body that
+/// could not be read ends up.
+fn followed_by_error(routine: Node<'_>) -> bool {
+    let mut node = routine;
+    loop {
+        let mut next = node.next_sibling();
+        while let Some(sibling) = next.filter(Node::is_extra) {
+            // A comment is extra, and so is some of what error recovery skips.
+            if sibling.is_error() {
+                return true;
+            }
+            next = sibling.next_sibling();
+        }
+        if let Some(next) = next {
+            return next.is_error() || next.is_missing();
+        }
+        let Some(parent) = node.parent() else {
+            return false;
+        };
+        node = parent;
+    }
 }
 
 /// The decoded value of one of a routine's header options, such as `HANDLER`.
