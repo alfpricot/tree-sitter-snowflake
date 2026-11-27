@@ -129,6 +129,8 @@
   (keyword_partial)
   (keyword_outer)
   (keyword_cross)
+  (keyword_natural)
+  (keyword_rule)
   (keyword_lateral)
   (keyword_on)
   (keyword_using)

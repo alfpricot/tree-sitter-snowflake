@@ -293,6 +293,8 @@ export default {
   keyword_increment: (_) => make_keyword('increment'),
   keyword_transaction: (_) => make_keyword('transaction'),
   keyword_work: (_) => make_keyword('work'),
+  keyword_natural: (_) => make_keyword('natural'),
+  keyword_rule: (_) => make_keyword('rule'),
   keyword_commit: (_) => make_keyword('commit'),
   keyword_rollback: (_) => make_keyword('rollback'),
   keyword_session: (_) => make_keyword('session'),

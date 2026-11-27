@@ -667,3 +667,127 @@ SELECT "quoted col", "with ""doubling""" FROM "my table";
       (relation
         (object_reference
           (identifier))))))
+
+================================================================================
+object constants
+================================================================================
+
+SELECT {}, {'k': 1, 'j': c1 + 1} AS o FROM t;
+SELECT {'a': {'b': [1, {'c': NULL}]}}['a'];
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (object_constructor))
+        (term
+          (object_constructor
+            (object_pair
+              (literal)
+              (literal))
+            (object_pair
+              (literal)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))
+          (keyword_as)
+          (identifier))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (semi_structured
+            (object_constructor
+              (object_pair
+                (literal)
+                (object_constructor
+                  (object_pair
+                    (literal)
+                    (array_constructor
+                      (literal)
+                      (object_constructor
+                        (object_pair
+                          (literal)
+                          (literal
+                            (keyword_null)))))))))
+            (literal
+              (literal))))))))
+
+================================================================================
+object constant wildcards
+================================================================================
+
+SELECT {*}, {t.*}, {* ILIKE 'c%'}, {* EXCLUDE c1}, {* EXCLUDE (c1, c2)} FROM t;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (object_constructor
+            (all_fields)))
+        (term
+          (object_constructor
+            (all_fields
+              (object_reference
+                (identifier)))))
+        (term
+          (object_constructor
+            (all_fields
+              (keyword_ilike)
+              (literal))))
+        (term
+          (object_constructor
+            (all_fields
+              (keyword_exclude)
+              (field
+                (identifier)))))
+        (term
+          (object_constructor
+            (all_fields
+              (keyword_exclude)
+              (field
+                (identifier))
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+object constant cannot mix a wildcard with pairs
+:error
+================================================================================
+
+SELECT {*, 'k': 'v'} FROM t;
+
+---
+
+
+
+================================================================================
+object constant keys are string literals
+:error
+================================================================================
+
+SELECT {k: 1};
+
+---
+
+

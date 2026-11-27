@@ -47,9 +47,21 @@ export default {
       ),
       $.keyword_on,
       choice(
+        // ON {ALL | FUTURE} <plural kind of several words> IN <container>
+        seq(
+          choice($.keyword_all, $.keyword_future),
+          alias($._plural_object_kind, $.object_kind),
+          $.keyword_in,
+          optional(choice($.keyword_database, $.keyword_schema)),
+          $.object_reference,
+        ),
         seq(
           optional(choice($.keyword_all, $.keyword_future)),
-          $.object_kind,
+          choice(
+            $.object_kind,
+            alias($._multi_word_object_kind, $.object_kind),
+            alias($._grant_table_kind, $.object_kind),
+          ),
           optional(
             seq(
               $.keyword_in,
@@ -67,6 +79,42 @@ export default {
         $.object_reference,
       ),
       choice($._granted_to, $._revoked_from),
+    ),
+
+  // Table kinds a grant names that DROP spells as plain TABLE.
+  _grant_table_kind: ($) => seq(choice($.keyword_event, $.keyword_hybrid), $.keyword_table),
+
+  // DYNAMIC TABLES, MATERIALIZED VIEWS, ROW ACCESS POLICIES, ...: any run
+  // of two or more words before IN. The keywords listed are the ones that
+  // can also begin a singular kind, so they lex as keywords here.
+  _plural_object_kind: ($) => seq($._kind_word, repeat1($._kind_word)),
+
+  _kind_word: ($) =>
+    choice(
+      $.identifier,
+      $.keyword_access,
+      $.keyword_aggregation,
+      $.keyword_api,
+      $.keyword_authentication,
+      $.keyword_cortex,
+      $.keyword_dynamic,
+      $.keyword_event,
+      $.keyword_external,
+      $.keyword_file,
+      $.keyword_hybrid,
+      $.keyword_iceberg,
+      $.keyword_masking,
+      $.keyword_materialized,
+      $.keyword_network,
+      $.keyword_notification,
+      $.keyword_password,
+      $.keyword_projection,
+      $.keyword_row,
+      $.keyword_search,
+      $.keyword_security,
+      $.keyword_semantic,
+      $.keyword_session,
+      $.keyword_storage,
     ),
 
   privilege_list: ($) => comma_list($.privilege, true),

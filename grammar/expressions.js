@@ -22,6 +22,7 @@ export default {
         $.between_expression,
         $.parenthesized_expression,
         $.array_constructor,
+        $.object_constructor,
         $.semi_structured,
         $.bind_variable,
         $.identifier_function,
@@ -42,6 +43,37 @@ export default {
   // the bracket is unambiguous with the subscript operator, which always
   // follows an expression.
   array_constructor: ($) => prec(1, seq('[', optional(comma_list($._expression, true)), ']')),
+
+  // { 'key': expr, ... } or one wildcard — Snowflake's OBJECT constant.
+  // Keys are string literals, and a wildcard cannot be mixed with pairs.
+  object_constructor: ($) =>
+    seq(
+      '{',
+      optional(choice(comma_list($.object_pair, true), alias($._object_wildcard, $.all_fields))),
+      '}',
+    ),
+
+  object_pair: ($) =>
+    seq(field('key', alias($._single_quote_string, $.literal)), ':', field('value', $._expression)),
+
+  // {*}, {t.*}, optionally narrowed by ILIKE 'pattern' or EXCLUDE columns.
+  _object_wildcard: ($) =>
+    seq(
+      optional(seq($.object_reference, '.')),
+      '*',
+      optional(
+        choice(
+          seq($.keyword_ilike, alias($._single_quote_string, $.literal)),
+          seq(
+            $.keyword_exclude,
+            choice(
+              alias($._qualified_field, $.field),
+              paren_list(alias($._qualified_field, $.field), true),
+            ),
+          ),
+        ),
+      ),
+    ),
 
   // v:field.subfield, v['key'], v:"quoted key", v:field[0].sub
   // The `:` path operator and the subscript on a semi-structured value,

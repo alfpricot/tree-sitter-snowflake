@@ -410,6 +410,7 @@ keyword_minus
 keyword_modify
 keyword_monitor
 keyword_name
+keyword_natural
 keyword_network
 keyword_next
 keyword_no
@@ -485,6 +486,7 @@ keyword_rollback
 keyword_rollup
 keyword_row
 keyword_rows
+keyword_rule
 keyword_scala
 keyword_schedule
 keyword_schema
@@ -597,7 +599,11 @@ not_like
 not_regexp
 not_rlike
 number
+object_constructor
 object_kind
+object_pair
+object_pair.key
+object_pair.value
 object_reference
 object_reference.database
 object_reference.name
