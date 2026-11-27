@@ -269,9 +269,9 @@ jobs:
   publish-npm:
     name: Publish to npm
     needs: [verify, prebuild]
-    # Every prebuild leg must succeed: a published version is skipped on a
-    # rerun, so a binary missing now could never be added to it.
-    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.prebuild.result == 'success' }}
+    # Every prebuild leg must succeed, which the default success() gate on
+    # `needs` enforces: a published version is skipped on a rerun, so a
+    # binary missing now could never be added to it.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -329,9 +329,9 @@ jobs:
   publish-github-packages:
     name: Publish to GitHub Packages
     needs: [verify, prebuild]
-    # Every prebuild leg must succeed: a published version is skipped on a
-    # rerun, so a binary missing now could never be added to it.
-    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.prebuild.result == 'success' }}
+    # Every prebuild leg must succeed, which the default success() gate on
+    # `needs` enforces: a published version is skipped on a rerun, so a
+    # binary missing now could never be added to it.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

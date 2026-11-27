@@ -41,10 +41,12 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 - the unit tests for the repository's own scripts, and version agreement across the three manifests
 - grammar regeneration (the committed parser and node-kind snapshot must match)
 - JavaScript lint and formatting, corpus and highlight tests, fixtures, and keyword handling
-- Rust format, lint, and tests, plus each crate's minimum Rust version and a run against tree-sitter 0.26, the companion's declared floor
+- the scanner compiled with warnings as errors, and a fuzz run when the scanner or `verify.yml` changes
+- Rust format, lint, and tests
+- each crate's minimum Rust version and a run against tree-sitter 0.26, the companion's declared floor, when a path a crate builds from changes
 - package contents and the Node binding
 
-A docs-only pull request skips the build jobs, and a draft fails the final check. That aggregate job, named `Verify`, is the required check on `dev` and `main`.
+A pull request that changes only docs, `NOTICE`, `CODEOWNERS`, or the Dependabot config skips the build jobs, and a draft fails the final check. That aggregate job, named `Verify`, is the required check on `dev` and `main`.
 
 ### Release
 
@@ -58,7 +60,7 @@ Feature pull requests go to `dev`. A promotion pull request from `dev` to `main`
 
 The workflow then dispatches `release.yml`. From the verified commit, it publishes the crate to crates.io and the npm package to npm and GitHub Packages, with prebuilt native addons for Linux and Windows. It also attaches a WASM build and the node-kind snapshot to the GitHub Release.
 
-`snowflake-handlers` keeps its own version. Bump it by hand in `snowflake-handlers/Cargo.toml` and add its `CHANGELOG.md` section, headed `## [<version>](<release URL>) - <date>`, in the pull request that changes it. `release.yml` publishes it with the grammar when that version is not on crates.io yet. It then tags `snowflake-handlers-v<version>` at the release commit and creates its GitHub Release from that section. A missing or empty section fails that job, and so does a heading still marked `Unreleased`. Verify checks for a dated heading on every pull request to `main`, because by the time the release job runs the crate is already published.
+`snowflake-handlers` keeps its own version. Bump it by hand in `snowflake-handlers/Cargo.toml` and add its `CHANGELOG.md` section, headed `## [<version>](<release URL>) - <date>`, in the pull request that changes it. `release.yml` publishes it with the grammar when that version is not on crates.io yet. It then tags `snowflake-handlers-v<version>` at the release commit and creates its GitHub Release from that section. A missing or empty section fails that job, and so does a heading still marked `Unreleased`. Verify rejects an `Unreleased` heading on every pull request to `main`, because by the time the release job runs the crate is already published.
 
 ### Maintenance
 

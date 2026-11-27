@@ -39,16 +39,7 @@ test('renames include the removed source path when classifying prose', () => {
 
 test('only explicit prose and metadata paths skip builds', () => {
   assert(docsOnly(['README.md', 'docs/CONSUMER_INTEGRATION.md']));
-  assert(
-    docsOnly([
-      'LICENSE',
-      'NOTICE',
-      '.editorconfig',
-      '.gitattributes',
-      '.github/CODEOWNERS',
-      '.github/dependabot.yml',
-    ]),
-  );
+  assert(docsOnly(['NOTICE', '.github/CODEOWNERS', '.github/dependabot.yml']));
   for (const files of [
     [],
     ['grammar.js'],
@@ -56,8 +47,10 @@ test('only explicit prose and metadata paths skip builds', () => {
     ['snowflake-handlers/README.md'],
     ['test/fixtures/README.md'],
     ['.github/workflows/verify.yml'],
-    ['bindings/node/LICENSE'],
-    ['LICENSE', 'binding.gyp'],
+    ['LICENSE'],
+    ['.editorconfig'],
+    ['.gitattributes'],
+    ['NOTICE', 'binding.gyp'],
   ])
     assert(!docsOnly(files));
 });

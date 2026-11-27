@@ -4,12 +4,12 @@ import { appendFileSync, readFileSync } from 'node:fs';
 
 export function docsOnly(files) {
   // Only prose and repository metadata that nothing builds or tests can skip compilation.
+  // LICENSE (package check), .editorconfig (formatter), and .gitattributes (line endings)
+  // are read by the build jobs, so they are not on this list.
   return (
     files.length > 0 &&
     files.every((path) =>
-      /^(?:[^/]+\.md|docs\/.*\.md|LICENSE|NOTICE|\.editorconfig|\.gitattributes|\.github\/(?:CODEOWNERS|dependabot\.yml))$/.test(
-        path,
-      ),
+      /^(?:[^/]+\.md|docs\/.*\.md|NOTICE|\.github\/(?:CODEOWNERS|dependabot\.yml))$/.test(path),
     )
   );
 }

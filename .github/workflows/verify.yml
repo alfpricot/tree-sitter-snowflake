@@ -17,10 +17,14 @@
 #                      pull request, docs-only ones included; skipped on
 #                      pull requests from forks, which cannot read the
 #                      leak check's key), probe both
-#                      identifier slots for every keyword, build and test
-#                      the Rust binding (against the tree-sitter version
-#                      that is snowflake-handlers' declared floor, and
-#                      against the latest), build and test the Node
+#                      identifier slots for every keyword, compile the
+#                      scanner with warnings as errors and fuzz it when it
+#                      changes, require a dated handlers changelog section
+#                      on pull requests to main, build and test the Rust
+#                      binding (against the latest tree-sitter, and, when a
+#                      path a crate builds from changes, against the version
+#                      that is snowflake-handlers' declared floor), build
+#                      and test the Node
 #                      binding, validate the PR title, scan the working
 #                      tree and Git history for secrets, and lint
 #                      workflow/YAML files. A final aggregate job
@@ -313,7 +317,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --no-install tree-sitter fuzz --iterations 100 \
-            --exclude 'tags on roles, users, tasks, streams, and dynamic tables' | tee "$RUNNER_TEMP/fuzz.log"
+            --exclude 'tags on roles, users, tasks, streams, and dynamic tables' 2>&1 | tee "$RUNNER_TEMP/fuzz.log"
           if grep -q 'failed fuzzing' "$RUNNER_TEMP/fuzz.log"; then
             echo "tree-sitter fuzz reported failures" >&2
             exit 1
