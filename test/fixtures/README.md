@@ -42,7 +42,7 @@ A fixture parsing clean is not proof it is valid Snowflake — a parser has no s
 | `function_python.sql` | Python UDF: `RUNTIME_VERSION`, `HANDLER`, `PACKAGES` (docs-derived) |
 | `merge_statement.sql` | `MERGE` with aggregate `USING`, `WHEN MATCHED AND (...) THEN UPDATE`, `WHEN NOT MATCHED THEN INSERT` |
 | `insert_overwrite.sql` | `INSERT OVERWRITE INTO t (cols) WITH cte ...` inside a scripting block |
-| `select_cte_window_qualify.sql` | `WITH RECURSIVE`, window functions incl. nested aggregate `SUM(SUM(x)) OVER`, `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`, `QUALIFY` |
+| `select_cte_window_qualify.sql` | `IGNORE NULLS`, `SAMPLE ... REPEATABLE`, `ASOF JOIN ... MATCH_CONDITION` (docs-derived), `WITH RECURSIVE`, window functions incl. nested aggregate `SUM(SUM(x)) OVER`, `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`, `QUALIFY` |
 | `select_grouping_sets.sql` | `GROUP BY GROUPING SETS` incl. the empty set `()` |
 | `select_pivot_unpivot.sql` | `PIVOT`/`UNPIVOT` (docs-derived) |
 | `select_semi_structured_flatten.sql` | `:` paths with `::` casts, `[0]` subscripts, `LATERAL FLATTEN(input => ...)` (docs-derived) |

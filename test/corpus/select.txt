@@ -1647,3 +1647,292 @@ SELECT * FROM a JOIN b JOIN c JOIN d ON c.k = d.k;
             (object_reference
               (identifier))
             (identifier)))))))
+
+================================================================================
+ignore and respect nulls
+================================================================================
+
+SELECT LEAD(a) IGNORE NULLS OVER (ORDER BY b), FIRST_VALUE(a) RESPECT NULLS OVER (ORDER BY b) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (window_function
+            (invocation
+              (object_reference
+                (identifier))
+              (field
+                (identifier)))
+            (keyword_ignore)
+            (keyword_nulls)
+            (keyword_over)
+            (window_specification
+              (order_by
+                (keyword_order)
+                (keyword_by)
+                (order_target
+                  (field
+                    (identifier)))))))
+        (term
+          (window_function
+            (invocation
+              (object_reference
+                (identifier))
+              (field
+                (identifier)))
+            (keyword_respect)
+            (keyword_nulls)
+            (keyword_over)
+            (window_specification
+              (order_by
+                (keyword_order)
+                (keyword_by)
+                (order_target
+                  (field
+                    (identifier)))))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+sample and tablesample
+================================================================================
+
+SELECT * FROM t SAMPLE (10);
+SELECT * FROM t AS a TABLESAMPLE BERNOULLI (20.5) REPEATABLE (7) JOIN u SAMPLE SYSTEM (3) SEED (1) ON a.k = u.k;
+SELECT * FROM t SAMPLE ROW (100 ROWS);
+SELECT system, block, seed, repeatable, match_condition FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (literal)))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (keyword_as)
+        (identifier)
+        (sample_clause
+          (keyword_tablesample)
+          (keyword_bernoulli)
+          (literal)
+          (keyword_repeatable)
+          (literal)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))
+          (sample_clause
+            (keyword_sample)
+            (keyword_system)
+            (literal)
+            (keyword_seed)
+            (literal)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (keyword_row)
+          (literal)
+          (keyword_rows)))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+asof join with match condition
+================================================================================
+
+SELECT * FROM trades t ASOF JOIN quotes q MATCH_CONDITION (t.ts >= q.ts) ON t.symbol = q.symbol;
+SELECT * FROM a ASOF JOIN b MATCH_CONDITION (a.ts <= b.ts) USING (k) LEFT JOIN c ON c.k = a.k;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (identifier))
+      (join
+        (keyword_asof)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))
+          (identifier))
+        (keyword_match_condition)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_asof)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_match_condition)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (keyword_using)
+        (identifier))
+      (join
+        (keyword_left)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+call aliases spelled ignore and respect need AS
+================================================================================
+
+SELECT COUNT(*) AS ignore, MAX(a) AS respect FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (all_fields))
+          (keyword_as)
+          (identifier))
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (field
+              (identifier)))
+          (keyword_as)
+          (identifier))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))

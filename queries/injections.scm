@@ -6,16 +6,18 @@
 ; grammars as `javascript`). A host that has not linked a grammar simply
 ; does not inject — the tree shape never depends on what the host has.
 ;
-; Only the dollar-quoted body is injectable, and the capture is its
+; A dollar-quoted body is verbatim source, and the capture is its
 ; `body_content` child rather than the whole `dollar_quoted_body`, so the
 ; injected parse starts after the opening `$$` and stops before the
-; closing one. Tree-sitter parses a range of the original source, and
-; the single-quoted body's `''` doubling means its byte range is not the
-; embedded language's source. Those bodies (the common single-quoted
-; form for foreign-language bodies) are reconstructed by the consumer:
-; collapse the `doubled_quote` and `escape` nodes, then parse the
-; result with a position-mapping table.
-; See docs/CONSUMER_INTEGRATION.md.
+; closing one.
+;
+; A single-quoted body (the common form) is the embedded language's source only
+; when it holds no `''` and no backslash escape: it is then one `body_content`
+; child, which the anchors below select, and JavaScript and Python bodies of
+; that shape are injected, each on its own. Any other single-quoted body must be
+; decoded first, with a position-mapping table, as the snowflake-handlers crate
+; does. It is not injected: joining its pieces would highlight text the body does
+; not contain. See docs/CONSUMER_INTEGRATION.md.
 ;
 ; The wildcard parent matches every routine node that carries a foreign
 ; `language` and an inline body: `create_procedure` and `create_function`
@@ -41,3 +43,13 @@
    (foreign_language (keyword_scala))
    body: (function_body (dollar_quoted_body (body_content) @injection.content)))
  (#set! injection.language "scala"))
+
+((_
+   (foreign_language (keyword_javascript))
+   body: (function_body (string_body . (body_content) @injection.content .)))
+ (#set! injection.language "javascript"))
+
+((_
+   (foreign_language (keyword_python))
+   body: (function_body (string_body . (body_content) @injection.content .)))
+ (#set! injection.language "python"))

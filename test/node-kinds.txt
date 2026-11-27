@@ -250,6 +250,7 @@ invocation
 invocation.parameter
 is_not
 join
+join.match_condition
 join.predicate
 keyword_abort
 keyword_access
@@ -268,13 +269,16 @@ keyword_api
 keyword_array
 keyword_as
 keyword_asc
+keyword_asof
 keyword_at
 keyword_authentication
 keyword_autoincrement
 keyword_before
 keyword_begin
+keyword_bernoulli
 keyword_between
 keyword_binary
+keyword_block
 keyword_body
 keyword_boolean
 keyword_break
@@ -371,6 +375,7 @@ keyword_hybrid
 keyword_iceberg
 keyword_identifier
 keyword_if
+keyword_ignore
 keyword_ilike
 keyword_immediate
 keyword_imported
@@ -401,6 +406,7 @@ keyword_loop
 keyword_managed
 keyword_masking
 keyword_match
+keyword_match_condition
 keyword_match_recognize
 keyword_matched
 keyword_matches
@@ -471,7 +477,9 @@ keyword_rely
 keyword_remove
 keyword_rename
 keyword_repeat
+keyword_repeatable
 keyword_replace
+keyword_respect
 keyword_restrict
 keyword_restricted
 keyword_resultset
@@ -489,6 +497,7 @@ keyword_rollup
 keyword_row
 keyword_rows
 keyword_rule
+keyword_sample
 keyword_scala
 keyword_schedule
 keyword_schema
@@ -497,6 +506,7 @@ keyword_secondary
 keyword_secret
 keyword_secure
 keyword_security
+keyword_seed
 keyword_select
 keyword_semantic
 keyword_sequence
@@ -520,8 +530,10 @@ keyword_string
 keyword_suspend
 keyword_suspended
 keyword_swap
+keyword_system
 keyword_table
 keyword_tables
+keyword_tablesample
 keyword_tag
 keyword_task
 keyword_temporary
@@ -652,6 +664,10 @@ return_statement
 revoke_statement
 revoke_statement.role
 rollback_statement
+sample_clause
+sample_clause.method
+sample_clause.seed
+sample_clause.size
 secret_binding
 secret_binding.secret
 secret_binding.variable

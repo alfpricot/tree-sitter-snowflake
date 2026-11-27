@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Keyword-slot probe. For every keyword spelled in grammar/keywords.js,
-// parses both positions where an ordinary identifier sits:
+// parses the positions where an ordinary identifier sits:
 //   alias slot:   SELECT * FROM db.schema.t <word>
 //   column slot:  SELECT <word> FROM t
+//   call alias:   SELECT f(a) <word> FROM t
 // A keyword valid in one of those parser states is substituted by keyword
 // extraction and breaks the probe. Failures are expected — and correct —
 // for two documented classes:
@@ -11,10 +12,13 @@
 //      either).
 //   2. Clause and function keywords that REQUIRE more tokens after them
 //      (LIMIT n, PIVOT (...), EXCEPT <query>, MATCH_RECOGNIZE (...),
-//      WINDOW w AS (...), TOP n, EXTRACT(...), IDENTIFIER(...),
+//      WINDOW w AS (...), ASOF JOIN, TOP n, EXTRACT(...), IDENTIFIER(...),
 //      INTERVAL 'n' DAY, AT/BEFORE/CHANGES (...) after a table).
 //      Snowflake itself rejects these words bare in the slot, so the grammar erroring is faithful behavior; the corpus
 //      has been grepped and none is used as a bare column or alias.
+//
+// After a call, the words that open a call suffix are expected to fail as
+// well: OVER, WITHIN GROUP, and IGNORE or RESPECT NULLS.
 //
 // Anything else failing is a regression: a new keyword is eating an
 // identifier position. Run this whenever a keyword is added.
@@ -44,6 +48,7 @@ const reserved = new Set(
 
 // Clause/function keywords that need more tokens after them (class 2).
 const clauseKeywords = new Set([
+  'asof',
   'except',
   'limit',
   'match_recognize',
@@ -59,6 +64,9 @@ const clauseKeywords = new Set([
   'changes',
 ]);
 
+// Words that continue a call, so a bare alias after one cannot be them.
+const callSuffixes = new Set(['ignore', 'over', 'respect', 'within']);
+
 const scratch = join(os.tmpdir(), 'kwprobe-' + process.pid);
 mkdirSync(scratch, { recursive: true });
 process.on('exit', () => rmSync(scratch, { recursive: true, force: true }));
@@ -71,6 +79,7 @@ for (const w of words) {
     wantIdentifiers: 4,
   });
   cases.push({ word: w, slot: 'column', sql: `SELECT ${w} FROM t\n`, wantIdentifiers: 2 });
+  cases.push({ word: w, slot: 'call', sql: `SELECT f(a) ${w} FROM t\n`, wantIdentifiers: 4 });
 }
 cases.forEach((c, i) => {
   c.file = join(scratch, `${i}.sql`);
@@ -93,13 +102,16 @@ for (const { item: c, body } of parsed) {
       ...c,
       err,
       ids,
-      expected: reserved.has(c.word.toUpperCase()) || clauseKeywords.has(c.word),
+      expected:
+        reserved.has(c.word.toUpperCase()) ||
+        clauseKeywords.has(c.word) ||
+        (c.slot === 'call' && callSuffixes.has(c.word)),
     });
   }
 }
 
 const regressions = failures.filter((f) => !f.expected);
-console.log(`probed ${cases.length} cases (${words.length} keywords x 2 slots)`);
+console.log(`probed ${cases.length} cases (${words.length} keywords x 3 slots)`);
 console.log(
   `failures: ${failures.length}, all in the documented reserved/clause-keyword classes: ${regressions.length === 0}`,
 );

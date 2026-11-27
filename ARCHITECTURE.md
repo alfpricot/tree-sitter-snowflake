@@ -15,7 +15,7 @@ The grammar source: shared rules, expressions, column lists, scripting, types, k
 The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the hand-written `scanner.c`, which lexes `$$`-delimited bodies. The scanner must be compiled alongside the parser; vendoring one without the other produces a link error or a parser that cannot lex a dollar-quoted body.
 
 ### [queries/](queries)
-`highlights.scm`, `injections.scm` (dollar-quoted bodies only, since single-quoted bodies need decoding), `locals.scm`, `structure.scm`, `tags.scm`, `folds.scm`, and `indents.scm` (nvim-treesitter capture names). `tree-sitter.json` has no key for the last two, so consumers load them directly or through the bindings.
+`highlights.scm`, `injections.scm` (dollar-quoted bodies, and single-quoted JavaScript and Python bodies that need no decoding), `locals.scm`, `structure.scm`, `tags.scm`, `folds.scm`, and `indents.scm` (nvim-treesitter capture names). `tree-sitter.json` has no key for the last two, so consumers load them directly or through the bindings.
 
 ### [bindings/](bindings)
 `bindings/rust` exposes `LANGUAGE`, the node-type JSON (`NODE_TYPES`), and one constant per query file (`HIGHLIGHTS_QUERY`, `INJECTIONS_QUERY`, `LOCALS_QUERY`, `STRUCTURE_QUERY`, `TAGS_QUERY`, `FOLDS_QUERY`, `INDENTS_QUERY`). `bindings/node` loads the native addon and adds `nodeTypeInfo` and the same query strings. `bindings/python`, built by `pyproject.toml` and `setup.py`, exposes `language()` and the query strings.

@@ -4,8 +4,8 @@ What the grammar parses today. It covers Snowflake SQL only, so T-SQL and Postgr
 
 ## Queries and DML
 
-- `SELECT` with CTEs (including recursive), set operators, `QUALIFY`, window functions and named windows, `CONNECT BY`, `MATCH_RECOGNIZE`, `PIVOT`, `UNPIVOT`, and time travel
-- inner, outer, cross, and natural joins, with or without `ON` or `USING`, and `LATERAL` sources such as `FLATTEN`
+- `SELECT` with CTEs (including recursive), set operators, `QUALIFY`, window functions and named windows, `CONNECT BY`, `MATCH_RECOGNIZE`, `PIVOT`, `UNPIVOT`, time travel, `SAMPLE` and `TABLESAMPLE` after the alias, and `IGNORE NULLS` or `RESPECT NULLS` before `OVER`
+- inner, outer, cross, natural, and `ASOF ... MATCH_CONDITION` joins, with or without `ON` or `USING`, and `LATERAL` sources such as `FLATTEN`
 - `GROUP BY ALL`, `GROUPING SETS`, `CUBE`, and `ROLLUP`
 - `INSERT` (including multi-table), `UPDATE`, `DELETE`, `TRUNCATE`, and `MERGE`
 
@@ -33,10 +33,8 @@ Blocks, branches, loops, cursors, `RESULTSET`, `EXECUTE IMMEDIATE`, and `EXCEPTI
 
 These Snowflake forms produce `ERROR` or `MISSING` nodes:
 
-- `IGNORE NULLS` and `RESPECT NULLS`
-- `SAMPLE` and `TABLESAMPLE`
-- `ASOF ... MATCH_CONDITION` joins
 - `LIKE ... ESCAPE`
+- `NTH_VALUE(...) FROM FIRST` or `FROM LAST`
 - structured `ARRAY(INT)` and `OBJECT(a INT)` types
 - `DROP` with other multi-word kinds, such as `EXTERNAL VOLUME`
 - `GRANT` and `REVOKE` on one object of other multi-word kinds, such as `GIT REPOSITORY` (the plural forms parse)

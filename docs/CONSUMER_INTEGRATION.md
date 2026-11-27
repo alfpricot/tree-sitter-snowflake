@@ -86,7 +86,7 @@ The two delimiter forms require different handling:
 - **Dollar-quoted foreign bodies (`dollar_quoted_body`).** The `body_content` node excludes the delimiters and contains verbatim embedded source. `queries/injections.scm` exposes this content to editor hosts. The related `dollar_quoted_script` and `dollar_quoted_expression` nodes contain SQL parsed by the Snowflake grammar.
 - **Single-quoted bodies (`string_body`).** The SQL text must be decoded before parsing the embedded language. A doubled apostrophe represents one apostrophe; backslash escapes can also change the text's length. Numeric escapes can span an `escape` node and the following `body_content` node, so decoding each child independently is insufficient. The companion reconstructs the text and records its mapping back to the original SQL source.
 
-Embedded tree ranges refer to decoded UTF-8 text. Translate them through `HandlerSource::source_range`, then use `source_point` on the original SQL text to obtain a zero-based row and byte column. `Handler::findings` already contains absolute SQL ranges. Tree-sitter injection queries alone cannot decode the single-quoted form.
+Embedded tree ranges refer to decoded UTF-8 text. Translate them through `HandlerSource::source_range`, then use `source_point` on the original SQL text to obtain a zero-based row and byte column. `Handler::findings` already contains absolute SQL ranges. Tree-sitter injection queries cannot decode the single-quoted form: `queries/injections.scm` injects a single-quoted JavaScript or Python body only when it needs no decoding.
 
 ### Measurement attribution
 
