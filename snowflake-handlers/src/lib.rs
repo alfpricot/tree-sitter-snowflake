@@ -232,7 +232,7 @@ pub struct Analysis {
 pub enum Error {
     /// The linked tree-sitter cannot load one of the grammars.
     Language(LanguageError),
-    /// A restriction query does not compile against its grammar.
+    /// A restriction or structure query does not compile against its grammar.
     Query(QueryError),
     /// The SQL text's parse returned no tree.
     Canceled,
@@ -242,7 +242,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Language(_) => f.write_str("Could not load a grammar"),
-            Self::Query(_) => f.write_str("Could not compile a restriction query"),
+            Self::Query(_) => f.write_str("Could not compile a query"),
             Self::Canceled => f.write_str("Parse canceled"),
         }
     }

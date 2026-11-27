@@ -11,6 +11,7 @@ import {
   needsRustFloor,
   needsScannerFuzz,
   needsPython,
+  needsWheels,
   needsWindowsBinding,
   verifyResults,
   versionsAgree,
@@ -41,6 +42,18 @@ test('the Python job runs for what the package builds, ships, or tests against',
   ])
     assert(needsPython([path]), path);
   assert(!needsPython(['README.md', 'bindings/node/index.js', 'snowflake-handlers/src/lib.rs']));
+});
+
+test('wheels build when the Python build changes and on every promotion', () => {
+  for (const path of [
+    'pyproject.toml',
+    'setup.py',
+    'bindings/python/tree_sitter_snowflake/binding.c',
+    '.github/workflows/release.yml',
+  ])
+    assert(needsWheels([path], 'dev'), path);
+  assert(!needsWheels(['src/parser.c', 'README.md'], 'dev'));
+  assert(needsWheels(['src/parser.c'], 'main'));
 });
 
 test('renames include the removed source path when classifying prose', () => {
@@ -103,8 +116,15 @@ test('a promotion needs a dated section for the handlers version', () => {
   assert.throws(() => handlersChangelogDated(cargo, '## [Unreleased]\n'), /no section/);
 });
 
-function results(build = 'true', event = 'pull_request', rust = build, python = build) {
+function results(
+  build = 'true',
+  event = 'pull_request',
+  rust = build,
+  python = build,
+  wheels = 'false',
+) {
   const jobs = ['changes', 'verify', 'consumer-pin', 'node-binding', 'python-binding', 'pr-title'];
+  jobs.push('python-wheels');
   return Object.fromEntries(
     jobs.map((job) => [
       job,
@@ -114,10 +134,11 @@ function results(build = 'true', event = 'pull_request', rust = build, python = 
           (['verify', 'consumer-pin', 'node-binding', 'python-binding'].includes(job) &&
             build === 'false') ||
           (job === 'consumer-pin' && rust === 'false') ||
-          (job === 'python-binding' && python === 'false')
+          (job === 'python-binding' && python === 'false') ||
+          (job === 'python-wheels' && wheels !== 'true')
             ? 'skipped'
             : 'success',
-        ...(job === 'changes' ? { outputs: { build, rust, python } } : {}),
+        ...(job === 'changes' ? { outputs: { build, rust, python, wheels } } : {}),
       },
     ]),
   );
@@ -125,13 +146,14 @@ function results(build = 'true', event = 'pull_request', rust = build, python = 
 
 test('aggregate accepts only deliberate skips', () => {
   for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
-    for (const [build, rust, python] of [
+    for (const [build, rust, python, wheels] of [
+      ['true', 'true', 'true', 'true'],
       ['true', 'true', 'true'],
       ['true', 'true', 'false'],
       ['true', 'false', 'true'],
       ['false', 'false', 'false'],
     ]) {
-      const valid = results(build, event, rust, python);
+      const valid = results(build, event, rust, python, wheels);
       verifyResults(valid, event, false);
       assert.throws(() => verifyResults(valid, event, true));
       for (const job of Object.keys(valid)) {

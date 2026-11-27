@@ -4,8 +4,8 @@
 //! are not read; use [`Analyzer`](crate::Analyzer) for those.
 
 use crate::{Error, descendants, error_ranges};
-use std::ops::Range;
-use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator};
+use std::{ops::Range, sync::OnceLock};
+use tree_sitter::{Language, Node, Parser, Query, QueryCursor, StreamingIterator};
 
 /// Everything [`summary`] found. Every range is in bytes of the SQL text.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,16 +74,26 @@ pub fn summary(sql: &str) -> Result<Summary, Error> {
     let language = tree_sitter_snowflake::LANGUAGE.into();
     let mut parser = Parser::new();
     parser.set_language(&language).map_err(Error::Language)?;
-    let query =
-        Query::new(&language, tree_sitter_snowflake::STRUCTURE_QUERY).map_err(Error::Query)?;
+    let query = structure_query(&language)?;
     let tree = parser.parse(sql, None).ok_or(Error::Canceled)?;
     let root = tree.root_node();
     Ok(Summary {
         statements: statements(root),
-        blocks: blocks(sql, root, &query),
+        blocks: blocks(sql, root, query),
         objects: objects(sql, root),
         errors: error_ranges(root),
     })
+}
+
+// Compiled once: the cost is paid against the whole grammar, not the input.
+fn structure_query(language: &Language) -> Result<&'static Query, Error> {
+    static QUERY: OnceLock<Query> = OnceLock::new();
+    if let Some(query) = QUERY.get() {
+        return Ok(query);
+    }
+    let query =
+        Query::new(language, tree_sitter_snowflake::STRUCTURE_QUERY).map_err(Error::Query)?;
+    Ok(QUERY.get_or_init(|| query))
 }
 
 fn statements(root: Node<'_>) -> Vec<Statement> {
@@ -92,9 +102,12 @@ fn statements(root: Node<'_>) -> Vec<Statement> {
         .filter(|node| node.kind() == "statement")
         .filter_map(|node| {
             let mut cursor = node.walk();
-            let first = node
-                .named_children(&mut cursor)
-                .find(|child| !child.is_extra())?;
+            // A leading WITH clause sits directly under the statement, ahead
+            // of the node that says what the statement does.
+            let first = node.named_children(&mut cursor).find(|child| {
+                !child.is_extra()
+                    && !matches!(child.kind(), "keyword_with" | "keyword_recursive" | "cte")
+            })?;
             Some(Statement {
                 kind: first.kind().to_owned(),
                 range: node.byte_range(),

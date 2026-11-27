@@ -32,6 +32,20 @@ export function needsPython(files) {
   );
 }
 
+// A wheel build takes minutes on two platforms, and a release cannot retry a
+// broken one under the same version, so it runs when the build itself changes
+// and on every promotion to main.
+export function needsWheels(files, base) {
+  return (
+    base === 'main' ||
+    files.some((path) =>
+      /^(?:pyproject\.toml|setup\.py|bindings\/python\/.*\.c|\.github\/workflows\/(?:verify|release)\.yml)$/.test(
+        path,
+      ),
+    )
+  );
+}
+
 export function needsScannerFuzz(files) {
   return files.some((path) => /^(?:src\/scanner\.c|\.github\/workflows\/verify\.yml)$/.test(path));
 }
@@ -115,6 +129,7 @@ export function verifyResults(needs, event, draft) {
     if (job === 'consumer-pin' && needs.changes?.outputs?.rust === 'false') expected = 'skipped';
     if (job === 'python-binding' && needs.changes?.outputs?.python === 'false')
       expected = 'skipped';
+    if (job === 'python-wheels' && needs.changes?.outputs?.wheels !== 'true') expected = 'skipped';
     assert.equal(value.result, expected, `${job} must finish as ${expected}`);
   }
 }
@@ -127,6 +142,7 @@ if (process.argv[2] === 'changes') {
   let rust = true;
   let scanner = false;
   let python = true;
+  let wheels = false;
   let windows = process.env.GITHUB_REF === 'refs/heads/main';
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
     if (canSkipEditedBuild(event, process.env.PRIOR_VERIFIED === 'true')) {
@@ -142,11 +158,12 @@ if (process.argv[2] === 'changes') {
       scanner = needsScannerFuzz(files);
       windows = needsWindowsBinding(files);
       python = needsPython(files);
+      wheels = build && needsWheels(files, base.ref);
     }
   }
   appendFileSync(
     /** @type {string} */ (process.env.GITHUB_OUTPUT),
-    `build=${build}\nrust=${rust}\nscanner=${scanner}\nwindows=${windows}\npython=${python}\n`,
+    `build=${build}\nrust=${rust}\nscanner=${scanner}\nwindows=${windows}\npython=${python}\nwheels=${wheels}\n`,
   );
 } else if (process.argv[2] === 'verify') {
   verifyResults(

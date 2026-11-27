@@ -45,6 +45,7 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 - Rust format, lint, and tests
 - each crate's minimum Rust version and a run against tree-sitter 0.26, the companion's declared floor, when a path a crate builds from changes
 - package contents, the Node binding, and the Python binding when a path it builds from changes
+- Python wheels on Linux and Windows when the package build changes, and on pull requests to `main`
 
 A pull request that changes only docs, `NOTICE`, `CODEOWNERS`, or the Dependabot config skips the build jobs, and a draft fails the final check. That aggregate job, named `Verify`, is the required check on `dev` and `main`.
 

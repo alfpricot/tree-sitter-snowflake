@@ -57,6 +57,16 @@ fn lists_statement_kinds_blocks_and_names() {
 }
 
 #[test]
+fn a_with_clause_does_not_name_the_statement() {
+    let sql = "WITH c AS (SELECT 1) INSERT INTO t SELECT * FROM c;
+WITH RECURSIVE r AS (SELECT 1), s AS (SELECT 2) SELECT * FROM r;";
+    let result = summary(sql).unwrap();
+    assert!(result.errors.is_empty(), "{:?}", result.errors);
+    let kinds: Vec<_> = result.statements.iter().map(|s| s.kind.as_str()).collect();
+    assert_eq!(kinds, ["insert_statement", "select"]);
+}
+
+#[test]
 fn reports_syntax_errors() {
     let result = summary("SELECT (1 FROM t;").unwrap();
     assert!(!result.errors.is_empty(), "{result:?}");

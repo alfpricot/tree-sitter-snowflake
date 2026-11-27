@@ -111,6 +111,49 @@ test('resolve only real tags on main whose version files agree', () => {
   }
 });
 
+test('resolve checks pyproject.toml and reports whether the tag has one', () => {
+  const root = mkdtempSync(join(tmpdir(), 'snowflake-python-'));
+  const output = join(root, 'output');
+  const run = (command, args, options) =>
+    execFileSync(command, args, { ...options, cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+  const git = (...args) => run('git', args, { encoding: 'utf8' }).trim();
+  const release = (tag, ...files) => {
+    git('add', 'Cargo.toml', 'package.json', 'tree-sitter.json', '.gala.toml', ...files);
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', tag);
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git('update-ref', `refs/tags/${tag}`, 'HEAD');
+  };
+  const reported = (tag) => {
+    writeFileSync(output, '');
+    const previous = process.cwd();
+    process.chdir(root);
+    try {
+      runCommand('resolve', { TAG: tag, GITHUB_OUTPUT: output });
+    } finally {
+      process.chdir(previous);
+    }
+    return readFileSync(output, 'utf8').match(/^python=(.*)$/m)?.[1];
+  };
+  try {
+    git('init', '-b', 'main');
+    writeFileSync(join(root, '.gala.toml'), GALA);
+    writeRelease(root, '0.1.0');
+    release('v0.1.0');
+    assert.equal(reported('v0.1.0'), 'false');
+
+    writeRelease(root, '0.1.1');
+    writePython(root, '0.1.1');
+    release('v0.1.1', 'pyproject.toml');
+    assert.equal(reported('v0.1.1'), 'true');
+
+    writeRelease(root, '0.1.2');
+    release('v0.1.2');
+    assert.throws(() => resolveRelease('v0.1.2', run), /pyproject\.toml/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('a tag cut before gala wrote the version files keeps publish-time versions', () => {
   const root = mkdtempSync(join(tmpdir(), 'snowflake-legacy-'));
   const url = pathToFileURL(root + '/');

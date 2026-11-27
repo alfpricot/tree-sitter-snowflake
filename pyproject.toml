@@ -1,13 +1,13 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools>=62.4.0", "wheel"]
+requires = ["setuptools>=77"]
 
 [project]
 name = "tree-sitter-snowflake"
 version = "0.3.1"
 description = "Tree-sitter grammar for Snowflake SQL"
 readme = "README.md"
-license.text = "MIT"
+license = "MIT"
 authors = [{ name = "M. Reifschneider" }]
 requires-python = ">=3.10"
 keywords = ["incremental", "parsing", "tree-sitter", "snowflake", "sql"]
