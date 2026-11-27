@@ -4,7 +4,7 @@ requires = ["setuptools>=77"]
 
 [project]
 name = "tree-sitter-snowflake"
-version = "0.3.1"
+version = "1.0.0"
 description = "Tree-sitter grammar for Snowflake SQL"
 readme = "README.md"
 license = "MIT"

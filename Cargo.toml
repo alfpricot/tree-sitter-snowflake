@@ -11,7 +11,7 @@ pedantic = "warn"
 [package]
 name = "tree-sitter-snowflake"
 description = "Tree-sitter grammar for Snowflake SQL"
-version = "0.3.1"
+version = "1.0.0"
 authors = ["M. Reifschneider"]
 license = "MIT"
 readme = "README.md"

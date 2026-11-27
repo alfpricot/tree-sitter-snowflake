@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0 (2026-11-27)
+
+### Breaking Changes
+
+* **grammar:** parse account and replication objects, quantified LIKE, and structured types (#109)
+* **grammar:** parse ASOF joins, sampling and null treatment, and inject quoted bodies (#106)
+* **handlers:** report handler metadata and keep failures per handler (#104)
+* **grammar:** parse secrets and network rules and rename odd node names (#103)
+* **bindings:** type-check the JavaScript and make node types assignable (#99)
+* **handlers:** give errors and encoding failures typed values (#96)
+* **bindings:** add folds and indents queries (#93)
+* **grammar:** reject CHECK constraints and a misplaced IF EXISTS (#91)
+* **grammar:** parse missing drop, grant, join, and constant forms (#89)
+
+### Features
+
+* add Go bindings and highlight more single-quoted bodies (#108)
+* **handlers:** list handler dependencies and summarize routines (#107)
+* add Python bindings and a SQL summary to the handlers crate (#105)
+
+### Bug Fixes
+
+* parse database role grants and match quoted handler names (#110)
+* **handlers:** reject a leading plus in numeric escapes (#95)
+
+### Refactoring
+
+* **grammar:** split create statements by object family (#97)
+* **tools:** share the batched parse helpers (#94)
+
 ## 0.3.1 (2026-11-24)
 
 ### Bug Fixes
