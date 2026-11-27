@@ -96,7 +96,7 @@ Unavailable or invalid bodies are unmeasured, not measured at zero. Preserve tha
 
 ## Node kinds are the public API
 
-Consumers often compare node-kind and field-name strings at runtime. Renaming or removing a node or a field can therefore compile successfully while silently changing analysis results. `test/node-kinds.txt` is the committed, CI-checked snapshot of every named node kind and, as `kind.field` lines, every field each kind carries. A node or field rename or removal is a breaking change; while the crate is below 1.0 it ships as a new minor version, which Cargo and npm caret ranges do not pick up automatically.
+Consumers often compare node-kind and field-name strings at runtime. Renaming or removing a node or a field can therefore compile successfully while silently changing analysis results. `test/node-kinds.txt` is the committed, CI-checked snapshot of every named node kind and, as `kind.field` lines, every field each kind carries. A node or field rename or removal is a breaking change and ships as a new major version, which Cargo and npm caret ranges do not pick up automatically.
 
 After upgrading, run `node tools/node-kinds.mjs` and compare the output with the previous release's snapshot before updating a structural profile.
 
