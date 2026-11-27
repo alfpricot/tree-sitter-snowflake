@@ -188,7 +188,6 @@ impl Analyzer {
             body.tree = Some(tree);
         }
         let findings = checks::tasks(sql, &statements, &handlers);
-        drop(statements);
         Ok(Analysis {
             sql_tree,
             sql_errors,

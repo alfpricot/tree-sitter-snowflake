@@ -441,7 +441,7 @@ mod tests {
             .unwrap();
         for (source, expected) in [
             (r#""\x41""#, Some("A")),
-            (r#""A""#, Some("A")),
+            (r#""\u0041""#, Some("A")),
             (r#""\x+f""#, None),
             (r#""\u+041""#, None),
             (r#""\x4""#, None),
