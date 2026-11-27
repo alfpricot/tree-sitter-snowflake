@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.3.0) - 2026-11-26
+
+Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree the analyzer returns and what it reports as a syntax error.
+
+### Changed
+
+- **Breaking:** requires tree-sitter-snowflake 0.4. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.
+- `ALTER TABLE ... RENAME TO`, `COMMIT WORK`, object constants, `NATURAL` joins, joins without a condition, routine `DROP` signatures, and many multi-word `DROP`, `GRANT`, and `REVOKE` kinds no longer appear in `Analysis::sql_errors`.
+- A `NATURAL JOIN` with an `ON` clause, an unquoted table alias spelled `natural`, and some `DROP`, `GRANT`, and `REVOKE` statements that use a kind word as an object name are now reported as syntax errors.
+- Literal SQL inside a handler that uses a newly accepted form is now checked, where it was previously skipped as unparsable.
+
 ## [0.2.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.2.0) - 2026-11-05
 
 Built against the tree-sitter-snowflake 0.3 grammar, whose routine, Scripting, and statement rules changed what the analyzer sees.
