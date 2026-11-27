@@ -1,13 +1,15 @@
 # Contributing to tree-sitter-snowflake
 
-A tree-sitter grammar for Snowflake SQL, with Rust and Node bindings and the `snowflake-handlers` companion crate.
+A tree-sitter grammar for Snowflake SQL, with Rust, Node, Python, and Go bindings and the `snowflake-handlers` companion crate.
 
 ## Before you start
 
-1. Branch from **`dev`**; `main` is the production branch, updated by promotion pull request; releases are cut automatically from it.
+1. Branch from **`dev`**; `main` is the production branch, updated by a promotion pull request; releases are cut automatically from it.
 2. Read [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Local setup
+
+You need Node 24, Rust 1.90 or later, and a C compiler. On Windows the parse tools under `tools/` build the parser with `gcc`; elsewhere they use the default compiler.
 
 ```sh
 npm ci --ignore-scripts
@@ -16,7 +18,9 @@ npx --no-install tree-sitter generate
 cargo build
 ```
 
-The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile; `tools/cli-version.test.mjs` fails CI when that entry, an npm script, or a workflow pins a `tree-sitter-cli` version that lags the devDependency. The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. `.gitattributes` marks `src/parser.c` with `-diff` — a grammar change renumbers the parse states, so its diff is a whole-file rewrite that carries no reviewable information. Review `grammar.js`, `src/grammar.json`, and the corpus tests instead, and on a merge conflict in `src/parser.c` resolve `grammar.js` with both sides' changes, then regenerate rather than editing the C file by hand. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run. On a machine without MSVC, set `CC=gcc CXX=g++`.
+The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, regenerate the lockfile and the parser. The `allowScripts` entries name packages without a version, so they need no edit. `tools/cli-version.test.mjs` fails CI when an npm script or a workflow pins a `tree-sitter-cli` version that lags the devDependency.
+
+The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. `.gitattributes` marks `src/parser.c` with `-diff` — a grammar change renumbers the parse states, so its diff is a whole-file rewrite that carries no reviewable information. Review `grammar.js`, `src/grammar.json`, and the corpus tests instead, and on a merge conflict in `src/parser.c` resolve `grammar.js` with both sides' changes, then regenerate rather than editing the C file by hand. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run; a stale parser passes tests with a straight face. On Windows without MSVC, set `CC=gcc CXX=g++`.
 
 ## Validation before a pull request
 
@@ -28,6 +32,7 @@ FIXTURE_LEAK_KEY="$KEY" node tools/fixture-leak-grep.mjs   # needs the key; with
 node tools/keyword-probe.mjs
 node tools/package-check.mjs
 node --test tools/*.test.mjs tools/parse-rate/*.test.mjs
+node tools/ci-policy.mjs versions
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
@@ -36,7 +41,7 @@ npm run lint
 npm run format:check
 ```
 
-These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, and Rust and JavaScript style. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. It also builds against tree-sitter 0.26 and runs the Node binding tests (`npm test`), which need MSVC on Windows. `npm run format` applies formatting.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the manifests, and Rust and JavaScript style. `npm run lint` also type-checks `tools/` and `bindings/node/`. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. When a path a crate builds from changes, it also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. CI compiles `src/scanner.c` with `-Wall -Wextra -Wpedantic -Werror` and fuzzes the parser when the scanner changes. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting. The Go binding test runs with `go test ./bindings/go` and needs cgo. The Python binding tests run with `pip install . pytest "tree-sitter~=0.25"` in a virtual environment, then `pytest bindings/python/tests`.
 
 ## Pull requests
 

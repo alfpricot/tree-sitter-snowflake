@@ -1314,3 +1314,40 @@ CREATE PROCEDURE p() RETURNS INT LANGUAGE JAVASCRIPT EXECUTE AS RESTRICTED CALLE
       (function_body
         (dollar_quoted_body
           (body_content))))))
+
+================================================================================
+empty routine option lists
+================================================================================
+
+CREATE FUNCTION f() RETURNS INT LANGUAGE PYTHON PACKAGES = () IMPORTS = () HANDLER = 'h' AS $$x$$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_function
+      (keyword_create)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_arguments)
+      (keyword_returns)
+      (keyword_int)
+      (foreign_language
+        (keyword_language)
+        (keyword_python))
+      (module_option
+        (option
+          (identifier)))
+      (module_option
+        (option
+          (identifier)))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_body
+          (body_content))))))

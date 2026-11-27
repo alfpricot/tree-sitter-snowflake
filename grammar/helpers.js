@@ -47,6 +47,21 @@ export function paren_list(field, requireFirst) {
   return wrapped_in_parenthesis(comma_list(field, requireFirst));
 }
 
+// CREATE [OR REPLACE] [modifiers] kind [IF NOT EXISTS] name — the header
+// most CREATE statements open with. Returns the sequence members, so a
+// caller spreads them into its own `seq`. `kind` is one rule or a list of
+// them. Statements that take no IF NOT EXISTS spell their header out.
+export function create_header($, kind, { modifiers = [], name = $.object_reference } = {}) {
+  return [
+    $.keyword_create,
+    optional($._or_replace),
+    ...modifiers,
+    ...[kind].flat(),
+    optional($._if_not_exists),
+    field('name', name),
+  ];
+}
+
 // The `SET TAG tag = 'value', ... | UNSET TAG tag, ...` pair the ALTER
 // statements for taggable objects share. Kept apart from
 // set_unset_properties because some ALTERs (SESSION) take no tags.
@@ -58,14 +73,33 @@ export function set_unset_tags($) {
 }
 
 // The `SET <options> | UNSET <names>` alternative pair every ALTER
-// object shares. A plain function, not a named rule, so callers can
+// object shares. The options set at once are comma-separated unless `spaced`,
+// which also takes them separated by spaces. A statement that takes no tags
+// should not be spaced without need: the option list takes any word, so a tag
+// clause would read as two options instead of an error. A plain function, not a named rule, so callers can
 // spread it alongside their own alternatives in one surrounding
 // `choice`/`repeat1`.
-export function set_unset_properties($) {
+export function set_unset_properties($, { spaced = false } = {}) {
+  const separator = spaced ? optional(',') : ',';
   return [
-    seq($.keyword_set, comma_list($.option, true)),
+    seq($.keyword_set, $.option, repeat(seq(separator, $.option))),
     seq($.keyword_unset, comma_list($.identifier, true)),
   ];
+}
+
+// The `<type> INTEGRATION` words CREATE, DROP, UNDROP, GRANT, and REVOKE
+// share for a typed integration.
+export function typed_integration($) {
+  return seq(
+    choice(
+      $.keyword_storage,
+      $.keyword_api,
+      $.keyword_security,
+      $.keyword_notification,
+      seq($.keyword_external, $.keyword_access),
+    ),
+    $.keyword_integration,
+  );
 }
 
 // A stage path, unquoted (the common form) or single-quoted — Snowflake

@@ -1,35 +1,55 @@
 use crate::{
-    ExecutionRights, Handler, HandlerSource, HandlerStatus, Language, RoutineKind, descendants,
+    AnalysisFailure, ExecutionRights, Handler, HandlerSource, HandlerStatus, Language, Limits,
+    RoutineKind, descendants,
 };
-use tree_sitter::Tree;
+use tree_sitter::Node;
 
-pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
+/// The statements the analyzer reads, gathered in one pass over the SQL tree.
+pub(crate) struct Statements<'tree> {
+    /// Every `CREATE PROCEDURE` and `CREATE FUNCTION`.
+    pub routines: Vec<Node<'tree>>,
+    /// Every `CREATE TASK`.
+    pub tasks: Vec<Node<'tree>>,
+}
+
+impl<'tree> Statements<'tree> {
+    pub fn collect(root: Node<'tree>) -> Self {
+        let mut statements = Self {
+            routines: Vec::new(),
+            tasks: Vec::new(),
+        };
+        for node in descendants(root) {
+            match node.kind() {
+                "create_procedure" | "create_function" => statements.routines.push(node),
+                "create_task" => statements.tasks.push(node),
+                _ => {}
+            }
+        }
+        statements
+    }
+}
+
+pub(crate) fn handlers(sql: &str, routines: &[Node<'_>], limits: Limits) -> Vec<Handler> {
     let mut result = Vec::new();
-    for routine in descendants(tree.root_node()) {
+    for &routine in routines {
         let kind = match routine.kind() {
             "create_procedure" => RoutineKind::Procedure,
             "create_function" => RoutineKind::Function,
             _ => continue,
         };
-        let Some(language_node) = routine.child_by_field_name("language") else {
+        let Some(language) = foreign_language(routine) else {
             continue;
         };
-        let language = descendants(language_node)
-            .into_iter()
-            .find_map(|node| match node.kind() {
-                "keyword_javascript" => Some(Language::JavaScript),
-                "keyword_python" => Some(Language::Python),
-                "keyword_java" => Some(Language::Java),
-                "keyword_scala" => Some(Language::Scala),
-                _ => None,
-            });
-        let Some(language) = language else { continue };
-        let Some(wrapper) = routine.child_by_field_name("body") else {
+        let wrapper = routine.child_by_field_name("body");
+        // Without a body, only a routine that parsed cleanly is known to be
+        // staged; a syntax error may be what hid the body.
+        if wrapper.is_none() && (routine.has_error() || followed_by_error(routine)) {
             continue;
-        };
-        let form = descendants(wrapper)
-            .into_iter()
-            .find(|n| matches!(n.kind(), "string_body" | "dollar_quoted_body"));
+        }
+        let form = wrapper.and_then(|wrapper| {
+            descendants(wrapper).find(|n| matches!(n.kind(), "string_body" | "dollar_quoted_body"))
+        });
+        let body_start = wrapper.map_or(routine.end_byte(), |n| n.start_byte());
         let mut rights = if kind == RoutineKind::Procedure {
             ExecutionRights::Owner
         } else {
@@ -37,18 +57,16 @@ pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
         };
         if kind == RoutineKind::Procedure {
             for node in descendants(routine)
-                .into_iter()
-                .filter(|n| n.kind() == "execute_as_clause" && n.end_byte() <= wrapper.start_byte())
+                .filter(|n| n.kind() == "execute_as_clause" && n.end_byte() <= body_start)
             {
-                rights = if descendants(node)
-                    .iter()
-                    .any(|n| n.kind() == "keyword_caller")
-                {
+                let mut owner = false;
+                let caller = descendants(node).any(|n| {
+                    owner |= n.kind() == "keyword_owner";
+                    n.kind() == "keyword_caller"
+                });
+                rights = if caller {
                     ExecutionRights::Caller
-                } else if descendants(node)
-                    .iter()
-                    .any(|n| n.kind() == "keyword_owner")
-                {
+                } else if owner {
                     ExecutionRights::Owner
                 } else {
                     ExecutionRights::Unknown
@@ -64,10 +82,19 @@ pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
             language,
             rights,
             routine_range: routine.byte_range(),
-            body_range: wrapper.byte_range(),
+            handler: option_value(sql, routine, "HANDLER"),
+            runtime_version: option_value(sql, routine, "RUNTIME_VERSION"),
+            packages: option_list(sql, routine, "PACKAGES"),
+            imports: option_list(sql, routine, "IMPORTS"),
+            external_access_integrations: option_list(sql, routine, "EXTERNAL_ACCESS_INTEGRATIONS"),
+            body_range: wrapper.map_or(body_start..body_start, |n| n.byte_range()),
             source: None,
             tree: None,
-            status: HandlerStatus::InvalidSql,
+            status: if wrapper.is_none() {
+                HandlerStatus::Staged
+            } else {
+                HandlerStatus::InvalidSql
+            },
             parse_errors: Vec::new(),
             findings: Vec::new(),
         };
@@ -76,20 +103,119 @@ pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
         {
             let delimiters = if form.kind() == "string_body" { 1 } else { 2 };
             let range = form.start_byte() + delimiters..form.end_byte() - delimiters;
-            let decoded = if delimiters == 1 {
-                HandlerSource::quoted(&sql[range.clone()], range.start)
+            if limits.max_body_bytes.is_some_and(|max| range.len() > max) {
+                body.status = HandlerStatus::AnalysisFailed(AnalysisFailure::BodyTooLarge);
             } else {
-                Ok(HandlerSource::verbatim(&sql[range.clone()], range.start))
-            };
-            match decoded {
-                Ok(source) => {
-                    body.source = Some(source);
-                    body.status = HandlerStatus::UnavailableLanguage;
+                let decoded = if delimiters == 1 {
+                    HandlerSource::quoted(&sql[range.clone()], range.start)
+                } else {
+                    Ok(HandlerSource::verbatim(&sql[range.clone()], range.start))
+                };
+                match decoded {
+                    Ok(source) => {
+                        body.source = Some(source);
+                        body.status = HandlerStatus::UnavailableLanguage;
+                    }
+                    Err(message) => body.status = HandlerStatus::InvalidEncoding(message),
                 }
-                Err(message) => body.status = HandlerStatus::InvalidEncoding(message),
             }
         }
         result.push(body);
     }
     result
+}
+
+/// Whether a syntax error starts right after `routine`, where a body that
+/// could not be read ends up.
+fn followed_by_error(routine: Node<'_>) -> bool {
+    let mut node = routine;
+    loop {
+        let mut next = node.next_sibling();
+        while let Some(sibling) = next.filter(Node::is_extra) {
+            // A comment is extra, and so is some of what error recovery skips.
+            if sibling.is_error() {
+                return true;
+            }
+            next = sibling.next_sibling();
+        }
+        if let Some(next) = next {
+            return next.is_error() || next.is_missing();
+        }
+        let Some(parent) = node.parent() else {
+            return false;
+        };
+        node = parent;
+    }
+}
+
+/// The foreign language a routine declares, or `None` for a SQL routine.
+pub(crate) fn foreign_language(routine: Node<'_>) -> Option<Language> {
+    let clause = routine.child_by_field_name("language")?;
+    descendants(clause).find_map(|node| match node.kind() {
+        "keyword_javascript" => Some(Language::JavaScript),
+        "keyword_python" => Some(Language::Python),
+        "keyword_java" => Some(Language::Java),
+        "keyword_scala" => Some(Language::Scala),
+        _ => None,
+    })
+}
+
+/// One of a routine's header options, such as `HANDLER`. The last spelling
+/// wins when an option is repeated.
+fn header_option<'tree>(sql: &str, routine: Node<'tree>, name: &str) -> Option<Node<'tree>> {
+    let mut cursor = routine.walk();
+    routine
+        .named_children(&mut cursor)
+        .filter(|n| n.kind() == "module_option")
+        .filter_map(|n| n.named_child(0))
+        .filter(|option| {
+            option
+                .child_by_field_name("name")
+                .is_some_and(|n| sql[n.byte_range()].eq_ignore_ascii_case(name))
+        })
+        .last()
+}
+
+/// The decoded value of a header option that holds one value.
+fn option_value(sql: &str, routine: Node<'_>, name: &str) -> Option<String> {
+    let value = header_option(sql, routine, name)?.child_by_field_name("value")?;
+    decoded_value(&sql[value.byte_range()])
+}
+
+/// The decoded items of a header option that holds a list. A list of strings
+/// parses as repeated values, and a list of names as nested options. An item
+/// that cannot be decoded is left out.
+fn option_list(sql: &str, routine: Node<'_>, name: &str) -> Vec<String> {
+    let Some(option) = header_option(sql, routine, name) else {
+        return Vec::new();
+    };
+    let mut cursor = option.walk();
+    let values: Vec<_> = option
+        .children_by_field_name("value", &mut cursor)
+        .filter(Node::is_named)
+        .collect();
+    let mut cursor = option.walk();
+    let names = option
+        .named_children(&mut cursor)
+        .filter(|n| n.kind() == "option")
+        .filter_map(|n| n.child_by_field_name("name"));
+    values
+        .into_iter()
+        .chain(names)
+        .filter_map(|n| decoded_value(&sql[n.byte_range()]))
+        .collect()
+}
+
+/// An option value without its string delimiters, with a single-quoted
+/// string's escapes decoded. Anything else is returned as written.
+fn decoded_value(raw: &str) -> Option<String> {
+    if let Some(inner) = raw.strip_prefix("$$").and_then(|r| r.strip_suffix("$$")) {
+        return Some(inner.to_owned());
+    }
+    match raw.strip_prefix('\'').and_then(|r| r.strip_suffix('\'')) {
+        Some(inner) => HandlerSource::quoted(inner, 0)
+            .ok()
+            .map(|decoded| decoded.text().to_owned()),
+        None => Some(raw.to_owned()),
+    }
 }

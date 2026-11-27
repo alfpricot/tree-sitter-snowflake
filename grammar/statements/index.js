@@ -1,4 +1,8 @@
 import create_rules from './create.js';
+import table_rules from './create-table.js';
+import loading_rules from './create-loading.js';
+import account_rules from './create-account.js';
+import governance_rules from './create-governance.js';
 import procedure_rules from './create-procedure.js';
 import task_rules from './task.js';
 import alter_rules from './alter.js';
@@ -9,10 +13,27 @@ import copy_rules from './copy.js';
 import grant_rules from './grant.js';
 import admin_rules from './admin.js';
 import semantic_rules from './semantic.js';
-import clause_rules from '../clauses.js';
 import { merge_rules, optional_parenthesis } from '../helpers.js';
 
 const statement_rules = {
+  // The IF [NOT] EXISTS clauses every statement family shares.
+  _if_not_exists: ($) => seq($.keyword_if, $.keyword_not, $.keyword_exists),
+  _if_exists_clause: ($) => seq($.keyword_if, $.keyword_exists),
+
+  // The kinds that can precede POLICY. Inlined in grammar.js, so it adds no
+  // parser step of its own.
+  _policy_kind: ($) =>
+    choice(
+      $.keyword_masking,
+      seq($.keyword_row, $.keyword_access),
+      $.keyword_aggregation,
+      $.keyword_projection,
+      $.keyword_network,
+      $.keyword_password,
+      $.keyword_session,
+      $.keyword_authentication,
+    ),
+
   // A Snowflake script: statements separated by mandatory `;`, with the
   // final statement's terminator optional. Snowflake requires the
   // separator between statements, which keeps statement-initial keywords
@@ -81,6 +102,10 @@ const statement_rules = {
 export default merge_rules(
   statement_rules,
   create_rules,
+  table_rules,
+  loading_rules,
+  account_rules,
+  governance_rules,
   procedure_rules,
   task_rules,
   alter_rules,
@@ -91,5 +116,4 @@ export default merge_rules(
   grant_rules,
   admin_rules,
   semantic_rules,
-  clause_rules,
 );

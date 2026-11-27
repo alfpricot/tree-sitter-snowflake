@@ -16,6 +16,7 @@ export default {
         choice(
           alias($._grant_privilege_core, $.grant_core),
           seq($.keyword_role, comma_list(field('role', $.identifier), true), $._granted_to),
+          seq($._database_role_list, $._granted_to),
         ),
         optional(seq($.keyword_with, $.keyword_grant, $.keyword_option)),
         optional(seq($.keyword_granted, $.keyword_by, $.keyword_role, $.identifier)),
@@ -29,9 +30,14 @@ export default {
       choice(
         alias($._grant_privilege_core, $.grant_core),
         seq($.keyword_role, comma_list(field('role', $.identifier), true), $._revoked_from),
+        seq($._database_role_list, $._revoked_from),
       ),
       optional(choice($.keyword_cascade, $.keyword_restrict)),
     ),
+
+  // DATABASE ROLE [db.]name, the role a role grant hands out.
+  _database_role_list: ($) =>
+    seq($.keyword_database, $.keyword_role, comma_list(field('role', $.object_reference), true)),
 
   // <privileges> ON [ALL | FUTURE] <object kind> [<ref> | IN <database|schema> <ref>]
   // shared by GRANT and REVOKE through the alias above. The kind may be
@@ -47,9 +53,21 @@ export default {
       ),
       $.keyword_on,
       choice(
+        // ON {ALL | FUTURE} <plural kind of several words> IN <container>
+        seq(
+          choice($.keyword_all, $.keyword_future),
+          alias($._plural_object_kind, $.object_kind),
+          $.keyword_in,
+          optional(choice($.keyword_database, $.keyword_schema)),
+          $.object_reference,
+        ),
         seq(
           optional(choice($.keyword_all, $.keyword_future)),
-          $.object_kind,
+          choice(
+            $.object_kind,
+            alias($._multi_word_object_kind, $.object_kind),
+            alias($._grant_table_kind, $.object_kind),
+          ),
           optional(
             seq(
               $.keyword_in,
@@ -65,8 +83,50 @@ export default {
           ),
         ),
         $.object_reference,
+        // ON DATABASE ROLE [db.]name, which always names the role.
+        seq(alias($._database_role_kind, $.object_kind), $.object_reference),
+        // ON DATABASE role: a database that happens to be named `role`.
+        seq(alias($._database_kind, $.object_kind), alias($._role_as_name, $.object_reference)),
       ),
       choice($._granted_to, $._revoked_from),
+    ),
+
+  // Table kinds a grant names that DROP spells as plain TABLE.
+  _grant_table_kind: ($) => seq($.keyword_hybrid, $.keyword_table),
+
+  // DYNAMIC TABLES, MATERIALIZED VIEWS, ROW ACCESS POLICIES, ...: any run
+  // of two or more words before IN. The keywords listed are the ones that
+  // can also begin a singular kind, so they lex as keywords here.
+  _plural_object_kind: ($) => seq($._kind_word, repeat1($._kind_word)),
+
+  _kind_word: ($) =>
+    choice(
+      $.identifier,
+      $.keyword_access,
+      $.keyword_aggregation,
+      $.keyword_api,
+      $.keyword_authentication,
+      $.keyword_cortex,
+      $.keyword_dynamic,
+      $.keyword_event,
+      $.keyword_external,
+      $.keyword_failover,
+      $.keyword_file,
+      $.keyword_hybrid,
+      $.keyword_iceberg,
+      $.keyword_masking,
+      $.keyword_materialized,
+      $.keyword_network,
+      $.keyword_notification,
+      $.keyword_password,
+      $.keyword_projection,
+      $.keyword_replication,
+      $.keyword_row,
+      $.keyword_search,
+      $.keyword_security,
+      $.keyword_semantic,
+      $.keyword_session,
+      $.keyword_storage,
     ),
 
   privilege_list: ($) => comma_list($.privilege, true),
@@ -120,21 +180,10 @@ export default {
       $.keyword_streamlit,
       $.keyword_agent,
       $.keyword_alert,
-      seq(
-        optional(
-          choice(
-            $.keyword_masking,
-            seq($.keyword_row, $.keyword_access),
-            $.keyword_aggregation,
-            $.keyword_projection,
-            $.keyword_network,
-            $.keyword_password,
-            $.keyword_session,
-            $.keyword_authentication,
-          ),
-        ),
-        $.keyword_policy,
-      ),
+      $.keyword_share,
+      $.keyword_secret,
+      $.keyword_notebook,
+      seq(optional($._policy_kind), $.keyword_policy),
       $.identifier,
     ),
 
@@ -145,10 +194,13 @@ export default {
 
   _revoked_from: ($) => seq($.keyword_from, comma_list($.grantee, true)),
 
-  // ROLE r | USER u | SHARE s | PUBLIC | a bare role name
+  // ROLE r | DATABASE ROLE [db.]r | USER u | SHARE s | PUBLIC | a bare role
+  // name, which may be spelled `database`.
   grantee: ($) =>
     choice(
       seq($.keyword_role, $.identifier),
+      seq($.keyword_database, $.keyword_role, $.object_reference),
+      alias($.keyword_database, $.identifier),
       seq($.keyword_user, $.identifier),
       seq($.keyword_share, $.identifier),
       $.keyword_public,

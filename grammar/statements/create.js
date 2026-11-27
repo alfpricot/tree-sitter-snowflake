@@ -1,10 +1,11 @@
-import { comma_list, paren_list, wrapped_in_parenthesis } from '../helpers.js';
+import { comma_list, create_header, paren_list, wrapped_in_parenthesis } from '../helpers.js';
 
-// Snowflake DDL: CREATE [OR REPLACE] across Snowflake's object families.
-// Option floods (warehouse parameters, task
-// parameters, file-format options, copy options, stage properties, table
-// properties) are the generic `option` shape — `identifier [= value]` —
-// because option names are never keywords.
+// Snowflake DDL: CREATE [OR REPLACE] across Snowflake's object families. This
+// module holds the statement list, the clauses the families share, and the
+// objects without a family module of their own. Option floods (warehouse
+// parameters, task parameters, file-format options, copy options, stage
+// properties, table properties) are the generic `option` shape,
+// `identifier [= value]`, because option names are never keywords.
 export default {
   _create_statement: ($) =>
     choice(
@@ -29,6 +30,14 @@ export default {
       $.create_cortex_search,
       $.create_policy,
       $.create_alert,
+      $.create_secret,
+      $.create_network_rule,
+      $.create_database_role,
+      $.create_share,
+      $.create_external_volume,
+      $.create_notebook,
+      $.create_replication_group,
+      $.create_failover_group,
     ),
 
   // CREATE [OR REPLACE] CORTEX SEARCH SERVICE name ON column
@@ -88,168 +97,6 @@ export default {
 
   _or_replace: ($) => seq($.keyword_or, $.keyword_replace),
 
-  // CREATE [OR REPLACE] [TRANSIENT] TABLE [IF NOT EXISTS] name
-  //   { ( column_definitions ) [table options]
-  //   | [CLUSTER BY (...)] AS query
-  //   | LIKE other_table
-  //   | CLONE other_table }
-  //   [COPY GRANTS] [WITH TAG (...)] ...
-  create_table: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        repeat(
-          choice(
-            $.keyword_transient,
-            $.keyword_volatile,
-            $.keyword_temporary,
-            $.keyword_local,
-            $.keyword_global,
-            $.keyword_external,
-            $.keyword_iceberg,
-            $.keyword_event,
-            $.keyword_hybrid,
-          ),
-        ),
-        $.keyword_table,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        optional($.cluster_by),
-        choice(
-          seq(
-            $.column_definitions,
-            repeat($.table_option),
-            optional(seq($.keyword_as, $.create_query)),
-          ),
-          seq(repeat($.table_option), $.keyword_as, $.create_query),
-          seq($.keyword_like, $.object_reference),
-          seq(
-            $.keyword_clone,
-            $.object_reference,
-            optional($._time_travel_clause),
-            repeat($.table_option),
-          ),
-        ),
-      ),
-    ),
-
-  // The CTAS query.
-  create_query: ($) => $._dml_read,
-
-  // CLUSTER BY (expr, ...), PARTITION BY (...), COPY GRANTS, and the
-  // identifier = value property tail Snowflake tables carry.
-  table_option: ($) =>
-    prec.left(
-      choice(
-        $.cluster_by,
-        $.table_partition_by,
-        seq($.keyword_copy, $.keyword_grants),
-        $._with_tag,
-        $._with_policy,
-        $._with_contact,
-        $.option,
-      ),
-    ),
-
-  // PARTITION BY (col, ...) — a table's partition columns. Distinct from
-  // the window and MATCH_RECOGNIZE `partition_by`, which takes a bare list.
-  table_partition_by: ($) =>
-    seq($.keyword_partition, $.keyword_by, paren_list($._expression, true)),
-
-  cluster_by: ($) => seq($.keyword_cluster, $.keyword_by, paren_list($._expression, true)),
-
-  // CREATE [OR REPLACE] [SECURE] VIEW [IF NOT EXISTS] name [(cols)]
-  //   [COPY GRANTS] [COMMENT = '...'] AS query
-  // A column list entry may carry its own COMMENT '...'.
-  create_view: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        optional($.keyword_secure),
-        $.keyword_view,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        optional(paren_list($.view_column, true)),
-        repeat($.view_option),
-        $.keyword_as,
-        $.create_query,
-      ),
-    ),
-
-  view_column: ($) =>
-    seq(
-      field('name', $.identifier),
-      repeat(
-        choice(
-          seq($.keyword_comment, alias($._single_quote_string, $.literal)),
-          $._with_column_policy,
-          $._with_tag,
-        ),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] MATERIALIZED VIEW name [(cols)]
-  //   [COMMENT = ''] [CLUSTER BY (...)] AS query
-  // The columns take the same COMMENT, policy, and tag clauses as a view's.
-  create_materialized_view: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_materialized,
-        $.keyword_view,
-        field('name', $.object_reference),
-        optional(paren_list($.view_column, true)),
-        repeat(choice($.cluster_by, $.view_option)),
-        $.keyword_as,
-        $.create_query,
-      ),
-    ),
-
-  // CREATE [OR REPLACE] DYNAMIC TABLE name [(cols)]
-  //   TARGET_LAG = '..' WAREHOUSE = '..' [COMMENT = ''] AS query
-  create_dynamic_table: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_dynamic,
-        $.keyword_table,
-        field('name', $.object_reference),
-        optional(paren_list($.dynamic_table_column, true)),
-        repeat1(choice($._with_tag, $._with_policy, $.option)),
-        $.keyword_as,
-        $.create_query,
-      ),
-    ),
-
-  // A dynamic table column: a name, an optional type, then the view column
-  // clauses plus WITH CONTACT.
-  dynamic_table_column: ($) =>
-    seq(
-      field('name', $.identifier),
-      optional(field('type', $._type)),
-      repeat(
-        choice(
-          seq($.keyword_comment, alias($._single_quote_string, $.literal)),
-          $._with_column_policy,
-          $._with_tag,
-          $._with_contact,
-        ),
-      ),
-    ),
-
-  view_option: ($) =>
-    choice(
-      seq($.keyword_copy, $.keyword_grants),
-      $._with_tag,
-      $._with_policy,
-      $._with_contact,
-      $.option,
-    ),
-
   // [WITH] TAG (tag = 'value', ...) — object tags at creation. WITH is
   // optional, as Snowflake documents it.
   _with_tag: ($) =>
@@ -299,190 +146,11 @@ export default {
   // schema, or warehouse names for support or approval requests.
   _with_contact: ($) => seq($.keyword_with, $.keyword_contact, $._paren_options),
 
-  // CREATE [OR REPLACE] [TEMPORARY] STAGE name
-  //   [URL = ''] [STORAGE_INTEGRATION = x] [CREDENTIALS = (...)]
-  //   [ENCRYPTION = (...)] [FILE_FORMAT = (...)] [COPY_OPTIONS = (...)]
-  //   [COMMENT = '']
-  create_stage: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        optional($.keyword_temporary),
-        $.keyword_stage,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        // WITH may also introduce an option: WITH DIRECTORY = (...).
-        repeat(choice($._with_tag, seq($.keyword_with, $.option), $.option)),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] FILE FORMAT name TYPE = csv [options ...]
-  create_file_format: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_file,
-        $.keyword_format,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        repeat1($.option),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] [TEMPORARY] STREAM name [[WITH] TAG (...)]
-  //   [COPY GRANTS]
-  //   { ON { [EXTERNAL | EVENT | DYNAMIC] TABLE | VIEW | STAGE } source
-  //       [{AT | BEFORE} (...)] [APPEND_ONLY = ...] [INSERT_ONLY = ...]
-  //       [SHOW_INITIAL_ROWS = ...] [COMMENT = '']
-  //   | CLONE source_stream [COPY GRANTS] }
-  // The source keeps the `table` field name whatever kind of object it is.
-  create_stream: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        optional($.keyword_temporary),
-        $.keyword_stream,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        optional($._with_tag),
-        optional(seq($.keyword_copy, $.keyword_grants)),
-        choice(
-          seq(
-            $.keyword_on,
-            choice(
-              seq(
-                optional(choice($.keyword_external, $.keyword_event, $.keyword_dynamic)),
-                $.keyword_table,
-              ),
-              $.keyword_view,
-              $.keyword_stage,
-            ),
-            field('table', $.object_reference),
-            optional($.time_travel),
-          ),
-          seq(
-            $.keyword_clone,
-            field('clone', $.object_reference),
-            optional(seq($.keyword_copy, $.keyword_grants)),
-          ),
-        ),
-        repeat($.option),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] PIPE name [AUTO_INGEST = ...]
-  //   [ERROR_INTEGRATION = ...] [COMMENT = ''] AS COPY INTO ...
-  create_pipe: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_pipe,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        repeat($.option),
-        $.keyword_as,
-        $.copy_into_statement,
-      ),
-    ),
-
-  // CREATE [OR REPLACE] WAREHOUSE [IF NOT EXISTS] name
-  //   [WITH] [WAREHOUSE_SIZE = 'XSMALL' ... options]
-  create_warehouse: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_warehouse,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        // The leading WITH introduces the properties; a WITH right before
-        // TAG belongs to the tag clause instead.
-        optional(seq($.keyword_with, $.option)),
-        repeat(choice($._with_tag, $._with_contact, $.option)),
-      ),
-    ),
-
-  // CREATE [OR REPLACE | TRANSIENT] DATABASE [IF NOT EXISTS] name
-  //   [options]
-  create_database: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        optional($.keyword_transient),
-        $.keyword_database,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        repeat(choice($._with_tag, $._with_contact, $.option)),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] [TRANSIENT] SCHEMA [IF NOT EXISTS] name
-  //   [WITH MANAGED ACCESS] [options]
-  create_schema: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        optional($.keyword_transient),
-        $.keyword_schema,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        repeat(
-          choice(
-            $._with_tag,
-            $._with_contact,
-            seq($.keyword_with, $.keyword_managed, $.keyword_access),
-            $.option,
-          ),
-        ),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] ROLE [IF NOT EXISTS] name [options]
-  // The scripted role files carry a trailing COMMENT = '...' option.
-  create_role: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_role,
-        optional($._if_not_exists),
-        field('name', $.identifier),
-        repeat(choice($._with_tag, $.option)),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] USER name [PASSWORD = ...] [options]
-  create_user: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_user,
-        optional($._if_not_exists),
-        field('name', $.identifier),
-        repeat(choice($._with_tag, $.option)),
-      ),
-    ),
-
   // CREATE [OR REPLACE] SEQUENCE [IF NOT EXISTS] name
   //   [WITH] [START [WITH] n] [INCREMENT [BY] n] [options]
   create_sequence: ($) =>
     prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_sequence,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        optional($.keyword_with),
-        repeat($.option),
-      ),
+      seq(...create_header($, $.keyword_sequence), optional($.keyword_with), repeat($.option)),
     ),
 
   // CREATE [OR REPLACE] TAG [IF NOT EXISTS] name
@@ -492,111 +160,9 @@ export default {
   create_tag: ($) =>
     prec.right(
       seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_tag,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
+        ...create_header($, $.keyword_tag),
         optional(seq($.identifier, comma_list(alias($._single_quote_string, $.literal), true))),
         repeat($.option),
       ),
-    ),
-
-  // CREATE [OR REPLACE] {STORAGE | API | SECURITY | NOTIFICATION |
-  //   EXTERNAL ACCESS} INTEGRATION [IF NOT EXISTS] name [options]
-  create_integration: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        choice(
-          $.keyword_storage,
-          $.keyword_api,
-          $.keyword_security,
-          $.keyword_notification,
-          seq($.keyword_external, $.keyword_access),
-        ),
-        $.keyword_integration,
-        optional($._if_not_exists),
-        field('name', $.identifier),
-        repeat1($.option),
-      ),
-    ),
-
-  // CREATE [OR REPLACE] {MASKING | ROW ACCESS | AGGREGATION | PROJECTION} POLICY [IF NOT EXISTS] name
-  //   AS (args) RETURNS type -> expr [COMMENT = '...'] ...
-  // CREATE [OR REPLACE] {NETWORK | PASSWORD | SESSION | AUTHENTICATION} POLICY [IF NOT EXISTS] name
-  //   [options ...]
-  create_policy: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        optional(
-          field(
-            'policy_type',
-            choice(
-              $.keyword_masking,
-              seq($.keyword_row, $.keyword_access),
-              $.keyword_aggregation,
-              $.keyword_projection,
-              $.keyword_network,
-              $.keyword_password,
-              $.keyword_session,
-              $.keyword_authentication,
-            ),
-          ),
-        ),
-        $.keyword_policy,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        choice(
-          seq(
-            repeat($.option),
-            $.keyword_as,
-            paren_list($.policy_parameter, false),
-            $.keyword_returns,
-            field('return_type', $._type),
-            '->',
-            field('body', $.policy_body),
-            repeat($.option),
-          ),
-          repeat($.option),
-        ),
-      ),
-    ),
-
-  policy_parameter: ($) => seq(field('name', $.identifier), optional(field('type', $._type))),
-
-  policy_body: ($) => $._expression,
-
-  // CREATE [OR REPLACE] ALERT [IF NOT EXISTS] name
-  //   [WAREHOUSE = ...] [SCHEDULE = ...] [COMMENT = ...]
-  //   IF ( EXISTS ( query ) ) THEN statement
-  create_alert: ($) =>
-    prec.right(
-      seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_alert,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
-        repeat($.alert_option),
-        $.keyword_if,
-        wrapped_in_parenthesis($._expression),
-        $.keyword_then,
-        field('action', $.statement),
-      ),
-    ),
-
-  alert_option: ($) =>
-    choice(
-      seq(
-        $.keyword_warehouse,
-        '=',
-        field('warehouse', choice($.object_reference, alias($._single_quote_string, $.literal))),
-      ),
-      seq($.keyword_schedule, '=', alias($._single_quote_string, $.literal)),
-      $.option,
     ),
 };

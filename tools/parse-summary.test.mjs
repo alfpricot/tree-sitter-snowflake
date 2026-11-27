@@ -1,21 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { byteOffset, lineStarts, parseSummaryFromXml } from './parse-summary.mjs';
-
-test('lineStarts and byteOffset accurately compute UTF-8 byte positions', () => {
-  const text = 'SELECT 1;\nSELECT 2;\nSELECT 3;';
-  const starts = lineStarts(text);
-  assert.deepEqual(starts, [0, 10, 20]);
-  assert.equal(byteOffset(starts, 0, 0), 0);
-  assert.equal(byteOffset(starts, 1, 7), 17);
-
-  // Multi-byte character (3 bytes in UTF-8)
-  const nonAscii = 'SELECT "★";\nSELECT 1;';
-  const nonAsciiStarts = lineStarts(nonAscii);
-  // 'SELECT "★";\n' length in bytes: 7 + 1 + 3 + 1 + 1 + 1 = 14 bytes
-  assert.deepEqual(nonAsciiStarts, [0, 14]);
-  assert.equal(byteOffset(nonAsciiStarts, 1, 0), 14);
-});
+import { parseSummaryFromXml } from './parse-summary.mjs';
 
 test('parseSummaryFromXml extracts clean statements with their kinds and byte boundaries', () => {
   const xml = `
@@ -146,4 +131,24 @@ test('parseSummaryFromXml ignores marginalia when determining statement kind', (
   assert.equal(statements[0].kind, 'create_table');
   assert.equal(statements[0].start, 8);
   assert.equal(statements[0].end, 30);
+});
+
+test('parseSummaryFromXml names a WITH statement by what follows the clause', () => {
+  const xml = `
+    <program srow="0" scol="0" erow="0" ecol="50">
+      <statement srow="0" scol="0" erow="0" ecol="50">
+        <keyword_with srow="0" scol="0" erow="0" ecol="4">WITH</keyword_with>
+        <keyword_recursive srow="0" scol="5" erow="0" ecol="14">RECURSIVE</keyword_recursive>
+        <cte srow="0" scol="15" erow="0" ecol="30">
+          <identifier srow="0" scol="15" erow="0" ecol="16">c</identifier>
+        </cte>
+        <insert_statement srow="0" scol="31" erow="0" ecol="50">
+          <keyword_insert srow="0" scol="31" erow="0" ecol="37">INSERT</keyword_insert>
+        </insert_statement>
+      </statement>
+    </program>
+  `;
+  const { statements } = parseSummaryFromXml(xml, [0]);
+
+  assert.deepEqual(statements, [{ kind: 'insert_statement', start: 0, end: 50 }]);
 });

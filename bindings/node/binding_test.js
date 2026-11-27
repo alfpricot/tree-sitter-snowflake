@@ -16,6 +16,38 @@ test('exports node type metadata', async () => {
   assert(language.nodeTypeInfo.some((node) => node.type === 'program'));
 });
 
+test('every exported query compiles against the grammar', async () => {
+  const { default: language } = await import('./index.js');
+  for (const name of [
+    'HIGHLIGHTS_QUERY',
+    'INJECTIONS_QUERY',
+    'LOCALS_QUERY',
+    'STRUCTURE_QUERY',
+    'TAGS_QUERY',
+    'FOLDS_QUERY',
+    'INDENTS_QUERY',
+  ]) {
+    assert.equal(typeof language[name], 'string', `${name} is not exported`);
+    assert.doesNotThrow(() => new Parser.Query(language, language[name]), name);
+  }
+});
+
+test('the folds query covers scripting blocks, CTEs, and dollar-quoted bodies', async () => {
+  const { default: language } = await import('./index.js');
+  const parser = new Parser();
+  parser.setLanguage(language);
+  const tree = parser.parse(`EXECUTE IMMEDIATE $$
+BEGIN
+  WITH c AS (SELECT 1) SELECT * FROM c;
+END
+$$;`);
+  assert.equal(tree.rootNode.hasError, false);
+  const folded = new Parser.Query(language, /** @type {string} */ (language.FOLDS_QUERY))
+    .captures(tree.rootNode)
+    .map(({ node }) => node.type);
+  assert.deepEqual(folded.toSorted(), ['block', 'cte', 'dollar_quoted_script']);
+});
+
 test('exports the snowflake language name', async () => {
   const { default: language } = await import('./index.js');
   assert.equal(language.name, 'snowflake');

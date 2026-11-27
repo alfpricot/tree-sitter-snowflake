@@ -11,5 +11,5 @@ export function missingKeywordCaptures(nodeTypes, highlights) {
   const kinds = new Set(
     nodeTypes.filter((n) => n.named && n.type.startsWith('keyword_')).map((n) => n.type),
   );
-  return [...kinds].filter((k) => !captured.has(k)).sort();
+  return [...kinds].filter((k) => !captured.has(k)).toSorted();
 }

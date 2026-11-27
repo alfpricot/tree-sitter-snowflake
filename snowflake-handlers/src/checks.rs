@@ -1,7 +1,12 @@
-use crate::{Error, ExecutionRights, Handler, Language, RoutineKind, descendants};
-use std::ops::Range;
+use crate::extract::Statements;
+use crate::{
+    AnalysisFailure, ExecutionRights, Handler, HandlerStatus, Language, RoutineKind, descendants,
+    parse,
+};
+use std::{ops::Range, time::Duration};
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
+/// How firmly a rule's match points at a problem.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Severity {
@@ -11,11 +16,15 @@ pub enum Severity {
     Advisory,
 }
 
+/// One restriction the analyzer checks for.
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct Rule {
+    /// The stable identifier, one of the constants in [`rules`](crate::rules).
     pub id: &'static str,
+    /// What was matched and why it matters.
     pub message: &'static str,
+    /// How firmly the match points at a problem.
     pub severity: Severity,
 }
 
@@ -27,19 +36,32 @@ pub struct Rule {
 // fresh string literal — `finding_by_rule` still takes a plain
 // `&'static str`, so a hand-typed, mistyped literal at a new call site
 // would still compile and panic on ordinary input.
+/// A call to `eval` in JavaScript.
 pub const JS_EVAL: &str = "js-eval";
+/// A library import in JavaScript.
 pub const JS_IMPORT: &str = "js-import";
+/// A browser or network API in JavaScript.
 pub const JS_HOST_API: &str = "js-host-api";
+/// Process creation in a Python procedure.
 pub const PYTHON_PROCESS: &str = "python-process";
+/// A construct that may run work concurrently.
 pub const CONCURRENCY: &str = "concurrency";
+/// Building a new Snowpark session.
 pub const SESSION_BUILDER: &str = "session-builder";
+/// Access to the session's JDBC connection.
 pub const JDBC_CONNECTION: &str = "jdbc-connection";
+/// PUT or GET run from a Python procedure.
 pub const PYTHON_PUT_GET: &str = "python-put-get";
+/// A stage-path pattern passed to `file.get` in Python.
 pub const PYTHON_GET_PATTERN: &str = "python-get-pattern";
+/// A file download to a path outside `/tmp`.
 pub const LOCAL_WRITE_PATH: &str = "local-write-path";
+/// A named temporary object under owner's rights.
 pub const OWNER_TEMP_OBJECT: &str = "owner-temp-object";
+/// A task without a warehouse calling a Scala procedure.
 pub const SCALA_TASK_WAREHOUSE: &str = "scala-task-warehouse";
 
+/// Every rule, with its identifier, message, and severity.
 pub const RULES: &[Rule] = &[
     Rule {
         id: JS_EVAL,
@@ -103,11 +125,15 @@ pub const RULES: &[Rule] = &[
     },
 ];
 
+/// A rule that matched at a place in the SQL.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Finding {
+    /// The matched rule's identifier.
     pub rule_id: &'static str,
+    /// The matched rule's message.
     pub message: &'static str,
+    /// The matched rule's severity.
     pub severity: Severity,
     /// Absolute half-open byte range in the original SQL source.
     pub range: Range<usize>,
@@ -153,7 +179,8 @@ pub(crate) fn check(
     tree: &Tree,
     query: &Query,
     sql_parser: &mut Parser,
-) -> Result<Vec<Finding>, Error> {
+    timeout: Option<Duration>,
+) -> Result<Vec<Finding>, AnalysisFailure> {
     let source = body.source.as_ref().unwrap();
     let text = source.text();
     let mut cursor = QueryCursor::new();
@@ -163,10 +190,10 @@ pub(crate) fn check(
         for (name, node) in query
             .capture_names()
             .iter()
-            .enumerate()
-            .flat_map(|(index, &name)| {
+            .zip(0u32..)
+            .flat_map(|(&name, index)| {
                 matched
-                    .nodes_for_capture_index(index as u32)
+                    .nodes_for_capture_index(index)
                     .map(move |node| (name, node))
             })
         {
@@ -184,7 +211,9 @@ pub(crate) fn check(
             match name {
                 "sql" => {
                     if let Some(sql) = literal(node, text, body.language) {
-                        check_sql(&sql, body, range, sql_parser, &mut findings)?;
+                        let tree =
+                            parse(sql_parser, &sql, timeout).ok_or(AnalysisFailure::TimedOut)?;
+                        check_sql(&sql, &tree, body, range, &mut findings);
                     }
                 }
                 "stage-path" => {
@@ -204,7 +233,7 @@ pub(crate) fn check(
         }
     }
     if cursor.did_exceed_match_limit() {
-        return Err(Error("Restriction query match limit exceeded".into()));
+        return Err(AnalysisFailure::MatchLimitExceeded);
     }
     findings.sort_by_key(|f| (f.range.start, f.range.end, f.rule_id));
     findings.dedup();
@@ -213,16 +242,13 @@ pub(crate) fn check(
 
 fn check_sql(
     sql: &str,
+    tree: &Tree,
     body: &Handler,
     range: Range<usize>,
-    parser: &mut Parser,
     findings: &mut Vec<Finding>,
-) -> Result<(), Error> {
-    let tree = parser
-        .parse(sql, None)
-        .ok_or_else(|| Error("Literal SQL parse cancelled".into()))?;
+) {
     if tree.root_node().has_error() {
-        return Ok(());
+        return;
     }
     for node in descendants(tree.root_node()) {
         if matches!(node.kind(), "put_statement" | "get_statement") {
@@ -231,9 +257,7 @@ fn check_sql(
             } else if node.kind() == "get_statement" {
                 // GET's local destination is the only write path. PUT reads a
                 // local source, so a non-/tmp PUT source is not a write violation.
-                let local = descendants(node)
-                    .into_iter()
-                    .find(|n| n.kind() == "literal");
+                let local = descendants(node).find(|n| n.kind() == "literal");
                 if let Some(local) = local {
                     let path = sql[local.byte_range()].trim_matches('\'');
                     if !within_tmp(path) {
@@ -252,7 +276,6 @@ fn check_sql(
             }
         }
     }
-    Ok(())
 }
 
 fn within_tmp(path: &str) -> bool {
@@ -276,10 +299,7 @@ fn within_tmp(path: &str) -> bool {
 /// Decode a conservative subset of each embedded language's literal syntax.
 /// Dynamic/interpolated strings and unsupported escapes are deliberately skipped.
 fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
-    if descendants(node)
-        .iter()
-        .any(|n| matches!(n.kind(), "interpolation" | "template_substitution"))
-    {
+    if descendants(node).any(|n| matches!(n.kind(), "interpolation" | "template_substitution")) {
         return None;
     }
     let mut raw = &text[node.byte_range()];
@@ -331,7 +351,8 @@ fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
                 }
                 let count = if escaped == 'u' { 4 } else { 2 };
                 let digits: String = chars.by_ref().take(count).collect();
-                if digits.len() != count {
+                // `from_str_radix` alone would accept a leading `+`.
+                if digits.len() != count || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
                     return None;
                 }
                 char::from_u32(u32::from_str_radix(&digits, 16).ok()?)?
@@ -342,22 +363,20 @@ fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
     Some(result)
 }
 
-pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding> {
+pub(crate) fn tasks(sql: &str, statements: &Statements<'_>, handlers: &[Handler]) -> Vec<Finding> {
     let mut result = Vec::new();
-    let declarations: Vec<_> = descendants(tree.root_node())
-        .into_iter()
+    let declarations: Vec<_> = statements
+        .routines
+        .iter()
         .filter(|n| n.kind() == "create_procedure")
         .filter_map(|n| n.child_by_field_name("name"))
         .map(|n| canonical_name(&sql[n.byte_range()]))
         .collect();
-    for task in descendants(tree.root_node())
-        .into_iter()
-        .filter(|n| n.kind() == "create_task" && !n.has_error())
-    {
+    for &task in statements.tasks.iter().filter(|n| !n.has_error()) {
         let Some(task_body) = task.child_by_field_name("body") else {
             continue;
         };
-        let warehouse = descendants(task).iter().any(|n| {
+        let warehouse = descendants(task).any(|n| {
             n.kind() == "task_option"
                 && n.end_byte() < task_body.start_byte()
                 && n.child_by_field_name("warehouse").is_some()
@@ -365,13 +384,8 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding
         if warehouse {
             continue;
         }
-        for call in descendants(task_body)
-            .into_iter()
-            .filter(|n| n.kind() == "call_statement")
-        {
-            let reference = descendants(call)
-                .into_iter()
-                .find(|n| n.kind() == "object_reference");
+        for call in descendants(task_body).filter(|n| n.kind() == "call_statement") {
+            let reference = descendants(call).find(|n| n.kind() == "object_reference");
             let Some(reference) = reference else { continue };
             let name = canonical_name(&sql[reference.byte_range()]);
             // Same-file exact qualification only. Multiple overloads are ambiguous.
@@ -383,7 +397,9 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding
                 .collect();
             if candidates.len() == 1
                 && candidates[0].language == Language::Scala
-                && candidates[0].source.is_some()
+                // A body that exceeded a limit still declares the procedure.
+                && (candidates[0].source.is_some()
+                    || matches!(candidates[0].status, HandlerStatus::AnalysisFailed(_)))
                 && declarations.iter().filter(|n| **n == name).count() == 1
             {
                 result.push(finding_by_rule(SCALA_TASK_WAREHOUSE, call.byte_range()));
@@ -393,21 +409,109 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding
     result
 }
 
-fn canonical_name(name: &str) -> String {
-    // Preserve quoted identifiers exactly, including dots and doubled quotes.
+/// The parts of a name as Snowflake resolves them: an unquoted part folds to
+/// uppercase, and a quoted part keeps its text, dots included, with `""` read
+/// as one quote.
+fn canonical_name(name: &str) -> Vec<String> {
+    let mut parts = Vec::new();
+    let mut part = String::new();
     let mut quoted = false;
-    name.chars()
-        .flat_map(|c| {
-            if c == '"' {
-                quoted = !quoted;
-            }
-            if quoted || c == '"' {
-                vec![c]
-            } else if c.is_whitespace() {
-                Vec::new()
-            } else {
-                c.to_uppercase().collect()
-            }
-        })
-        .collect()
+    let mut chars = name.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' if quoted && chars.next_if_eq(&'"').is_some() => part.push('"'),
+            '"' => quoted = !quoted,
+            _ if quoted => part.push(c),
+            '.' => parts.push(std::mem::take(&mut part)),
+            _ if c.is_whitespace() => {}
+            _ => part.extend(c.to_uppercase()),
+        }
+    }
+    parts.push(part);
+    parts
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_paths_that_resolve_under_tmp_are_inside_it() {
+        for path in [
+            "/tmp",
+            "/tmp/out",
+            "//tmp//out",
+            "/./tmp/out",
+            "/var/../tmp/out",
+            "file:///tmp/out",
+        ] {
+            assert!(within_tmp(path), "{path}");
+        }
+        for path in [
+            "",
+            "tmp/out",
+            "/",
+            "/tmpx",
+            "/var/tmp",
+            "/tmp/../etc",
+            "/tmp/..",
+            "file://tmp/out",
+            "/tmp\\out",
+        ] {
+            assert!(!within_tmp(path), "{path}");
+        }
+    }
+
+    #[test]
+    fn names_compare_as_snowflake_resolves_them() {
+        for (left, right) in [
+            ("p", r#""P""#),
+            ("db.s.p", r#""DB" . "S"."P""#),
+            (r#""a""b""#, r#""a""b""#),
+        ] {
+            assert_eq!(
+                canonical_name(left),
+                canonical_name(right),
+                "{left} {right}"
+            );
+        }
+        for (left, right) in [
+            ("p", r#""p""#),
+            ("a.b", r#""A.B""#),
+            (r#""a b""#, r#""ab""#),
+            (r#""a""b""#, r#""ab""#),
+            ("s.p", "p"),
+        ] {
+            assert_ne!(
+                canonical_name(left),
+                canonical_name(right),
+                "{left} {right}"
+            );
+        }
+    }
+
+    #[test]
+    fn literal_escapes_need_real_hex_digits() {
+        let mut parser = Parser::new();
+        parser
+            .set_language(&tree_sitter_python::LANGUAGE.into())
+            .unwrap();
+        for (source, expected) in [
+            (r#""\x41""#, Some("A")),
+            (r#""\u0041""#, Some("A")),
+            (r#""\x+f""#, None),
+            (r#""\u+041""#, None),
+            (r#""\x4""#, None),
+        ] {
+            let tree = parser.parse(source, None).unwrap();
+            let node = descendants(tree.root_node())
+                .find(|n| n.kind() == "string")
+                .unwrap();
+            assert_eq!(
+                literal(node, source, Language::Python).as_deref(),
+                expected,
+                "{source}"
+            );
+        }
+    }
 }

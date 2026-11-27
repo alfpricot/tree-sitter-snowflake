@@ -667,3 +667,386 @@ SELECT "quoted col", "with ""doubling""" FROM "my table";
       (relation
         (object_reference
           (identifier))))))
+
+================================================================================
+object constants
+================================================================================
+
+SELECT {}, {'k': 1, 'j': c1 + 1} AS o FROM t;
+SELECT {'a': {'b': [1, {'c': NULL}]}}['a'];
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (object_constructor))
+        (term
+          (object_constructor
+            (object_pair
+              (literal)
+              (literal))
+            (object_pair
+              (literal)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))
+          (keyword_as)
+          (identifier))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (semi_structured
+            (object_constructor
+              (object_pair
+                (literal)
+                (object_constructor
+                  (object_pair
+                    (literal)
+                    (array_constructor
+                      (literal)
+                      (object_constructor
+                        (object_pair
+                          (literal)
+                          (literal
+                            (keyword_null)))))))))
+            (literal
+              (literal))))))))
+
+================================================================================
+object constant wildcards
+================================================================================
+
+SELECT {*}, {t.*}, {* ILIKE 'c%'}, {* EXCLUDE c1}, {* EXCLUDE (c1, c2)} FROM t;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (object_constructor
+            (all_fields)))
+        (term
+          (object_constructor
+            (all_fields
+              (object_reference
+                (identifier)))))
+        (term
+          (object_constructor
+            (all_fields
+              (keyword_ilike)
+              (literal))))
+        (term
+          (object_constructor
+            (all_fields
+              (keyword_exclude)
+              (field
+                (identifier)))))
+        (term
+          (object_constructor
+            (all_fields
+              (keyword_exclude)
+              (field
+                (identifier))
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+object constant cannot mix a wildcard with pairs
+:error
+================================================================================
+
+SELECT {*, 'k': 'v'} FROM t;
+
+---
+
+
+
+================================================================================
+object constant keys are string literals
+:error
+================================================================================
+
+SELECT {k: 1};
+
+---
+
+
+
+================================================================================
+quantified LIKE and ILIKE with ESCAPE
+================================================================================
+
+SELECT * FROM t WHERE a LIKE ANY ('x%', 'y%');
+SELECT * FROM t WHERE a NOT ILIKE ALL (SELECT p FROM q) ESCAPE '^' AND b;
+SELECT a LIKE 'x^%' ESCAPE '^', b ILIKE c FROM t;
+SELECT a LIKE ANY ('x') ESCAPE '^' OR b FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (keyword_like)
+          (keyword_any)
+          (list
+            (literal
+              (literal))
+            (literal
+              (literal)))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (binary_expression
+            (field
+              (identifier))
+            (not_ilike
+              (keyword_not)
+              (keyword_ilike))
+            (keyword_all)
+            (subquery
+              (select
+                (keyword_select)
+                (select_expression
+                  (term
+                    (field
+                      (identifier)))))
+              (from
+                (keyword_from)
+                (relation
+                  (object_reference
+                    (identifier)))))
+            (keyword_escape)
+            (literal
+              (literal)))
+          (keyword_and)
+          (field
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (keyword_like)
+            (literal
+              (literal))
+            (keyword_escape)
+            (literal
+              (literal))))
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (keyword_ilike)
+            (field
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (keyword_like)
+              (keyword_any)
+              (list
+                (literal
+                  (literal)))
+              (keyword_escape)
+              (literal
+                (literal)))
+            (keyword_or)
+            (field
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+structured ARRAY, OBJECT and MAP types
+================================================================================
+
+SELECT CAST(a AS ARRAY(INT)), b::OBJECT(a INT NOT NULL, b VARCHAR(10)), c::MAP(VARCHAR, INT NOT NULL) FROM t;
+CREATE TABLE t (a ARRAY(NUMBER(10,0) NOT NULL), b OBJECT(), c MAP(VARCHAR, ARRAY(INT)), d ARRAY, map INT);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (cast
+            (keyword_cast)
+            (field
+              (identifier))
+            (keyword_as)
+            (array_type
+              (keyword_array)
+              (keyword_int))))
+        (term
+          (cast_expression
+            (field
+              (identifier))
+            (object_type
+              (keyword_object)
+              (object_type_field
+                (identifier)
+                (keyword_int)
+                (keyword_not)
+                (keyword_null))
+              (object_type_field
+                (identifier)
+                (varchar
+                  (keyword_varchar)
+                  (literal))))))
+        (term
+          (cast_expression
+            (field
+              (identifier))
+            (map_type
+              (keyword_map)
+              (varchar
+                (keyword_varchar))
+              (keyword_int)
+              (keyword_not)
+              (keyword_null))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (array_type
+            (keyword_array)
+            (number
+              (keyword_number)
+              (literal)
+              (literal))
+            (keyword_not)
+            (keyword_null)))
+        (column_definition
+          (identifier)
+          (object_type
+            (keyword_object)))
+        (column_definition
+          (identifier)
+          (map_type
+            (keyword_map)
+            (varchar
+              (keyword_varchar))
+            (array_type
+              (keyword_array)
+              (keyword_int))))
+        (column_definition
+          (identifier)
+          (keyword_array))
+        (column_definition
+          (identifier)
+          (keyword_int))))))
+
+================================================================================
+pattern operator chains group to the left
+================================================================================
+
+SELECT a LIKE 'x%' RLIKE 'y', b LIKE c LIKE d FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (keyword_like)
+              (literal
+                (literal)))
+            (keyword_rlike)
+            (literal
+              (literal))))
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (keyword_like)
+              (field
+                (identifier)))
+            (keyword_like)
+            (field
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))

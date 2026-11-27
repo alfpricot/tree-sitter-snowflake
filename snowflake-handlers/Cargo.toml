@@ -1,6 +1,6 @@
 [package]
 name = "snowflake-handlers"
-version = "0.2.0"
+version = "0.3.0"
 description = "Extract, parse, and check embedded Snowflake procedure and function bodies"
 edition = "2024"
 rust-version = "1.90"
@@ -9,10 +9,15 @@ repository = "https://github.com/alfpricot/tree-sitter-snowflake.git"
 readme = "README.md"
 include = ["/src/**", "/queries/**", "/README.md", "/LICENSE"]
 
+[lints]
+workspace = true
+
 [features]
 default = []
 java = ["dep:tree-sitter-java"]
 scala = ["dep:tree-sitter-scala"]
+summary = []
+serde = ["summary", "dep:serde"]
 
 [dependencies]
 tree-sitter-snowflake = { version = "0.3.1", path = ".." }
@@ -21,3 +26,7 @@ tree-sitter-javascript = "0.25"
 tree-sitter-python = "0.25"
 tree-sitter-java = { version = "0.23.5", optional = true }
 tree-sitter-scala = { version = "0.26.2", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"

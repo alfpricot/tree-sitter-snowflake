@@ -15,10 +15,8 @@ import { fileURLToPath } from 'node:url';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const types = JSON.parse(readFileSync(join(repo, 'src/node-types.json'), 'utf8'));
-const kinds = types
-  .filter((n) => n.named)
-  .flatMap((n) => [n.type, ...Object.keys(n.fields ?? {}).map((f) => `${n.type}.${f}`)])
-  .sort();
+const listing = (n) => [n.type].concat(Object.keys(n.fields ?? {}).map((f) => `${n.type}.${f}`));
+const kinds = types.flatMap((n) => (n.named ? listing(n) : [])).toSorted();
 
 if (process.argv.includes('--check')) {
   const committed = readFileSync(join(repo, 'test/node-kinds.txt'), 'utf8')

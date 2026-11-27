@@ -1,5 +1,30 @@
 import { paren_list, comma_list, wrapped_in_parenthesis } from './helpers.js';
 
+// x [NOT] {LIKE | ILIKE} pattern [ESCAPE char], and the quantified form
+// x [NOT] {LIKE | ILIKE} {ANY | ALL} (pattern, ...) [ESCAPE char]. Both are
+// binary_expression nodes; the quantified one has a `quantifier` field and a
+// list or subquery on its right. Like the other pattern operators, a chain
+// groups to the left.
+function like_expression($) {
+  return prec.left(
+    'pattern_matching',
+    seq(
+      field('left', $._expression),
+      field('operator', choice($.keyword_like, $.keyword_ilike, $.not_like, $.not_ilike)),
+      choice(
+        field('right', $._expression),
+        seq(
+          field('quantifier', choice($.keyword_any, $.keyword_all)),
+          field('right', choice($.list, $.subquery)),
+        ),
+      ),
+      // The escape character is a constant, which keeps a following clause
+      // keyword from being read as one.
+      optional(seq($.keyword_escape, field('escape', $.literal))),
+    ),
+  );
+}
+
 export default {
   _expression: ($) =>
     prec(
@@ -22,6 +47,7 @@ export default {
         $.between_expression,
         $.parenthesized_expression,
         $.array_constructor,
+        $.object_constructor,
         $.semi_structured,
         $.bind_variable,
         $.identifier_function,
@@ -42,6 +68,37 @@ export default {
   // the bracket is unambiguous with the subscript operator, which always
   // follows an expression.
   array_constructor: ($) => prec(1, seq('[', optional(comma_list($._expression, true)), ']')),
+
+  // { 'key': expr, ... } or one wildcard — Snowflake's OBJECT constant.
+  // Keys are string literals, and a wildcard cannot be mixed with pairs.
+  object_constructor: ($) =>
+    seq(
+      '{',
+      optional(choice(comma_list($.object_pair, true), alias($._object_wildcard, $.all_fields))),
+      '}',
+    ),
+
+  object_pair: ($) =>
+    seq(field('key', alias($._single_quote_string, $.literal)), ':', field('value', $._expression)),
+
+  // {*}, {t.*}, optionally narrowed by ILIKE 'pattern' or EXCLUDE columns.
+  _object_wildcard: ($) =>
+    seq(
+      optional(seq($.object_reference, '.')),
+      '*',
+      optional(
+        choice(
+          seq($.keyword_ilike, alias($._single_quote_string, $.literal)),
+          seq(
+            $.keyword_exclude,
+            choice(
+              alias($._qualified_field, $.field),
+              paren_list(alias($._qualified_field, $.field), true),
+            ),
+          ),
+        ),
+      ),
+    ),
 
   // v:field.subfield, v['key'], v:"quoted key", v:field[0].sub
   // The `:` path operator and the subscript on a semi-structured value,
@@ -215,12 +272,8 @@ export default {
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
         [$.keyword_collate, 'postfix'],
-        [$.keyword_like, 'pattern_matching'],
-        [$.keyword_ilike, 'pattern_matching'],
         [$.keyword_regexp, 'pattern_matching'],
         [$.keyword_rlike, 'pattern_matching'],
-        [$.not_like, 'pattern_matching'],
-        [$.not_ilike, 'pattern_matching'],
         [$.not_regexp, 'pattern_matching'],
         [$.not_rlike, 'pattern_matching'],
         [$.distinct_from, 'binary_is'],
@@ -235,6 +288,7 @@ export default {
           ),
         ),
       ),
+      like_expression($),
       ...[
         [$.keyword_and, 'clause_connective'],
         [$.keyword_or, 'clause_disjunctive'],

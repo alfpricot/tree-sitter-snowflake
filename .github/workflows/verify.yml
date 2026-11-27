@@ -17,11 +17,15 @@
 #                      pull request, docs-only ones included; skipped on
 #                      pull requests from forks, which cannot read the
 #                      leak check's key), probe both
-#                      identifier slots for every keyword, build and test
-#                      the Rust binding (against the tree-sitter version
-#                      that is snowflake-handlers' declared floor, and
-#                      against the latest), build and test the Node
-#                      binding, validate the PR title, scan the working
+#                      identifier slots for every keyword, compile the
+#                      scanner with warnings as errors and fuzz it when it
+#                      changes, require a dated handlers changelog section
+#                      on pull requests to main, build and test the Rust
+#                      binding (against the latest tree-sitter, and, when a
+#                      path a crate builds from changes, against the version
+#                      that is snowflake-handlers' declared floor), test the
+#                      Go binding, build and test the Node
+#                      and Python bindings, validate the PR title, scan the working
 #                      tree and Git history for secrets, and lint
 #                      workflow/YAML files. A final aggregate job
 #                      rolls every check up into a single `Verify` status
@@ -62,7 +66,11 @@ jobs:
       checks: read
     outputs:
       build: ${{ steps.paths.outputs.build }}
+      rust: ${{ steps.paths.outputs.rust }}
+      scanner: ${{ steps.paths.outputs.scanner }}
       windows: ${{ steps.paths.outputs.windows }}
+      python: ${{ steps.paths.outputs.python }}
+      wheels: ${{ steps.paths.outputs.wheels }}
     env:
       GITLEAKS_VERSION: '8.30.1'
       ACTIONLINT_VERSION: '1.7.12'
@@ -167,6 +175,12 @@ jobs:
         # catches the drift on the pull request instead of on main.
         run: node tools/ci-policy.mjs versions
 
+      - name: Require a dated handlers changelog section on a promotion
+        # release.yml refuses to tag an undated section, and by then the
+        # crate is already published, so catch it before the merge to main.
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: node tools/ci-policy.mjs handlers-changelog
+
       - name: Validate YAML files
         run: |
           python3 -m pip install --disable-pip-version-check --quiet pyyaml
@@ -225,7 +239,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Validate conventional PR title
-        uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6.1.2
+        uses: amannn/action-semantic-pull-request@66e72920af32222769c386d81f89656ebcb6d6d5 # v6.1.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -285,6 +299,9 @@ jobs:
           node tools/node-kinds.mjs > test/node-kinds.txt
           git diff --exit-code -- test/node-kinds.txt
 
+      - name: Compile the scanner with warnings as errors
+        run: cc -std=c11 -Wall -Wextra -Wpedantic -Werror -fsyntax-only -Isrc src/scanner.c
+
       - name: Lint the grammar and tooling JS
         run: npm run lint
 
@@ -293,6 +310,20 @@ jobs:
 
       - name: Run corpus and highlight tests
         run: npx --no-install tree-sitter test
+
+      - name: Fuzz the parser when the scanner changes
+        if: needs.changes.outputs.scanner == 'true'
+        # `tree-sitter fuzz` exits 0 when a case parses wrongly, so read its
+        # summary too. The excluded case already fails incremental parsing,
+        # independently of the scanner.
+        run: |
+          set -euo pipefail
+          npx --no-install tree-sitter fuzz --iterations 100 \
+            --exclude 'tags on roles, users, tasks, streams, and dynamic tables' 2>&1 | tee "$RUNNER_TEMP/fuzz.log"
+          if grep -q 'failed fuzzing' "$RUNNER_TEMP/fuzz.log"; then
+            echo "tree-sitter fuzz reported failures" >&2
+            exit 1
+          fi
 
       - name: Parse every fixture and fail on ERROR/MISSING or zero-width nodes
         run: node tools/fixture-check.mjs
@@ -311,13 +342,24 @@ jobs:
           cargo test --workspace
           cargo test -p snowflake-handlers --all-features
 
+      - name: Set up Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+          # cgo does not track the parser sources bindings/go includes from
+          # src/, so a restored build cache could test an old parser.
+          cache: false
+
+      - name: Test the Go binding
+        run: go test ./bindings/go
+
       - name: Verify package contents
         run: node tools/package-check.mjs
 
   consumer-pin:
     name: Rust build/test against tree-sitter 0.26 (snowflake-handlers' declared floor)
     needs: changes
-    if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true'
+    if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true' && needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -369,17 +411,16 @@ jobs:
             (cd "$consumer" && cargo "+$toolchain" check)
           }
           check_floor 1.85 "tree-sitter-snowflake = { path = \"$GITHUB_WORKSPACE\" }"
-          check_floor 1.90 "snowflake-handlers = { path = \"$GITHUB_WORKSPACE/snowflake-handlers\", features = [\"java\", \"scala\"] }"
+          check_floor 1.90 "snowflake-handlers = { path = \"$GITHUB_WORKSPACE/snowflake-handlers\", features = [\"java\", \"scala\", \"serde\"] }"
 
       # The dev-dependency tracks the latest tree-sitter, so the `verify`
       # job above covers the newest release. This job covers the other
       # end of the range: snowflake-handlers/Cargo.toml declares
       # `tree-sitter = ">=0.26, <0.28"`, and the generated parser's ABI
-      # must stay one that floor accepts. Every known consumer has moved to
-      # `tree-sitter = "0.27"` (cadence verified 2026-09-26), so no known
-      # consumer pins 0.26 — this job now exists solely to
-      # keep the companion's declared floor honest, not to track a
-      # consumer. Edit the manifest in-job and test there. The
+      # must stay one that floor accepts. No known consumer still pins
+      # 0.26, so this job exists solely to keep the companion's declared
+      # floor honest, not to track a consumer. Edit the manifest in-job
+      # and test there. The
       # `^tree-sitter = ` anchor matches only the dev-dependency —
       # `tree-sitter-language` in [dependencies] has a different prefix.
       # Pin the companion's runtime dependency too, so its returned trees
@@ -418,9 +459,60 @@ jobs:
       - name: Run the Node binding tests
         run: npm test
 
+  python-binding:
+    name: Python binding build/test
+    needs: changes
+    if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true' && needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.10'
+
+      # Installing from the sdist shows the published archive carries every
+      # file the extension compiles from.
+      - name: Build the source distribution and install it
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --quiet build
+          python -m build --sdist --outdir "$RUNNER_TEMP/dist"
+          python -m pip install --disable-pip-version-check --quiet "$RUNNER_TEMP"/dist/*.tar.gz 'tree-sitter~=0.25' pytest
+
+      - name: Run the Python binding tests
+        run: python -m pytest bindings/python/tests
+
+  # The same build release.yml runs, before there is a tag to spend on it.
+  python-wheels:
+    name: Python wheels (${{ matrix.os }})
+    needs: changes
+    if: github.event.pull_request.draft != true && needs.changes.outputs.wheels == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build and test the wheels
+        uses: pypa/cibuildwheel@f9b966cfadf4109556cadc5bb39ddb72d0ce664e # v4.3.5
+        env:
+          CIBW_ARCHS: auto64
+
   ci:
     name: ${{ github.event_name == 'push' && 'Verify (push)' || 'Verify' }}
-    needs: [changes, verify, consumer-pin, node-binding, pr-title]
+    needs: [changes, verify, consumer-pin, node-binding, python-binding, python-wheels, pr-title]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

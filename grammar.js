@@ -17,9 +17,12 @@ export default grammar({
   // before it can settle; tree-sitter reports any that stop being needed
   // as "unnecessary conflicts" on generate, and those are removed.
   conflicts: ($) => [
+    // `CREATE EVENT TABLE ...` — with a column list or a query, or bare;
+    // settled by what follows the name.
+    [$._create_table_definition, $._create_bare_event_table],
     // `CREATE TEMPORARY ...` — the modifier list belongs to a table or a
     // routine; settled by the object keyword that follows it.
-    [$.create_table, $.create_procedure, $.create_function],
+    [$._create_table_definition, $.create_procedure, $.create_function],
     // `a.b` — the prefix of a qualified column vs. an object reference.
     [$.object_reference, $._qualified_field],
     // `a.b.c` — how many parts belong to the reference.
@@ -53,19 +56,39 @@ export default grammar({
     // `prior` — the PRIOR operator vs. a column of that name; settled by
     // whether an operand follows.
     [$._prior_field, $.unary_expression],
+    // `DROP PROCEDURE p` — a routine drop with an argument signature vs.
+    // the generic shape; settled by whether `(` follows the name.
+    [$.object_kind, $._routine_object_kind],
+    // `a JOIN b JOIN c ...` — the second join nests inside the first or
+    // follows it; ON / USING conditions that need nesting force it, and the
+    // join rule's dynamic precedence prefers the sequence otherwise.
+    [$.join],
+    // `GRANT ... ON ALL EXTERNAL ...` — a word of a singular kind vs. of a
+    // plural one; settled by where IN arrives.
+    [$._multi_word_object_kind, $._kind_word],
+    [$._kind_word, $.object_kind],
+    // `DROP DATABASE role` or `GRANT ... ON DATABASE role` — a database named
+    // `role` vs. the DATABASE ROLE kind; settled by whether a name follows.
+    [$._database_kind, $._database_role_kind],
+    // `CREATE DATABASE ROLE r` — the DATABASE ROLE kind vs. a database named
+    // `role`; settled by whether a name follows.
+    [$.create_database_role, $._role_as_name],
+    // `f(x) FROM first` — the NTH_VALUE direction vs. a FROM clause naming a
+    // table `first`; settled by whether OVER follows.
+    [$._expression, $.window_function],
+    // `ALTER REPLICATION GROUP g ADD a.b TO ...` — object names or accounts;
+    // settled by the list named after TO.
+    [$.object_reference, $.account_identifier],
   ],
 
   precedences: (_) => [
     [
       'postfix',
       'unary_sign',
-      'binary_exp',
       'binary_times',
       'binary_plus',
-      'unary_other',
       'binary_other',
       'binary_in',
-      'binary_compare',
       'binary_relation',
       'binary_is',
       'pattern_matching',
@@ -75,6 +98,8 @@ export default grammar({
       'clause_disjunctive',
     ],
   ],
+
+  inline: ($) => [$._policy_kind],
 
   word: ($) => $._identifier,
 

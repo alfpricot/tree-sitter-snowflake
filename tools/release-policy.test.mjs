@@ -14,6 +14,8 @@ import {
   runCommand,
 } from './release-policy.mjs';
 
+const writePython = (root, version) =>
+  writeFileSync(join(root, 'pyproject.toml'), `[project]\nversion = "${version}"\n`);
 const writeRelease = (root, cargo, npm = cargo, treeSitter = cargo) => {
   writeFileSync(join(root, 'Cargo.toml'), `[package]\nname = "example"\nversion = "${cargo}"\n`);
   writeFileSync(join(root, 'package.json'), `{"name":"example","version":"${npm}"}`);
@@ -50,6 +52,11 @@ test('package.json and tree-sitter.json must carry the Cargo version', () => {
     assert.throws(() => checkVersions(url), /package\.json/);
     writeRelease(root, '0.1.2', '0.1.2', '0.1.1');
     assert.throws(() => checkVersions(url), /tree-sitter\.json/);
+    writeRelease(root, '0.1.2');
+    writePython(root, '0.1.2');
+    assert.equal(checkVersions(url), '0.1.2');
+    writePython(root, '0.1.1');
+    assert.throws(() => checkVersions(url), /pyproject\.toml/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -99,6 +106,49 @@ test('resolve only real tags on main whose version files agree', () => {
     commit('unpromoted', stale);
     git('update-ref', 'refs/tags/v0.1.5', 'HEAD');
     assert.throws(() => resolveRelease('v0.1.5', run));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('resolve checks pyproject.toml and reports whether the tag has one', () => {
+  const root = mkdtempSync(join(tmpdir(), 'snowflake-python-'));
+  const output = join(root, 'output');
+  const run = (command, args, options) =>
+    execFileSync(command, args, { ...options, cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+  const git = (...args) => run('git', args, { encoding: 'utf8' }).trim();
+  const release = (tag, ...files) => {
+    git('add', 'Cargo.toml', 'package.json', 'tree-sitter.json', '.gala.toml', ...files);
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', tag);
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git('update-ref', `refs/tags/${tag}`, 'HEAD');
+  };
+  const reported = (tag) => {
+    writeFileSync(output, '');
+    const previous = process.cwd();
+    process.chdir(root);
+    try {
+      runCommand('resolve', { TAG: tag, GITHUB_OUTPUT: output });
+    } finally {
+      process.chdir(previous);
+    }
+    return readFileSync(output, 'utf8').match(/^python=(.*)$/m)?.[1];
+  };
+  try {
+    git('init', '-b', 'main');
+    writeFileSync(join(root, '.gala.toml'), GALA);
+    writeRelease(root, '0.1.0');
+    release('v0.1.0');
+    assert.equal(reported('v0.1.0'), 'false');
+
+    writeRelease(root, '0.1.1');
+    writePython(root, '0.1.1');
+    release('v0.1.1', 'pyproject.toml');
+    assert.equal(reported('v0.1.1'), 'true');
+
+    writeRelease(root, '0.1.2');
+    release('v0.1.2');
+    assert.throws(() => resolveRelease('v0.1.2', run), /pyproject\.toml/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

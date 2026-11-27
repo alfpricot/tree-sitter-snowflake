@@ -2894,9 +2894,8 @@ CREATE TABLE t (
               (keyword_delete)
               (keyword_no)
               (keyword_action))
-            (keyword_not_enforced
-              (keyword_not)
-              (keyword_enforced))))))))
+            (keyword_not)
+            (keyword_enforced)))))))
 
 ================================================================================
 inline REFERENCES followed by NOT NULL and NOT ENFORCED
@@ -2931,7 +2930,1479 @@ CREATE TABLE t (a INT REFERENCES u (id) NOT NULL, b INT REFERENCES v NOT ENFORCE
             (keyword_references)
             (object_reference
               (identifier)))
-          (keyword_not_enforced
-            (keyword_not)
-            (keyword_enforced))
+          (keyword_not)
+          (keyword_enforced)
           (keyword_rely))))))
+
+================================================================================
+alter table rename
+================================================================================
+
+ALTER TABLE t RENAME TO t2;
+ALTER TABLE IF EXISTS db.s.t RENAME TO db.s.t2;
+
+---
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier)))))
+
+================================================================================
+drop routines by signature
+================================================================================
+
+DROP PROCEDURE p(VARCHAR);
+DROP FUNCTION IF EXISTS db.s.f(INT, NUMBER(10, 2));
+DROP FUNCTION f() CASCADE;
+DROP PROCEDURE p;
+
+---
+
+(program
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_procedure))
+    (object_reference
+      (identifier))
+    (function_argument_types
+      (varchar
+        (keyword_varchar))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_function))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)
+      (identifier)
+      (identifier))
+    (function_argument_types
+      (keyword_int)
+      (number
+        (keyword_number)
+        (literal)
+        (literal))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_function))
+    (object_reference
+      (identifier))
+    (function_argument_types)
+    (keyword_cascade))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_procedure))
+    (object_reference
+      (identifier))))
+
+================================================================================
+drop and undrop multi-word object kinds
+================================================================================
+
+DROP DYNAMIC TABLE t;
+DROP EXTERNAL TABLE IF EXISTS t CASCADE;
+DROP ICEBERG TABLE t;
+DROP SEMANTIC VIEW v;
+DROP CORTEX SEARCH SERVICE s;
+DROP STORAGE INTEGRATION i;
+DROP EXTERNAL ACCESS INTEGRATION IF EXISTS i;
+UNDROP DYNAMIC TABLE t;
+
+---
+
+(program
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_dynamic)
+      (keyword_table))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_external)
+      (keyword_table))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier))
+    (keyword_cascade))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_iceberg)
+      (keyword_table))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_semantic)
+      (keyword_view))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_cortex)
+      (keyword_search)
+      (keyword_service))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_storage)
+      (keyword_integration))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_external)
+      (keyword_access)
+      (keyword_integration))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)))
+  (statement
+    (undrop_statement
+      (keyword_undrop)
+      (object_kind
+        (keyword_dynamic)
+        (keyword_table))
+      (object_reference
+        (identifier)))))
+
+================================================================================
+drop table takes no signature
+:error
+================================================================================
+
+DROP TABLE t(INT);
+
+---
+
+
+
+================================================================================
+drop database role and network rule
+================================================================================
+
+DROP DATABASE ROLE IF EXISTS d.r;
+DROP NETWORK RULE d.s.r;
+DROP DATABASE role;
+
+---
+
+(program
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_database)
+      (keyword_role))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_network)
+      (keyword_rule))
+    (object_reference
+      (identifier)
+      (identifier)
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_database))
+    (object_reference
+      (identifier))))
+
+================================================================================
+alter policy with IF EXISTS after POLICY
+================================================================================
+
+ALTER MASKING POLICY IF EXISTS p SET BODY -> val;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_policy
+      (keyword_alter)
+      (keyword_masking)
+      (keyword_policy)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_body)
+      (policy_body
+        (field
+          (identifier))))))
+
+================================================================================
+create secret
+================================================================================
+
+CREATE OR REPLACE SECRET IF NOT EXISTS db.s.api_secret
+  TYPE = OAUTH2
+  API_AUTHENTICATION = oauth_int
+  OAUTH_SCOPES = ('read', 'write')
+  COMMENT = 'c';
+CREATE SECRET login TYPE = PASSWORD USERNAME = 'u' PASSWORD = 'p';
+CREATE SECRET tagged TYPE = GENERIC_STRING SECRET_STRING = 's' WITH TAG (team = 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_secret)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal))
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_secret)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_secret)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal)))))
+
+================================================================================
+create network rule
+================================================================================
+
+CREATE OR REPLACE NETWORK RULE db.s.api_rule
+  TYPE = HOST_PORT
+  MODE = EGRESS
+  VALUE_LIST = ('example.com:443');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_network_rule
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_network)
+      (keyword_rule)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal))))))
+
+================================================================================
+external access integration with qualified object lists
+================================================================================
+
+CREATE EXTERNAL ACCESS INTEGRATION api_access
+  ALLOWED_NETWORK_RULES = (db.s.api_rule, other_rule)
+  ALLOWED_AUTHENTICATION_SECRETS = ALL
+  ALLOWED_API_AUTHENTICATION_INTEGRATIONS = (oauth_int)
+  ENABLED = TRUE;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_integration
+      (keyword_create)
+      (keyword_external)
+      (keyword_access)
+      (keyword_integration)
+      (identifier)
+      (option
+        (identifier)
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (keyword_true))))))
+
+================================================================================
+function secret bindings
+================================================================================
+
+CREATE FUNCTION f(q STRING) RETURNS STRING LANGUAGE PYTHON
+  HANDLER = 'run'
+  EXTERNAL_ACCESS_INTEGRATIONS = (api_access)
+  SECRETS = ('cred' = db.s.api_secret, 'other' = s2)
+  AS $$def run(q): return q$$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_function
+      (keyword_create)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_arguments
+        (function_argument
+          (identifier)
+          (keyword_string)))
+      (keyword_returns)
+      (keyword_string)
+      (foreign_language
+        (keyword_language)
+        (keyword_python))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (option
+            (identifier))))
+      (module_option
+        (option
+          (identifier)
+          (secret_binding
+            (literal)
+            (object_reference
+              (identifier)
+              (identifier)
+              (identifier)))
+          (secret_binding
+            (literal)
+            (object_reference
+              (identifier)))))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_body
+          (body_content))))))
+
+================================================================================
+double and double precision types
+================================================================================
+
+CREATE TABLE t (a DOUBLE, b DOUBLE PRECISION);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_double))
+        (column_definition
+          (identifier)
+          (keyword_double_prec_only))))))
+
+================================================================================
+database roles and a database named role
+================================================================================
+
+CREATE DATABASE ROLE r;
+CREATE OR REPLACE DATABASE ROLE IF NOT EXISTS db.r COMMENT = 'x';
+CREATE DATABASE role;
+CREATE DATABASE role COMMENT = 'x';
+CREATE DATABASE db DATA_RETENTION_TIME_IN_DAYS = 1;
+ALTER DATABASE ROLE IF EXISTS db.r RENAME TO db.r2;
+ALTER DATABASE ROLE r SET COMMENT = 'x';
+ALTER DATABASE role SET COMMENT = 'x';
+ALTER DATABASE role RENAME TO other;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_database_role
+      (keyword_create)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier))))
+  (statement
+    (create_database_role
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_database)
+      (keyword_role)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))))
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal))))
+  (statement
+    (alter_database_role
+      (keyword_alter)
+      (keyword_database)
+      (keyword_role)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier)
+        (identifier))))
+  (statement
+    (alter_database_role
+      (keyword_alter)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_database
+      (keyword_alter)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_database
+      (keyword_alter)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier)))))
+
+================================================================================
+shares
+================================================================================
+
+CREATE SHARE IF NOT EXISTS s COMMENT = 'x';
+ALTER SHARE s ADD ACCOUNTS = org.a, org.b SHARE_RESTRICTIONS = FALSE;
+ALTER SHARE IF EXISTS s REMOVE ACCOUNTS = a;
+ALTER SHARE s SET ACCOUNTS = a, b COMMENT = 'x';
+ALTER SHARE s SET TAG t = 'v';
+ALTER SHARE s UNSET COMMENT;
+DROP SHARE IF EXISTS s;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_share
+      (keyword_create)
+      (keyword_share)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (identifier)
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_share
+      (keyword_alter)
+      (keyword_share)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (group_property
+        (identifier)
+        (account_identifier
+          (identifier)
+          (identifier))
+        (account_identifier
+          (identifier)
+          (identifier)))
+      (group_property
+        (identifier)
+        (literal
+          (keyword_false)))))
+  (statement
+    (alter_share
+      (keyword_alter)
+      (keyword_share)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_remove)
+      (group_property
+        (identifier)
+        (account_identifier
+          (identifier)))))
+  (statement
+    (alter_share
+      (keyword_alter)
+      (keyword_share)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (group_property
+        (identifier)
+        (account_identifier
+          (identifier))
+        (account_identifier
+          (identifier)))
+      (group_property
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_share
+      (keyword_alter)
+      (keyword_share)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (alter_share
+      (keyword_alter)
+      (keyword_share)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_share))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier))))
+
+================================================================================
+external volumes
+================================================================================
+
+CREATE OR REPLACE EXTERNAL VOLUME v STORAGE_LOCATIONS = ((NAME = 'a' STORAGE_PROVIDER = 'S3' STORAGE_BASE_URL = 's3://b/' ENCRYPTION = (TYPE = 'AWS_SSE_S3')), (NAME = 'b', STORAGE_PROVIDER = 'GCS')) ALLOW_WRITES = TRUE;
+ALTER EXTERNAL VOLUME v ADD STORAGE_LOCATION = (NAME = 'c' STORAGE_PROVIDER = 'S3');
+ALTER EXTERNAL VOLUME IF EXISTS v REMOVE STORAGE_LOCATION 'c';
+ALTER EXTERNAL VOLUME v SET ALLOW_WRITES = FALSE;
+ALTER EXTERNAL VOLUME v UPDATE STORAGE_LOCATION = 'a' CREDENTIALS = (AZURE_SAS_TOKEN = 'x');
+DROP EXTERNAL VOLUME IF EXISTS v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_external_volume
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_external)
+      (keyword_volume)
+      (identifier)
+      (option
+        (identifier)
+        (option_group
+          (option
+            (identifier)
+            (literal
+              (literal)))
+          (option
+            (identifier)
+            (literal
+              (literal)))
+          (option
+            (identifier)
+            (literal
+              (literal)))
+          (option
+            (identifier)
+            (option
+              (identifier)
+              (literal
+                (literal)))))
+        (option_group
+          (option
+            (identifier)
+            (literal
+              (literal)))
+          (option
+            (identifier)
+            (literal
+              (literal)))))
+      (option
+        (identifier)
+        (literal
+          (keyword_true)))))
+  (statement
+    (alter_external_volume
+      (keyword_alter)
+      (keyword_external)
+      (keyword_volume)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (option
+        (identifier)
+        (option
+          (identifier)
+          (literal
+            (literal)))
+        (option
+          (identifier)
+          (literal
+            (literal))))))
+  (statement
+    (alter_external_volume
+      (keyword_alter)
+      (keyword_external)
+      (keyword_volume)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_remove)
+      (identifier)
+      (literal)))
+  (statement
+    (alter_external_volume
+      (keyword_alter)
+      (keyword_external)
+      (keyword_volume)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (keyword_false)))))
+  (statement
+    (alter_external_volume
+      (keyword_alter)
+      (keyword_external)
+      (keyword_volume)
+      (object_reference
+        (identifier))
+      (keyword_update)
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (option
+          (identifier)
+          (literal
+            (literal))))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_external)
+      (keyword_volume))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier))))
+
+================================================================================
+notebooks
+================================================================================
+
+CREATE NOTEBOOK db.s.n FROM '@db.s.st/path' MAIN_FILE = 'a.ipynb' QUERY_WAREHOUSE = wh;
+CREATE OR REPLACE NOTEBOOK n FROM @st/path;
+ALTER NOTEBOOK n ADD LIVE VERSION FROM LAST;
+ALTER NOTEBOOK n SET QUERY_WAREHOUSE = wh COMMENT = 'x';
+ALTER NOTEBOOK n RENAME TO m;
+DROP NOTEBOOK n;
+UNDROP NOTEBOOK n;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_notebook
+      (keyword_create)
+      (keyword_notebook)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (keyword_from)
+      (stage_reference)
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))))
+  (statement
+    (create_notebook
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_notebook)
+      (object_reference
+        (identifier))
+      (keyword_from)
+      (stage_reference)))
+  (statement
+    (alter_notebook
+      (keyword_alter)
+      (keyword_notebook)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (identifier)
+      (identifier)
+      (keyword_from)
+      (keyword_last)))
+  (statement
+    (alter_notebook
+      (keyword_alter)
+      (keyword_notebook)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_notebook
+      (keyword_alter)
+      (keyword_notebook)
+      (object_reference
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_notebook))
+    (object_reference
+      (identifier)))
+  (statement
+    (undrop_statement
+      (keyword_undrop)
+      (object_kind
+        (keyword_notebook))
+      (object_reference
+        (identifier)))))
+
+================================================================================
+event tables without a column list
+================================================================================
+
+CREATE EVENT TABLE e;
+CREATE OR REPLACE EVENT TABLE db.s.e DATA_RETENTION_TIME_IN_DAYS = 1 COMMENT = 'x';
+CREATE EVENT TABLE e (a INT);
+ALTER EVENT TABLE e SET COMMENT = 'x';
+DROP EVENT TABLE e;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_event)
+      (keyword_table)
+      (object_reference
+        (identifier))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_event)
+      (keyword_table)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (table_option
+        (option
+          (identifier)
+          (literal)))
+      (table_option
+        (option
+          (identifier)
+          (literal
+            (literal))))))
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_event)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int)))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_event)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_event)
+      (keyword_table))
+    (object_reference
+      (identifier))))
+
+================================================================================
+replication and failover groups
+================================================================================
+
+CREATE REPLICATION GROUP IF NOT EXISTS g OBJECT_TYPES = DATABASES, ROLES, ACCOUNT PARAMETERS, NETWORK POLICIES, RESOURCE MONITORS ALLOWED_DATABASES = d1, d2 ALLOWED_INTEGRATION_TYPES = SECURITY INTEGRATIONS, EXTERNAL ACCESS INTEGRATIONS ALLOWED_ACCOUNTS = org.a, org.b IGNORE EDITION CHECK REPLICATION_SCHEDULE = '10 MINUTE';
+CREATE FAILOVER GROUP g AS REPLICA OF org.account.g;
+ALTER FAILOVER GROUP IF EXISTS g SET OBJECT_TYPES = DATABASES ALLOWED_DATABASES = d REPLICATION_SCHEDULE = 'x';
+ALTER FAILOVER GROUP g ADD d3, d4 TO ALLOWED_DATABASES;
+ALTER REPLICATION GROUP g REMOVE d3 FROM ALLOWED_DATABASES;
+ALTER REPLICATION GROUP g MOVE DATABASES d1 TO FAILOVER GROUP h;
+ALTER REPLICATION GROUP g REFRESH;
+ALTER FAILOVER GROUP g PRIMARY;
+ALTER FAILOVER GROUP g SUSPEND IMMEDIATE;
+ALTER FAILOVER GROUP g RESUME;
+ALTER REPLICATION GROUP g RENAME TO h;
+DROP REPLICATION GROUP IF EXISTS g;
+DROP FAILOVER GROUP g;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_replication_group
+      (keyword_create)
+      (keyword_replication)
+      (keyword_group)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (identifier)
+      (group_property
+        (identifier)
+        (object_kind
+          (identifier))
+        (object_kind
+          (keyword_roles))
+        (object_kind
+          (keyword_account)
+          (identifier))
+        (object_kind
+          (keyword_network)
+          (identifier))
+        (object_kind
+          (keyword_resource)
+          (identifier)))
+      (group_property
+        (identifier)
+        (object_reference
+          (identifier))
+        (object_reference
+          (identifier)))
+      (group_property
+        (identifier)
+        (object_kind
+          (keyword_security)
+          (identifier))
+        (object_kind
+          (keyword_external)
+          (keyword_access)
+          (identifier)))
+      (group_property
+        (identifier)
+        (account_identifier
+          (identifier)
+          (identifier))
+        (account_identifier
+          (identifier)
+          (identifier)))
+      (keyword_ignore)
+      (identifier)
+      (identifier)
+      (group_property
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_failover_group
+      (keyword_create)
+      (keyword_failover)
+      (keyword_group)
+      (identifier)
+      (keyword_as)
+      (identifier)
+      (identifier)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (group_property
+        (identifier)
+        (object_kind
+          (identifier)))
+      (group_property
+        (identifier)
+        (object_reference
+          (identifier)))
+      (group_property
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (object_reference
+        (identifier))
+      (object_reference
+        (identifier))
+      (keyword_to)
+      (identifier)))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_remove)
+      (object_reference
+        (identifier))
+      (keyword_from)
+      (identifier)))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_move)
+      (identifier)
+      (object_reference
+        (identifier))
+      (keyword_to)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_refresh)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_primary)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_suspend)
+      (keyword_immediate)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_resume)))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_replication)
+      (keyword_group))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_failover)
+      (keyword_group))
+    (object_reference
+      (identifier))))
+
+================================================================================
+secrets, network rules, integrations and spaced routine properties
+================================================================================
+
+ALTER SECRET IF EXISTS s SET USERNAME = 'a' PASSWORD = 'b';
+ALTER SECRET s UNSET COMMENT;
+DROP SECRET s;
+ALTER NETWORK RULE r SET VALUE_LIST = ('a', 'b') COMMENT = 'x';
+ALTER NETWORK RULE r UNSET VALUE_LIST, COMMENT;
+ALTER EXTERNAL ACCESS INTEGRATION i SET ALLOWED_NETWORK_RULES = (a, b) ENABLED = TRUE;
+ALTER SECURITY INTEGRATION IF EXISTS i SET ENABLED = FALSE;
+ALTER INTEGRATION i SET ENABLED = FALSE, COMMENT = 'x';
+ALTER FUNCTION f(INT) SET EXTERNAL_ACCESS_INTEGRATIONS = (i) SECRETS = ('k' = s) COMMENT = 'x';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_secret
+      (keyword_alter)
+      (keyword_secret)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_secret
+      (keyword_alter)
+      (keyword_secret)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_secret))
+    (object_reference
+      (identifier)))
+  (statement
+    (alter_network_rule
+      (keyword_alter)
+      (keyword_network)
+      (keyword_rule)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (literal))
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_network_rule
+      (keyword_alter)
+      (keyword_network)
+      (keyword_rule)
+      (object_reference
+        (identifier))
+      (keyword_unset)
+      (identifier)
+      (identifier)))
+  (statement
+    (alter_integration
+      (keyword_alter)
+      (keyword_external)
+      (keyword_access)
+      (keyword_integration)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (object_reference
+          (identifier))
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (keyword_true)))))
+  (statement
+    (alter_integration
+      (keyword_alter)
+      (keyword_security)
+      (keyword_integration)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (keyword_false)))))
+  (statement
+    (alter_integration
+      (keyword_alter)
+      (keyword_integration)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (option
+        (identifier)
+        (literal
+          (keyword_false)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (alter_function
+      (keyword_alter)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_argument_types
+        (keyword_int))
+      (keyword_set)
+      (option
+        (identifier)
+        (option
+          (identifier)))
+      (option
+        (identifier)
+        (secret_binding
+          (literal)
+          (object_reference
+            (identifier))))
+      (option
+        (identifier)
+        (literal
+          (literal))))))
+
+================================================================================
+account lists, edition checks and a database named role with options
+================================================================================
+
+CREATE DATABASE role CLONE prod;
+CREATE DATABASE ROLE r COMMENT = 'x' WITH TAG (a = 'b');
+ALTER REPLICATION GROUP g ADD org.a, org.b TO ALLOWED_ACCOUNTS IGNORE EDITION CHECK;
+ALTER FAILOVER GROUP g SET ALLOWED_ACCOUNTS = org.a IGNORE EDITION CHECK;
+ALTER FAILOVER GROUP g REMOVE org.a FROM ALLOWED_ACCOUNTS;
+ALTER REPLICATION GROUP g ADD db1 TO ALLOWED_DATABASES;
+SELECT accounts, allowed_accounts FROM t accounts;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (option
+        (identifier))
+      (option
+        (identifier))))
+  (statement
+    (create_database_role
+      (keyword_create)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (object_reference
+        (identifier)
+        (identifier))
+      (object_reference
+        (identifier)
+        (identifier))
+      (keyword_to)
+      (identifier)
+      (keyword_ignore)
+      (identifier)
+      (identifier)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (group_property
+        (identifier)
+        (account_identifier
+          (identifier)
+          (identifier)))
+      (keyword_ignore)
+      (identifier)
+      (identifier)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_remove)
+      (account_identifier
+        (identifier)
+        (identifier))
+      (keyword_from)
+      (identifier)))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (object_reference
+        (identifier))
+      (keyword_to)
+      (identifier)))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (identifier)))))

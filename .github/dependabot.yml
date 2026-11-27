@@ -1,3 +1,5 @@
+# This is the reference copy shared with other tree-sitter grammar repositories.
+# A fix made here should be carried over to them.
 version: 2
 
 updates:
@@ -30,6 +32,29 @@ updates:
           - '*'
         update-types:
           - major
+
+  - package-ecosystem: gomod
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:15"
+      timezone: America/New_York
+    open-pull-requests-limit: 2
+    rebase-strategy: auto
+    cooldown:
+      default-days: 4
+    commit-message:
+      prefix: chore
+      include: scope
+    labels:
+      - dependabot
+      - go
+    groups:
+      gomod-all:
+        patterns:
+          - '*'
 
   - package-ecosystem: github-actions
     directory: /
@@ -76,6 +101,12 @@ updates:
       semver-major-days: 7
       semver-minor-days: 4
       semver-patch-days: 2
+    ignore:
+      # The Node types stay on the major CI runs; newer ones let the type check
+      # accept APIs that runtime lacks. Raise both together.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
     commit-message:
       prefix: chore
       include: scope

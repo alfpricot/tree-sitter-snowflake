@@ -1,0 +1,32 @@
+-- External access for a handler that calls out: a secret, the network rule it
+-- may reach, the integration that allows both, and the function that uses it.
+CREATE OR REPLACE SECRET DB1.S1.API_SECRET
+  TYPE = GENERIC_STRING
+  SECRET_STRING = 'placeholder'
+  COMMENT = 'credential for the example endpoint';
+
+CREATE OR REPLACE NETWORK RULE DB1.S1.API_RULE
+  TYPE = HOST_PORT
+  MODE = EGRESS
+  VALUE_LIST = ('example.com:443');
+
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION INT1
+  ALLOWED_NETWORK_RULES = (DB1.S1.API_RULE)
+  ALLOWED_AUTHENTICATION_SECRETS = (DB1.S1.API_SECRET)
+  ENABLED = TRUE;
+
+CREATE OR REPLACE FUNCTION DB1.S1.F1(C1 STRING)
+  RETURNS STRING
+  LANGUAGE PYTHON
+  RUNTIME_VERSION = '3.11'
+  HANDLER = 'run'
+  EXTERNAL_ACCESS_INTEGRATIONS = (INT1)
+  SECRETS = ('cred' = DB1.S1.API_SECRET)
+  PACKAGES = ('requests')
+AS $$
+def run(c1):
+    return c1
+$$;
+
+GRANT USAGE ON INTEGRATION INT1 TO ROLE ROLE1;
+GRANT READ ON SECRET DB1.S1.API_SECRET TO ROLE ROLE1;

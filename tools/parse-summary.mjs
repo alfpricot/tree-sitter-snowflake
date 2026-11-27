@@ -5,13 +5,12 @@
 // Usage:
 //   node tools/parse-summary.mjs <corpus-root-or-file> [--grammar <dir>] [--out <file>]
 
-import { Buffer } from 'node:buffer';
-import { spawnSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { basename, dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolveTreeSitterCli } from './fixture-result.mjs';
+import { batchParse, byteOffset, lineStarts } from './lib/parse-batch.mjs';
 import { decode } from './parse-rate/parse-rate.mjs';
 
 export function walkSql(dir, out = []) {
@@ -26,20 +25,15 @@ export function walkSql(dir, out = []) {
   return out;
 }
 
-export function lineStarts(text) {
-  const lines = text.split('\n');
-  const starts = [0];
-  let offset = 0;
-  for (let i = 0; i < lines.length - 1; i++) {
-    offset += Buffer.byteLength(lines[i], 'utf8') + 1;
-    starts.push(offset);
-  }
-  return starts;
-}
-
-export function byteOffset(starts, row, col) {
-  return (starts[row] ?? 0) + col;
-}
+// Children of a statement that do not say what it does: comments, and the
+// parts of a leading WITH clause.
+const NOT_STATEMENT_KINDS = new Set([
+  'comment',
+  'marginalia',
+  'keyword_with',
+  'keyword_recursive',
+  'cte',
+]);
 
 export function parseSummaryFromXml(xml, starts) {
   const statements = [];
@@ -48,6 +42,7 @@ export function parseSummaryFromXml(xml, starts) {
   const stack = [];
   const re = /<(\/?)([A-Za-z_][\w.]*)([^>]*)>/g;
   let m;
+  /** @type {any} */
   let currentTopLevelStatement = null;
 
   const sourceEndIdx = xml.indexOf('</source>');
@@ -112,8 +107,7 @@ export function parseSummaryFromXml(xml, starts) {
       currentTopLevelStatement &&
       parent === currentTopLevelStatement &&
       currentTopLevelStatement.statementEntry.kind === 'unknown' &&
-      tag !== 'comment' &&
-      tag !== 'marginalia'
+      !NOT_STATEMENT_KINDS.has(tag)
     ) {
       currentTopLevelStatement.statementEntry.kind = tag;
     }
@@ -170,7 +164,7 @@ if (isMain) {
   }
 
   const isDirectory = statSync(inputPath).isDirectory();
-  const files = isDirectory ? walkSql(inputPath).sort() : [inputPath];
+  const files = isDirectory ? walkSql(inputPath).toSorted() : [inputPath];
 
   if (files.length === 0) {
     process.exit(0);
@@ -200,55 +194,17 @@ if (isMain) {
     });
   }
 
-  const results = [];
-  const BATCH = 40;
-  for (let i = 0; i < normalized.length; i += BATCH) {
-    const batch = normalized.slice(i, i + BATCH);
-    const proc = spawnSync(cli, ['parse', '-x', ...batch.map((f) => f.norm)], {
-      cwd: grammarDir,
-      encoding: 'buffer',
-      maxBuffer: 1 << 28,
-      env: process.platform === 'win32' ? { ...process.env, CC: 'gcc', CXX: 'g++' } : process.env,
-    });
-
-    if (proc.error) {
-      throw new Error(`parse-summary: could not run ${cli}: ${proc.error.message}`);
-    }
-
-    const xml = proc.stdout.toString('utf8');
-    const chunks = xml.split('<source name="');
-    const matched = new Set();
-
-    for (let c = 1; c < chunks.length; c++) {
-      const nl = chunks[c].indexOf('\n');
-      const name = chunks[c].slice(0, nl).replace(/"?>?$/, '');
-      const body = chunks[c].slice(nl);
-      const target =
-        batch.find((f) => f.norm === name) ||
-        batch.find((f) => name.replace(/\\/g, '/').endsWith(f.norm.replace(/\\/g, '/')));
-
-      if (!target) {
-        throw new Error(
-          `parse-summary: could not match XML <source name="${name}"> to a file in this batch`,
-        );
-      }
-
-      matched.add(target);
-      const starts = lineStarts(target.text);
-      const { statements, errors } = parseSummaryFromXml(body, starts);
-      results.push({
-        file: target.displayPath,
-        statements,
-        errors,
-      });
-    }
-
-    if (matched.size !== batch.length) {
-      throw new Error(
-        `parse-summary: parser failed on batch (matched ${matched.size}/${batch.length} files, exit code ${proc.status}): ${proc.stderr.toString('utf8')}`,
-      );
-    }
-  }
+  const parsed = batchParse({
+    tool: 'parse-summary',
+    cli,
+    cwd: grammarDir,
+    items: normalized,
+    path: (f) => f.norm,
+  });
+  const results = Array.from(parsed, ({ item, body }) => ({
+    file: item.displayPath,
+    ...parseSummaryFromXml(body, lineStarts(item.text)),
+  }));
 
   const outputLines =
     results.map((r) => JSON.stringify(r)).join('\n') + (results.length > 0 ? '\n' : '');

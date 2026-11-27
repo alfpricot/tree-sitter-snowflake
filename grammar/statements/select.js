@@ -217,7 +217,24 @@ export default {
       ),
     ),
 
-  window_function: ($) => seq($.invocation, $.keyword_over, $.window_specification),
+  // IGNORE NULLS and RESPECT NULLS sit between the call and its OVER clause,
+  // after the FROM FIRST or FROM LAST that NTH_VALUE takes.
+  // The precedence matches invocation's, so that a FROM after the call stays
+  // open to both readings: `f(x) FROM first` reads a table named `first`
+  // until OVER or a null treatment shows otherwise.
+  window_function: ($) =>
+    prec(
+      1,
+      seq(
+        $.invocation,
+        optional(seq($.keyword_from, field('from', choice($.keyword_first, $.keyword_last)))),
+        optional($._null_treatment),
+        $.keyword_over,
+        $.window_specification,
+      ),
+    ),
+
+  _null_treatment: ($) => seq(choice($.keyword_ignore, $.keyword_respect), $.keyword_nulls),
 
   _alias: ($) =>
     seq(
@@ -243,6 +260,29 @@ export default {
           $.stage_source,
         ),
         optional(seq($._alias, optional(alias($._column_list, $.list)))),
+        optional($.sample_clause),
+      ),
+    ),
+
+  // {SAMPLE | TABLESAMPLE} [BERNOULLI | ROW | SYSTEM | BLOCK]
+  //   (probability | n ROWS) [{REPEATABLE | SEED} (seed)], after the alias.
+  sample_clause: ($) =>
+    prec.right(
+      seq(
+        choice($.keyword_sample, $.keyword_tablesample),
+        optional(
+          field(
+            'method',
+            choice($.keyword_bernoulli, $.keyword_row, $.keyword_system, $.keyword_block),
+          ),
+        ),
+        wrapped_in_parenthesis(seq(field('size', $._expression), optional($.keyword_rows))),
+        optional(
+          seq(
+            choice($.keyword_repeatable, $.keyword_seed),
+            wrapped_in_parenthesis(field('seed', $._expression)),
+          ),
+        ),
       ),
     ),
 
@@ -271,25 +311,53 @@ export default {
       seq($.stage_reference, optional(wrapped_in_parenthesis(comma_list($.named_argument, true)))),
     ),
 
+  // Snowflake makes ON optional (omitting it gives the Cartesian
+  // product). Only a join with a condition may nest another join before
+  // it, so `a JOIN b JOIN c` reads as two joins in sequence. Where a chain
+  // reads both ways, the parse with the fewest nested joins wins, so each
+  // condition binds to the nearest join still open. NATURAL
+  // implies its columns and takes no condition; it must be a keyword here,
+  // or a bare JOIN would read the word as the left table's alias, and so
+  // must ASOF. An ASOF join takes its MATCH_CONDITION before any ON or
+  // USING.
   join: ($) =>
-    seq(
-      optional(
-        seq(
-          choice(
-            seq($.keyword_left, optional($.keyword_outer)),
-            seq($.keyword_right, optional($.keyword_outer)),
-            seq($.keyword_full, optional($.keyword_outer)),
-            $.keyword_inner,
+    choice(
+      seq(
+        optional($._join_type),
+        $.keyword_join,
+        $.relation,
+        optional(
+          seq(
+            optional(prec.dynamic(-1, $.join)),
+            choice(
+              seq($.keyword_on, field('predicate', $._expression)),
+              seq($.keyword_using, paren_list($.identifier, true)),
+            ),
           ),
         ),
       ),
-      $.keyword_join,
-      $.relation,
-      optional($.join),
-      choice(
-        seq($.keyword_on, field('predicate', $._expression)),
-        seq($.keyword_using, paren_list($.identifier, true)),
+      seq($.keyword_natural, optional($._join_type), $.keyword_join, $.relation),
+      seq(
+        $.keyword_asof,
+        $.keyword_join,
+        $.relation,
+        $.keyword_match_condition,
+        wrapped_in_parenthesis(field('match_condition', $._expression)),
+        optional(
+          choice(
+            seq($.keyword_on, field('predicate', $._expression)),
+            seq($.keyword_using, paren_list($.identifier, true)),
+          ),
+        ),
       ),
+    ),
+
+  _join_type: ($) =>
+    choice(
+      seq($.keyword_left, optional($.keyword_outer)),
+      seq($.keyword_right, optional($.keyword_outer)),
+      seq($.keyword_full, optional($.keyword_outer)),
+      $.keyword_inner,
     ),
 
   cross_join: ($) => seq($.keyword_cross, $.keyword_join, $.relation),

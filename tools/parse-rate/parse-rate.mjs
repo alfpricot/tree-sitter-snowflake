@@ -15,12 +15,12 @@
 // before a differential comparison.
 
 import { Buffer } from 'node:buffer';
-import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
 import { resolveTreeSitterCli } from '../fixture-result.mjs';
+import { batchParse, byteOffset, lineStarts } from '../lib/parse-batch.mjs';
 
 // --- collect and decode -----------------------------------------------------
 
@@ -75,25 +75,6 @@ export function decode(buf) {
 }
 
 // --- parse in batches and measure error bytes from the XML tree --------------
-
-// tree-sitter's row/column positions are byte offsets, but a JS string
-// index is a UTF-16 code-unit offset — the two only agree on pure ASCII
-// text. Line starts are therefore computed from each line's UTF-8 byte
-// length, not from the character index the `\n` was found at.
-function lineStarts(text) {
-  const lines = text.split('\n');
-  const starts = [0];
-  let offset = 0;
-  for (let i = 0; i < lines.length - 1; i++) {
-    offset += Buffer.byteLength(lines[i], 'utf8') + 1;
-    starts.push(offset);
-  }
-  return starts;
-}
-
-function byteOffset(starts, row, col) {
-  return starts[row] + col;
-}
 
 // Extracts outermost ERROR/MISSING byte ranges from tree-sitter's XML
 // output. The XML is not balanced in the DOM sense (text between tags is
@@ -156,7 +137,7 @@ if (isMain) {
 
   const cli = resolveTreeSitterCli(repoDir, grammarDir);
 
-  const files = walk(corpusRoot, []).sort();
+  const files = walk(corpusRoot, []).toSorted();
   const scratch = join(os.tmpdir(), `parse-rate-${process.pid}`);
   process.on('exit', () => rmSync(scratch, { recursive: true, force: true }));
   const normalized = [];
@@ -168,55 +149,22 @@ if (isMain) {
     normalized.push({ original: file, norm, text });
   }
 
-  const BATCH = 40;
-  const perFile = [];
-  for (let i = 0; i < normalized.length; i += BATCH) {
-    const batch = normalized.slice(i, i + BATCH);
-    const proc = spawnSync(cli, ['parse', '-x', ...batch.map((f) => f.norm)], {
-      cwd: grammarDir,
-      encoding: 'buffer',
-      maxBuffer: 1 << 28,
-      env: process.platform === 'win32' ? { ...process.env, CC: 'gcc', CXX: 'g++' } : process.env,
-    });
-    if (proc.error) {
-      throw new Error(`parse-rate: could not run ${cli}: ${proc.error.message}`);
-    }
-    const xml = proc.stdout.toString('utf8');
-    const chunks = xml.split('<source name="');
-    const matched = new Set();
-    for (let c = 1; c < chunks.length; c++) {
-      const nl = chunks[c].indexOf('\n');
-      const name = chunks[c].slice(0, nl).replace(/"?>?$/, '');
-      const body = chunks[c].slice(nl);
-      const target =
-        batch.find((f) => f.norm === name) ||
-        batch.find((f) => name.replace(/\\/g, '/').endsWith(f.norm.replace(/\\/g, '/')));
-      if (!target) {
-        throw new Error(
-          `parse-rate: could not match XML <source name="${name}"> to a file in this batch`,
-        );
-      }
-      matched.add(target);
-      const starts = lineStarts(target.text);
-      const ranges = errorRangesFromXml(body, starts);
-      const errorBytes = ranges.reduce((sum, [a, b]) => sum + (b - a), 0);
-      const total = Buffer.byteLength(target.text, 'utf8');
-      perFile.push({
-        file: target.original,
-        bytes: total,
-        errorBytes,
-        hasError: ranges.length > 0,
-      });
-    }
-    // A CLI or grammar-load failure can exit non-zero with empty/truncated
-    // stdout while still not throwing above — a batch that silently matched
-    // fewer files than it was given is a false pass, not a clean run.
-    if (matched.size !== batch.length) {
-      throw new Error(
-        `parse-rate: only matched ${matched.size}/${batch.length} files in batch starting at index ${i} — the CLI likely failed to run (check gcc/CC and the grammar build)`,
-      );
-    }
-  }
+  const parsed = batchParse({
+    tool: 'parse-rate',
+    cli,
+    cwd: grammarDir,
+    items: normalized,
+    path: (f) => f.norm,
+  });
+  const perFile = Array.from(parsed, ({ item, body }) => {
+    const ranges = errorRangesFromXml(body, lineStarts(item.text));
+    return {
+      file: item.original,
+      bytes: Buffer.byteLength(item.text, 'utf8'),
+      errorBytes: ranges.reduce((sum, [a, b]) => sum + (b - a), 0),
+      hasError: ranges.length > 0,
+    };
+  });
 
   const totalFiles = perFile.length;
   const totalBytes = perFile.reduce((s, f) => s + f.bytes, 0);

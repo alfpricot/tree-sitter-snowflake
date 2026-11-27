@@ -3,7 +3,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
 const tracked = new Set(execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0'));
-const common = ['LICENSE', 'README.md', 'src/parser.c', 'src/scanner.c', 'queries/highlights.scm'];
+// Every tracked query ships: both bindings export each one by name.
+const queries = [...tracked].filter((path) => /^queries\/[^/]+\.scm$/.test(path));
+const common = ['LICENSE', 'README.md', 'src/parser.c', 'src/scanner.c'];
 
 function check(paths, required, prefix = '', generated = []) {
   const files = paths.map((path) => path.replaceAll('\\', '/'));
@@ -23,10 +25,16 @@ function check(paths, required, prefix = '', generated = []) {
   console.log(`Validated ${files.length} package entries (${prefix || 'grammar'}).`);
 }
 
-for (const [name, prefix, required] of [
-  ['tree-sitter-snowflake', '', [...common, 'bindings/rust/lib.rs', 'bindings/rust/build.rs']],
+/** @type {[name: string, prefix: string, required: string[]][]} */
+const crates = [
+  [
+    'tree-sitter-snowflake',
+    '',
+    [...common, ...queries, 'bindings/rust/lib.rs', 'bindings/rust/build.rs'],
+  ],
   ['snowflake-handlers', 'snowflake-handlers/', ['LICENSE', 'README.md', 'src/lib.rs']],
-]) {
+];
+for (const [name, prefix, required] of crates) {
   // The release workflow runs this script from main against an older tag's tree, which can
   // predate the companion crate's current directory; skip it there rather than fail the run.
   if (prefix && !existsSync(`${prefix}Cargo.toml`)) {
@@ -59,6 +67,7 @@ check(
   packages[0].files.map(({ path }) => path),
   [
     ...common,
+    ...queries,
     'package.json',
     'binding.gyp',
     'bindings/node/index.js',

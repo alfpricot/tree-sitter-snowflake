@@ -17,7 +17,7 @@ function referential_clause($, not_enforced) {
       optional(paren_list($.identifier, true)),
       optional(seq($.keyword_match, choice($.keyword_full, $.keyword_simple, $.keyword_partial))),
       repeat($.referential_action),
-      ...(not_enforced ? [optional($.keyword_not_enforced)] : []),
+      ...(not_enforced ? [optional($._not_enforced)] : []),
       optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
     ),
   );
@@ -91,16 +91,13 @@ export default {
         $._with_tag,
         // NOT ENFORCED [RELY | NORELY] after an inline REFERENCES, which
         // leaves these suffixes to the constraint list.
-        seq(
-          $.keyword_not_enforced,
-          optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
-        ),
+        seq($._not_enforced, optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely)))),
       ),
     ),
 
   _not_null: ($) => seq($.keyword_not, $.keyword_null),
 
-  keyword_not_enforced: ($) => seq($.keyword_not, $.keyword_enforced),
+  _not_enforced: ($) => seq($.keyword_not, $.keyword_enforced),
 
   // Snowflake accepts and ignores referential constraints; it never
   // enforces them, and CHECK constraints are not part of the dialect at
@@ -133,7 +130,8 @@ export default {
       seq($.keyword_no, $.keyword_action),
     ),
 
-  // Table-level constraint, also the shape ALTER TABLE ... ADD accepts.
+  // Table-level constraint inside a column list. ALTER TABLE ... ADD has its
+  // own rule, constraint_action.
   table_constraint: ($) =>
     prec.right(
       seq(
@@ -142,7 +140,7 @@ export default {
           seq(
             choice(seq($.keyword_primary, $.keyword_key), $.keyword_unique),
             paren_list($.identifier, true),
-            optional($.keyword_not_enforced),
+            optional($._not_enforced),
             optional(choice($.keyword_rely, seq($.keyword_no, $.keyword_rely))),
           ),
           seq(
@@ -151,7 +149,6 @@ export default {
             paren_list($.identifier, true),
             $.referential_clause,
           ),
-          seq($.keyword_check, wrapped_in_parenthesis($._expression)),
         ),
       ),
     ),
@@ -172,22 +169,53 @@ export default {
   _paren_options: ($) =>
     wrapped_in_parenthesis(seq($.option, repeat(seq(optional(','), $.option)))),
 
-  // The bare, unparenthesized spelling the warehouse/task/stage DDL uses:
-  // `WAREHOUSE_SIZE = 'XSMALL' AUTO_RESUME = TRUE`.
-  with_clause: ($) => prec.right(seq(optional($.keyword_with), repeat1($.option))),
-
   option: ($) =>
     prec.right(
-      seq(
-        field('name', $.identifier),
-        optional(
+      choice(
+        seq(
+          field('name', $.identifier),
+          optional(
+            choice(
+              seq('=', field('value', $._option_value)),
+              $._paren_options,
+              seq('=', $._paren_options),
+              // PACKAGES = () — an empty list.
+              seq('=', wrapped_in_parenthesis()),
+              // STORAGE_LOCATIONS = ((...), (...)) — a list of option groups.
+              seq(
+                '=',
+                wrapped_in_parenthesis(comma_list(alias($._paren_options, $.option_group), true)),
+              ),
+            ),
+          ),
+        ),
+        // The properties whose value is a list of schema objects, which may
+        // be qualified. The names are keywords so that their parentheses do
+        // not read as a nested option list.
+        seq(
+          field('name', $._object_list_option_name),
+          '=',
           choice(
-            seq('=', field('value', $._option_value)),
-            $._paren_options,
-            seq('=', $._paren_options),
+            wrapped_in_parenthesis(comma_list(field('value', $.object_reference), true)),
+            field('value', $._option_value),
           ),
         ),
       ),
+    ),
+
+  _object_list_option_name: ($) =>
+    choice(
+      alias($.keyword_allowed_network_rules, $.identifier),
+      alias($.keyword_allowed_authentication_secrets, $.identifier),
+      alias($.keyword_allowed_api_authentication_integrations, $.identifier),
+    ),
+
+  // 'variable' = secret — one binding in a routine's SECRETS list.
+  secret_binding: ($) =>
+    seq(
+      field('variable', alias($._single_quote_string, $.literal)),
+      '=',
+      field('secret', $.object_reference),
     ),
 
   _option_value: ($) =>
@@ -206,6 +234,7 @@ export default {
         // ('a', 'b', ...) — a parenthesized literal list, e.g. a storage
         // integration's STORAGE_ALLOWED_LOCATIONS or a UDF's PACKAGES.
         wrapped_in_parenthesis(comma_list($.literal, true)),
+        wrapped_in_parenthesis(comma_list($.secret_binding, true)),
       ),
     ),
 };

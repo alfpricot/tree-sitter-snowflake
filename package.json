@@ -9,9 +9,9 @@
     "prestart": "npx --no-install tree-sitter build --wasm",
     "start": "npx --no-install tree-sitter playground",
     "test": "node --test bindings/node/*_test.js",
-    "lint": "oxlint grammar.js grammar tools bindings/node",
-    "format": "oxfmt grammar.js \"grammar/**/*.js\" \"tools/**/*.mjs\" \"bindings/node/*.js\"",
-    "format:check": "oxfmt --check grammar.js \"grammar/**/*.js\" \"tools/**/*.mjs\" \"bindings/node/*.js\""
+    "lint": "oxlint grammar.js grammar tools bindings/node && tsc -p tsconfig.json",
+    "format": "oxfmt grammar.js \"grammar/**/*.js\" \"tools/**/*.mjs\" \"bindings/node/*.js\" \"bindings/node/*.d.ts\"",
+    "format:check": "oxfmt --check grammar.js \"grammar/**/*.js\" \"tools/**/*.mjs\" \"bindings/node/*.js\" \"bindings/node/*.d.ts\""
   },
   "author": "M. Reifschneider",
   "license": "MIT",
@@ -20,11 +20,14 @@
     "node-gyp-build": "4.8.4"
   },
   "devDependencies": {
+    "@types/node": "24.19.4",
     "node-gyp": "13.1.0",
-    "oxfmt": "0.76.0",
-    "oxlint": "1.91.0",
+    "oxfmt": "0.80.0",
+    "oxlint": "1.95.0",
+    "prebuildify": "6.0.1",
     "tree-sitter": "0.25.1",
-    "tree-sitter-cli": "0.27.2"
+    "tree-sitter-cli": "0.27.2",
+    "typescript": "7.0.2"
   },
   "peerDependencies": {
     "tree-sitter": "^0.25.0"
@@ -65,7 +68,7 @@
     "NOTICE"
   ],
   "allowScripts": {
-    "tree-sitter-cli@0.27.2": true,
-    "tree-sitter@0.25.1": true
+    "tree-sitter-cli": true,
+    "tree-sitter": true
   }
 }

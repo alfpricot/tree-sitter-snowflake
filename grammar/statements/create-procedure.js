@@ -102,7 +102,7 @@ function alter_routine($, keyword, actions) {
     choice(
       seq($.keyword_rename, $.keyword_to, $.object_reference),
       ...set_unset_tags($),
-      ...set_unset_properties($),
+      ...set_unset_properties($, { spaced: true }),
       ...actions,
     ),
   );

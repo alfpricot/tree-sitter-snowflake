@@ -9,10 +9,12 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
-import { fixtureResult, resolveTreeSitterCli } from './fixture-result.mjs';
+import { fixtureResult, resolveTreeSitterCli, rootNodeName } from './fixture-result.mjs';
+import { treeSitterEnv } from './lib/parse-batch.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const cli = resolveTreeSitterCli(repo);
+const root = rootNodeName(repo);
 const fixtures = readdirSync(join(repo, 'test/fixtures')).filter((f) => f.endsWith('.sql'));
 assert(fixtures.length > 0, 'No SQL fixtures found');
 
@@ -22,17 +24,17 @@ for (const f of fixtures) {
     cwd: repo,
     encoding: 'utf8',
     maxBuffer: 1 << 26,
-    env: { ...process.env, CC: 'gcc', CXX: 'g++' },
+    env: treeSitterEnv(),
   });
   try {
-    const { errors, zeroWidth } = fixtureResult(proc);
+    const { errors, zeroWidth } = fixtureResult(proc, root);
     if (errors || zeroWidth) {
       bad++;
       console.log(`${f}: errors=${errors} zero-width=${zeroWidth}`);
     }
   } catch (error) {
     bad++;
-    console.error(`${f}: ${error.message}`);
+    console.error(`${f}: ${/** @type {Error} */ (error).message}`);
   }
 }
 console.log(

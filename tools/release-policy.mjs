@@ -1,3 +1,6 @@
+// This is the reference copy shared with other tree-sitter grammar repositories.
+// A fix made here should be carried over to them.
+
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -5,6 +8,11 @@ import { pathToFileURL } from 'node:url';
 
 export function cargoVersion(manifest) {
   const section = manifest.split(/^\[package\]\s*$/m)[1]?.split(/^\[/m)[0];
+  return section?.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
+}
+
+export function pyprojectVersion(manifest) {
+  const section = manifest.split(/^\[project\]\s*$/m)[1]?.split(/^\[/m)[0];
   return section?.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
 }
 
@@ -18,10 +26,17 @@ export function releaseVersion(tag, manifest) {
   return version;
 }
 
-// gala writes package.json and tree-sitter.json in the release commit along
-// with Cargo.toml, and the generated parser embeds tree-sitter.json's version,
+// gala writes package.json, tree-sitter.json, and pyproject.toml in the
+// release commit along with Cargo.toml, and the generated parser embeds tree-sitter.json's version,
 // so a disagreement means the commit was not cut by a release.
-export function versionsMatch(version, packageJson, treeSitterJson) {
+// `pyproject` is undefined for a tree without Python bindings.
+/**
+ * @param {string} version
+ * @param {string} packageJson
+ * @param {string} treeSitterJson
+ * @param {string} [pyproject]
+ */
+export function versionsMatch(version, packageJson, treeSitterJson, pyproject) {
   assert.equal(
     JSON.parse(packageJson).version,
     version,
@@ -32,6 +47,13 @@ export function versionsMatch(version, packageJson, treeSitterJson) {
     version,
     `tree-sitter.json metadata.version must match Cargo.toml version ${version}`,
   );
+  if (pyproject !== undefined) {
+    assert.equal(
+      pyprojectVersion(pyproject),
+      version,
+      `pyproject.toml version must match Cargo.toml version ${version}`,
+    );
+  }
 }
 
 // A release cut before gala wrote package.json and tree-sitter.json (its
@@ -42,6 +64,10 @@ export function writesVersionFiles(galaToml) {
   return /^\[\[versionFile\]\]\s*$/m.test(galaToml ?? '');
 }
 
+/**
+ * @param {string | undefined} tag
+ * @param {(command: string, args: string[], options: object) => any} [run]
+ */
 export function resolveRelease(tag, run = execFileSync) {
   // Validate before passing the ref to git; branch names and option-like input fail closed.
   releaseVersion(tag, `[package]\nversion = "${tag?.slice(1)}"\n`);
@@ -51,10 +77,12 @@ export function resolveRelease(tag, run = execFileSync) {
   const version = releaseVersion(tag, git(['show', `${commit}:Cargo.toml`]));
   const ls = git(['ls-tree', '--name-only', commit, '--', '.gala.toml']);
   if (!writesVersionFiles(ls && git(['show', `${commit}:.gala.toml`]))) return commit;
+  const python = git(['ls-tree', '--name-only', commit, '--', 'pyproject.toml']);
   versionsMatch(
     version,
     git(['show', `${commit}:package.json`]),
     git(['show', `${commit}:tree-sitter.json`]),
+    python ? git(['show', `${commit}:pyproject.toml`]) : undefined,
   );
   return commit;
 }
@@ -66,7 +94,8 @@ export function checkVersions(root = pathToFileURL(process.cwd() + '/'), tag) {
   const manifest = read('Cargo.toml');
   const version = tag === undefined ? cargoVersion(manifest) : releaseVersion(tag, manifest);
   assert(version, 'Cargo.toml has no [package] version');
-  versionsMatch(version, read('package.json'), read('tree-sitter.json'));
+  const python = existsSync(new URL('pyproject.toml', root)) ? read('pyproject.toml') : undefined;
+  versionsMatch(version, read('package.json'), read('tree-sitter.json'), python);
   return version;
 }
 
@@ -100,14 +129,22 @@ export function runCommand(command, env = process.env) {
   if (command === 'resolve') {
     const commit = resolveRelease(env.TAG);
     const policy = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-    appendFileSync(env.GITHUB_OUTPUT, `commit=${commit}\npolicy=${policy}\n`);
+    // A tag cut before the Python bindings has nothing to publish to PyPI.
+    const python =
+      execFileSync('git', ['ls-tree', '--name-only', commit, '--', 'pyproject.toml'], {
+        encoding: 'utf8',
+      }).trim() !== '';
+    appendFileSync(
+      /** @type {string} */ (env.GITHUB_OUTPUT),
+      `commit=${commit}\npolicy=${policy}\npython=${python}\n`,
+    );
   } else if (command === 'check-npm' || command === 'prepare-npm') {
     prepareNpm(env.TAG);
     const provenance = canAttest(env.TAG, env.RELEASE_COMMIT, env.GITHUB_REF, env.GITHUB_SHA);
-    appendFileSync(env.GITHUB_OUTPUT, `provenance=${provenance}\n`);
+    appendFileSync(/** @type {string} */ (env.GITHUB_OUTPUT), `provenance=${provenance}\n`);
   } else if (command === 'versions') {
     const version = checkVersions();
-    console.log(`Cargo.toml, package.json, and tree-sitter.json all carry ${version}`);
+    console.log(`Every version file carries ${version}`);
   } else {
     throw new Error(`release-policy: unknown command ${JSON.stringify(command)}`);
   }
