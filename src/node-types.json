@@ -6609,7 +6609,19 @@
           "named": true
         },
         {
+          "type": "keyword_tag",
+          "named": true
+        },
+        {
+          "type": "keyword_with",
+          "named": true
+        },
+        {
           "type": "option",
+          "named": true
+        },
+        {
+          "type": "tag_assignment",
           "named": true
         }
       ]

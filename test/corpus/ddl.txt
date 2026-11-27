@@ -3186,6 +3186,7 @@ CREATE OR REPLACE SECRET IF NOT EXISTS db.s.api_secret
   OAUTH_SCOPES = ('read', 'write')
   COMMENT = 'c';
 CREATE SECRET login TYPE = PASSWORD USERNAME = 'u' PASSWORD = 'p';
+CREATE SECRET tagged TYPE = GENERIC_STRING SECRET_STRING = 's' WITH TAG (team = 'a');
 
 --------------------------------------------------------------------------------
 
@@ -3238,7 +3239,27 @@ CREATE SECRET login TYPE = PASSWORD USERNAME = 'u' PASSWORD = 'p';
       (option
         (identifier)
         (literal
-          (literal))))))
+          (literal)))))
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_secret)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal)))))
 
 ================================================================================
 create network rule

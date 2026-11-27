@@ -11268,8 +11268,17 @@
           {
             "type": "REPEAT1",
             "content": {
-              "type": "SYMBOL",
-              "name": "option"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_with_tag"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "option"
+                }
+              ]
             }
           }
         ]

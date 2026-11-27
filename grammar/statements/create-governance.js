@@ -29,9 +29,14 @@ export default {
     ),
 
   // CREATE [OR REPLACE] SECRET [IF NOT EXISTS] name TYPE = ... [options]
-  create_secret: ($) => prec.right(seq(...create_header($, $.keyword_secret), repeat1($.option))),
+  //   [[WITH] TAG (...)]
+  create_secret: ($) =>
+    prec.right(seq(...create_header($, $.keyword_secret), repeat1(choice($._with_tag, $.option)))),
 
   // CREATE [OR REPLACE] NETWORK RULE name TYPE = ... VALUE_LIST = (...) MODE = ...
+  // Snowflake has no IF NOT EXISTS here. The shared header accepts it anyway:
+  // without it the open option list would still take the clause, with no
+  // ERROR node and with IF read as the rule's name.
   create_network_rule: ($) =>
     prec.right(seq(...create_header($, [$.keyword_network, $.keyword_rule]), repeat1($.option))),
 
