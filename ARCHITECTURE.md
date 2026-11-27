@@ -2,13 +2,9 @@
 
 tree-sitter-snowflake is a tree-sitter grammar for Snowflake SQL with Rust and Node bindings, plus a companion crate that extracts the JavaScript, Python, Java, and Scala handlers embedded in procedure and function definitions. The grammar is written in JavaScript, and the generated C parser is committed so consumers never need the tree-sitter CLI.
 
-The main design choice is that the grammar parses Snowflake only and reports what it cannot parse as `ERROR` nodes. Embedded handler code is not parsed by the grammar. It is exposed as nodes so a second parser can take over.
+The main design choice is that the grammar parses Snowflake only and reports what it cannot parse as `ERROR` nodes. It is not a validator, so a clean tree makes no claim that the SQL runs.
 
-## What tree-sitter-snowflake is not
-
-- Not a multi-dialect SQL grammar and not a validator: it makes no claim that accepted SQL runs.
-- Not a dependency that pulls in embedded-language grammars: the grammar package does not link any of them.
-- Not an executor: no handler code is run.
+Embedded handler code is exposed as nodes so a second parser can take over. The grammar package links no embedded-language grammar, and nothing here runs handler code.
 
 ## Major components
 
@@ -28,7 +24,7 @@ The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the han
 A separate crate that decodes handler bodies, maps offsets back to the SQL file, parses JavaScript and Python (Java and Scala behind Cargo features), and runs advisory restriction checks.
 
 ### [test/](test) and [tools/](tools)
-`test/corpus` holds per-construct tree assertions, `test/fixtures` holds synthetic whole files, and `test/node-kinds.txt` snapshots the exported node kinds and their fields. `tools/` holds the checks CI runs over them (fixtures, keyword probe, node kinds, package contents) and the parse-rate harness.
+`test/corpus` holds per-construct tree assertions, `test/highlight` holds highlight assertions, `test/fixtures` holds synthetic whole files, and `test/node-kinds.txt` snapshots the exported node kinds and their fields. `tools/` holds the CI and release policy scripts, the checks CI runs (fixtures, source-identifier leaks, keyword probe, node kinds, package contents), and the parse summary and parse-rate tools.
 
 ## External systems and data flow
 
@@ -36,9 +32,37 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 
 ## Build, test, release, and deploy
 
-`verify.yml` runs on pull requests, on pushes to `dev` and `main`, and on manual dispatch. It checks the changed paths, secret scanning of the working tree and Git history, workflow and YAML syntax, the pull request title, the unit tests for the repository's own scripts, grammar regeneration (the committed parser and node-kind snapshot must match), lint and formatting for the JavaScript, the corpus, fixtures, keyword handling, Rust format, lint and tests (also against tree-sitter 0.26, the companion's declared floor), package contents, and the Node binding. A final aggregate job named `Verify` is the required check.
+### Verify
 
-Feature pull requests go to `dev`. A promotion pull request from `dev` to `main` cuts the release: `gala-release.yml` runs gala (`.gala.toml`), which computes the next version from Conventional Commits, bumps it in `Cargo.toml`, `package.json`, `tree-sitter.json`, and `snowflake-handlers`' dependency on the grammar crate, refreshes `package-lock.json`, regenerates the parser (whose metadata embeds the `tree-sitter.json` version), writes `CHANGELOG.md`, commits, tags `v<version>`, pushes with a deploy key, and fast-forwards `dev` to the release commit. The workflow then dispatches `release.yml`, which publishes the crate to crates.io and the npm package to npm and GitHub Packages from the verified commit, builds prebuilt native addons for Linux and Windows, and attaches a WASM build to the GitHub Release. `snowflake-handlers` keeps its own version: bump it by hand in `snowflake-handlers/Cargo.toml` and add its `CHANGELOG.md` section, headed `## [<version>](<release URL>) - <date>`, in the pull request that changes it. `release.yml` publishes it with the grammar when that version is not on crates.io yet, then tags `snowflake-handlers-v<version>` at the release commit and creates its GitHub Release from that section. A heading still marked `Unreleased` gets a warning in the run, and the date goes in with the next pull request. `cache-cleanup.yml` deletes stale Actions caches on a daily schedule. Nothing is deployed.
+`verify.yml` runs on pull requests, on pushes to `dev` and `main`, and on manual dispatch. It checks:
+
+- the changed paths, the pull request title, and workflow and YAML syntax
+- the working tree and Git history for secrets, and tracked files for source-corpus identifiers
+- the unit tests for the repository's own scripts, and version agreement across the three manifests
+- grammar regeneration (the committed parser and node-kind snapshot must match)
+- JavaScript lint and formatting, corpus and highlight tests, fixtures, and keyword handling
+- Rust format, lint, and tests, plus each crate's minimum Rust version and a run against tree-sitter 0.26, the companion's declared floor
+- package contents and the Node binding
+
+A docs-only pull request skips the build jobs, and a draft fails the final check. That aggregate job, named `Verify`, is the required check on `dev` and `main`.
+
+### Release
+
+Feature pull requests go to `dev`. A promotion pull request from `dev` to `main` cuts the release. `gala-release.yml` runs gala (`.gala.toml`), which:
+
+1. Computes the next version from Conventional Commits.
+2. Bumps it in `Cargo.toml`, `package.json`, `tree-sitter.json`, and `snowflake-handlers`' dependency on the grammar crate.
+3. Refreshes the lockfiles and regenerates the parser, whose metadata embeds the `tree-sitter.json` version.
+4. Writes `CHANGELOG.md`, commits, tags `v<version>`, and pushes with a deploy key.
+5. Fast-forwards `dev` to the release commit.
+
+The workflow then dispatches `release.yml`. From the verified commit, it publishes the crate to crates.io and the npm package to npm and GitHub Packages, with prebuilt native addons for Linux and Windows. It also attaches a WASM build and the node-kind snapshot to the GitHub Release.
+
+`snowflake-handlers` keeps its own version. Bump it by hand in `snowflake-handlers/Cargo.toml` and add its `CHANGELOG.md` section, headed `## [<version>](<release URL>) - <date>`, in the pull request that changes it. `release.yml` publishes it with the grammar when that version is not on crates.io yet. It then tags `snowflake-handlers-v<version>` at the release commit and creates its GitHub Release from that section. A missing or empty section fails that job. A heading still marked `Unreleased` only gets a warning, and the date goes in with the next pull request.
+
+### Maintenance
+
+`cache-cleanup.yml` deletes stale Actions caches on a daily schedule. Nothing is deployed.
 
 ## Where things live
 
