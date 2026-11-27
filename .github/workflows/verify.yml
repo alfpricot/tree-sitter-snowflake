@@ -346,6 +346,9 @@ jobs:
         uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
+          # cgo does not track the parser sources bindings/go includes from
+          # src/, so a restored build cache could test an old parser.
+          cache: false
 
       - name: Test the Go binding
         run: go test ./bindings/go

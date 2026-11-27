@@ -52,7 +52,9 @@ import (
 
 parser := tree_sitter.NewParser()
 defer parser.Close()
-err := parser.SetLanguage(tree_sitter.NewLanguage(tree_sitter_snowflake.Language()))
+if err := parser.SetLanguage(tree_sitter.NewLanguage(tree_sitter_snowflake.Language())); err != nil {
+	panic(err)
+}
 tree := parser.Parse([]byte("SELECT 1;"), nil)
 defer tree.Close()
 ```

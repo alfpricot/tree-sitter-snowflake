@@ -86,7 +86,8 @@ impl HandlerSource {
     /// parse [`text`](Self::text) and map the results with
     /// [`source_range`](Self::source_range) instead. Also `None` for an empty
     /// body, since an empty list of ranges selects the whole text, and when
-    /// `sql` is not the text this body was read from.
+    /// `sql` does not spell the body at its recorded offsets. Pass the text the
+    /// body was read from; an edited copy can spell it there by chance.
     #[must_use]
     pub fn included_ranges(&self, sql: &str) -> Option<Vec<tree_sitter::Range>> {
         let mut spans: Vec<Range<usize>> = Vec::new();
@@ -97,12 +98,10 @@ impl HandlerSource {
         };
         let mut next = self.start;
         for escape in &self.escapes {
-            let decoded = &self.text[escape.output.clone()];
-            if !sql.get(escape.source.clone())?.ends_with(decoded) {
-                return None;
-            }
             keep(next..escape.source.start);
-            keep(escape.source.end - decoded.len()..escape.source.end);
+            // An escape is longer than what it decodes to, so this stays
+            // inside it.
+            keep(escape.source.end - escape.output.len()..escape.source.end);
             next = escape.source.end;
         }
         keep(next..self.end);
