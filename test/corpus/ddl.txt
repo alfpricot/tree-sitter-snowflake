@@ -3153,3 +3153,27 @@ DROP DATABASE role;
       (keyword_database))
     (object_reference
       (identifier))))
+
+================================================================================
+alter policy with IF EXISTS after POLICY
+================================================================================
+
+ALTER MASKING POLICY IF EXISTS p SET BODY -> val;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_policy
+      (keyword_alter)
+      (keyword_masking)
+      (keyword_policy)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (keyword_body)
+      (policy_body
+        (field
+          (identifier))))))

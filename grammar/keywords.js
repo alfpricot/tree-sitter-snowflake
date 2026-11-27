@@ -228,7 +228,6 @@ export default {
   keyword_unique: (_) => make_keyword('unique'),
   keyword_foreign: (_) => make_keyword('foreign'),
   keyword_references: (_) => make_keyword('references'),
-  keyword_check: (_) => make_keyword('check'),
   keyword_enforced: (_) => make_keyword('enforced'),
   keyword_rely: (_) => make_keyword('rely'),
   keyword_simple: (_) => make_keyword('simple'),

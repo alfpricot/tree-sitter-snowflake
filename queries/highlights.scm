@@ -319,7 +319,6 @@
   (keyword_caller)
   (keyword_cascade)
   (keyword_changes)
-  (keyword_check)
   (keyword_comment)
   (keyword_connect)
   (keyword_cortex)
