@@ -2,7 +2,7 @@
 
 tree-sitter-snowflake is a tree-sitter grammar for Snowflake SQL with Rust and Node bindings, plus a companion crate that extracts the JavaScript, Python, Java, and Scala handlers embedded in procedure and function definitions. The grammar is written in JavaScript, and the generated C parser is committed so consumers never need the tree-sitter CLI.
 
-The main design choice is that the grammar parses Snowflake only and reports what it cannot parse as `ERROR` nodes. It is not a validator, so a clean tree makes no claim that the SQL runs.
+The main design choice is that the grammar parses Snowflake only and reports what it cannot parse as `ERROR` or `MISSING` nodes. It is not a validator, so a clean tree makes no claim that the SQL runs.
 
 Embedded handler code is exposed as nodes so a second parser can take over. The grammar package links no embedded-language grammar, and nothing here runs handler code.
 
