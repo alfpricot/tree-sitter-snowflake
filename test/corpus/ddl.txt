@@ -2894,9 +2894,8 @@ CREATE TABLE t (
               (keyword_delete)
               (keyword_no)
               (keyword_action))
-            (keyword_not_enforced
-              (keyword_not)
-              (keyword_enforced))))))))
+            (keyword_not)
+            (keyword_enforced)))))))
 
 ================================================================================
 inline REFERENCES followed by NOT NULL and NOT ENFORCED
@@ -2931,9 +2930,8 @@ CREATE TABLE t (a INT REFERENCES u (id) NOT NULL, b INT REFERENCES v NOT ENFORCE
             (keyword_references)
             (object_reference
               (identifier)))
-          (keyword_not_enforced
-            (keyword_not)
-            (keyword_enforced))
+          (keyword_not)
+          (keyword_enforced)
           (keyword_rely))))))
 
 ================================================================================
@@ -3177,3 +3175,244 @@ ALTER MASKING POLICY IF EXISTS p SET BODY -> val;
       (policy_body
         (field
           (identifier))))))
+
+================================================================================
+create secret
+================================================================================
+
+CREATE OR REPLACE SECRET IF NOT EXISTS db.s.api_secret
+  TYPE = OAUTH2
+  API_AUTHENTICATION = oauth_int
+  OAUTH_SCOPES = ('read', 'write')
+  COMMENT = 'c';
+CREATE SECRET login TYPE = PASSWORD USERNAME = 'u' PASSWORD = 'p';
+CREATE SECRET tagged TYPE = GENERIC_STRING SECRET_STRING = 's' WITH TAG (team = 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_secret)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal))
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_secret)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (option
+        (identifier)
+        (literal
+          (literal)))))
+  (statement
+    (create_secret
+      (keyword_create)
+      (keyword_secret)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal)))))
+
+================================================================================
+create network rule
+================================================================================
+
+CREATE OR REPLACE NETWORK RULE db.s.api_rule
+  TYPE = HOST_PORT
+  MODE = EGRESS
+  VALUE_LIST = ('example.com:443');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_network_rule
+      (keyword_create)
+      (keyword_or)
+      (keyword_replace)
+      (keyword_network)
+      (keyword_rule)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (literal))))))
+
+================================================================================
+external access integration with qualified object lists
+================================================================================
+
+CREATE EXTERNAL ACCESS INTEGRATION api_access
+  ALLOWED_NETWORK_RULES = (db.s.api_rule, other_rule)
+  ALLOWED_AUTHENTICATION_SECRETS = ALL
+  ALLOWED_API_AUTHENTICATION_INTEGRATIONS = (oauth_int)
+  ENABLED = TRUE;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_integration
+      (keyword_create)
+      (keyword_external)
+      (keyword_access)
+      (keyword_integration)
+      (identifier)
+      (option
+        (identifier)
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (object_reference
+          (identifier)))
+      (option
+        (identifier)
+        (literal
+          (keyword_true))))))
+
+================================================================================
+function secret bindings
+================================================================================
+
+CREATE FUNCTION f(q STRING) RETURNS STRING LANGUAGE PYTHON
+  HANDLER = 'run'
+  EXTERNAL_ACCESS_INTEGRATIONS = (api_access)
+  SECRETS = ('cred' = db.s.api_secret, 'other' = s2)
+  AS $$def run(q): return q$$;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_function
+      (keyword_create)
+      (keyword_function)
+      (object_reference
+        (identifier))
+      (function_arguments
+        (function_argument
+          (identifier)
+          (keyword_string)))
+      (keyword_returns)
+      (keyword_string)
+      (foreign_language
+        (keyword_language)
+        (keyword_python))
+      (module_option
+        (option
+          (identifier)
+          (literal
+            (literal))))
+      (module_option
+        (option
+          (identifier)
+          (option
+            (identifier))))
+      (module_option
+        (option
+          (identifier)
+          (secret_binding
+            (literal)
+            (object_reference
+              (identifier)
+              (identifier)
+              (identifier)))
+          (secret_binding
+            (literal)
+            (object_reference
+              (identifier)))))
+      (keyword_as)
+      (function_body
+        (dollar_quoted_body
+          (body_content))))))
+
+================================================================================
+double and double precision types
+================================================================================
+
+CREATE TABLE t (a DOUBLE, b DOUBLE PRECISION);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_double))
+        (column_definition
+          (identifier)
+          (keyword_double_prec_only))))))

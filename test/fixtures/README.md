@@ -25,6 +25,7 @@ A fixture parsing clean is not proof it is valid Snowflake — a parser has no s
 | `user_sequence_tag_streamlit.sql` | `CREATE USER`, `CREATE SEQUENCE`, `CREATE TAG ... ALLOWED_VALUES`, `CREATE STREAMLIT` |
 | `warehouse_options.sql` | warehouse option flood incl. identifier-valued `SCALING_POLICY=STANDARD` |
 | `storage_integration.sql` | `STORAGE INTEGRATION` with `STORAGE_ALLOWED_LOCATIONS=('azure://...')` |
+| `external_access.sql` | `SECRET`, `NETWORK RULE`, `EXTERNAL ACCESS INTEGRATION` with a qualified rule list, a function with `SECRETS` bindings, grants (docs-derived) |
 | `role_grants.sql` | `CREATE ROLE IF NOT EXISTS`, role hierarchy, schema-scope privileges incl. `MASKING POLICY`, `ZEROCOPY CONNECTOR`, future grants, `REVOKE` |
 | `comment_on.sql` | `COMMENT ON TABLE/COLUMN/VIEW/PROCEDURE` |
 | `cortex_agent.sql` | `CREATE AGENT` with `profile='json'` and `FROM SPECIFICATION $$yaml$$` |

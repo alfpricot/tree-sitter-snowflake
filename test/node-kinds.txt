@@ -120,6 +120,8 @@ create_integration
 create_integration.name
 create_materialized_view
 create_materialized_view.name
+create_network_rule
+create_network_rule.name
 create_pipe
 create_pipe.name
 create_policy
@@ -136,6 +138,8 @@ create_role
 create_role.name
 create_schema
 create_schema.name
+create_secret
+create_secret.name
 create_semantic_view
 create_semantic_view.name
 create_sequence
@@ -145,7 +149,7 @@ create_stage.name
 create_stream
 create_stream.clone
 create_stream.name
-create_stream.table
+create_stream.source
 create_streamlit
 create_streamlit.name
 create_table
@@ -415,7 +419,6 @@ keyword_next
 keyword_no
 keyword_none
 keyword_not
-keyword_not_enforced
 keyword_notification
 keyword_null
 keyword_nulls
@@ -491,6 +494,7 @@ keyword_schedule
 keyword_schema
 keyword_search
 keyword_secondary
+keyword_secret
 keyword_secure
 keyword_security
 keyword_select
@@ -648,6 +652,9 @@ return_statement
 revoke_statement
 revoke_statement.role
 rollback_statement
+secret_binding
+secret_binding.secret
+secret_binding.variable
 select
 select_expression
 select_into

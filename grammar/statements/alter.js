@@ -136,9 +136,9 @@ export default {
         seq(
           seq($.keyword_primary, $.keyword_key),
           paren_list($.identifier, true),
-          optional($.keyword_not_enforced),
+          optional($._not_enforced),
         ),
-        seq($.keyword_unique, paren_list($.identifier, true), optional($.keyword_not_enforced)),
+        seq($.keyword_unique, paren_list($.identifier, true), optional($._not_enforced)),
         seq($.keyword_foreign, $.keyword_key, paren_list($.identifier, true), $.referential_clause),
       ),
     ),
