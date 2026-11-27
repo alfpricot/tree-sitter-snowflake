@@ -25,7 +25,6 @@ export default {
   //       [{AT | BEFORE} (...)] [APPEND_ONLY = ...] [INSERT_ONLY = ...]
   //       [SHOW_INITIAL_ROWS = ...] [COMMENT = '']
   //   | CLONE source_stream [COPY GRANTS] }
-  // The source keeps the `table` field name whatever kind of object it is.
   create_stream: ($) =>
     prec.right(
       seq(
@@ -43,7 +42,7 @@ export default {
               $.keyword_view,
               $.keyword_stage,
             ),
-            field('table', $.object_reference),
+            field('source', $.object_reference),
             optional($.time_travel),
           ),
           seq(

@@ -17,7 +17,7 @@ The semi-structured `:` path operator, lambdas, `[...]` array literals, `{...}` 
 
 | Statement | Object families |
 | --- | --- |
-| `CREATE` | table (including external, Iceberg, event, and hybrid), view, materialized view, dynamic table, semantic view, stage, file format, stream, pipe, task, alert, policy (masking, row access, aggregation, projection, network, password, session, authentication), warehouse, database, schema, role, user, sequence, tag, integration, Streamlit, Cortex search service, agent, procedure, function |
+| `CREATE` | table (including external, Iceberg, event, and hybrid), view, materialized view, dynamic table, semantic view, stage, file format, stream, pipe, task, alert, secret, network rule, policy (masking, row access, aggregation, projection, network, password, session, authentication), warehouse, database, schema, role, user, sequence, tag, integration, Streamlit, Cortex search service, agent, procedure, function |
 | `ALTER` | table, view, task, warehouse, database, schema, stage, stream, sequence, role, user, pipe, integration, session, account, policy, alert, procedure, function |
 | `DROP`, `UNDROP` | single-word object kinds, materialized view, file format, policies, dynamic, external, and Iceberg tables, semantic view, Cortex search service, integrations, database role (`DROP` only), and network rule; `DROP PROCEDURE` and `DROP FUNCTION` also take an argument signature |
 

@@ -30,6 +30,8 @@ export default {
       $.create_cortex_search,
       $.create_policy,
       $.create_alert,
+      $.create_secret,
+      $.create_network_rule,
     ),
 
   // CREATE [OR REPLACE] CORTEX SEARCH SERVICE name ON column

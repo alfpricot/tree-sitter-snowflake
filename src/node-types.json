@@ -4511,6 +4511,10 @@
           "named": true
         },
         {
+          "type": "keyword_enforced",
+          "named": true
+        },
+        {
           "type": "keyword_foreign",
           "named": true
         },
@@ -4532,10 +4536,6 @@
         },
         {
           "type": "keyword_not",
-          "named": true
-        },
-        {
-          "type": "keyword_not_enforced",
           "named": true
         },
         {
@@ -4825,6 +4825,10 @@
           "named": true
         },
         {
+          "type": "keyword_enforced",
+          "named": true
+        },
+        {
           "type": "keyword_foreign",
           "named": true
         },
@@ -4833,7 +4837,7 @@
           "named": true
         },
         {
-          "type": "keyword_not_enforced",
+          "type": "keyword_not",
           "named": true
         },
         {
@@ -5833,6 +5837,64 @@
     }
   },
   {
+    "type": "create_network_rule",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_create",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_network",
+          "named": true
+        },
+        {
+          "type": "keyword_not",
+          "named": true
+        },
+        {
+          "type": "keyword_or",
+          "named": true
+        },
+        {
+          "type": "keyword_replace",
+          "named": true
+        },
+        {
+          "type": "keyword_rule",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "create_pipe",
     "named": true,
     "fields": {
@@ -6500,6 +6562,60 @@
     }
   },
   {
+    "type": "create_secret",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "keyword_create",
+          "named": true
+        },
+        {
+          "type": "keyword_exists",
+          "named": true
+        },
+        {
+          "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_not",
+          "named": true
+        },
+        {
+          "type": "keyword_or",
+          "named": true
+        },
+        {
+          "type": "keyword_replace",
+          "named": true
+        },
+        {
+          "type": "keyword_secret",
+          "named": true
+        },
+        {
+          "type": "option",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "create_semantic_view",
     "named": true,
     "fields": {
@@ -6721,7 +6837,7 @@
           }
         ]
       },
-      "table": {
+      "source": {
         "multiple": false,
         "required": false,
         "types": [
@@ -10952,25 +11068,6 @@
     }
   },
   {
-    "type": "keyword_not_enforced",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "keyword_enforced",
-          "named": true
-        },
-        {
-          "type": "keyword_not",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "keyword_number",
     "named": true,
     "fields": {}
@@ -12975,6 +13072,10 @@
             "named": true
           },
           {
+            "type": "secret_binding",
+            "named": true
+          },
+          {
             "type": "stage_reference",
             "named": true
           }
@@ -13925,6 +14026,10 @@
           "named": true
         },
         {
+          "type": "keyword_enforced",
+          "named": true
+        },
+        {
           "type": "keyword_full",
           "named": true
         },
@@ -13937,7 +14042,7 @@
           "named": true
         },
         {
-          "type": "keyword_not_enforced",
+          "type": "keyword_not",
           "named": true
         },
         {
@@ -14611,6 +14716,32 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "secret_binding",
+    "named": true,
+    "fields": {
+      "secret": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_reference",
+            "named": true
+          }
+        ]
+      },
+      "variable": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "literal",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -15948,6 +16079,10 @@
           "named": true
         },
         {
+          "type": "create_network_rule",
+          "named": true
+        },
+        {
           "type": "create_pipe",
           "named": true
         },
@@ -15965,6 +16100,10 @@
         },
         {
           "type": "create_schema",
+          "named": true
+        },
+        {
+          "type": "create_secret",
           "named": true
         },
         {
@@ -16292,6 +16431,10 @@
           "named": true
         },
         {
+          "type": "keyword_enforced",
+          "named": true
+        },
+        {
           "type": "keyword_foreign",
           "named": true
         },
@@ -16304,7 +16447,7 @@
           "named": true
         },
         {
-          "type": "keyword_not_enforced",
+          "type": "keyword_not",
           "named": true
         },
         {
@@ -19359,6 +19502,10 @@
   },
   {
     "type": "keyword_secondary",
+    "named": true
+  },
+  {
+    "type": "keyword_secret",
     "named": true
   },
   {

@@ -1,6 +1,6 @@
 import { create_header, paren_list, wrapped_in_parenthesis } from '../helpers.js';
 
-// Policies and alerts.
+// Policies, alerts, secrets and network rules.
 export default {
   // CREATE [OR REPLACE] {MASKING | ROW ACCESS | AGGREGATION | PROJECTION} POLICY [IF NOT EXISTS] name
   //   AS (args) RETURNS type -> expr [COMMENT = '...'] ...
@@ -27,6 +27,13 @@ export default {
         ),
       ),
     ),
+
+  // CREATE [OR REPLACE] SECRET [IF NOT EXISTS] name TYPE = ... [options]
+  create_secret: ($) => prec.right(seq(...create_header($, $.keyword_secret), repeat1($.option))),
+
+  // CREATE [OR REPLACE] NETWORK RULE name TYPE = ... VALUE_LIST = (...) MODE = ...
+  create_network_rule: ($) =>
+    prec.right(seq(...create_header($, [$.keyword_network, $.keyword_rule]), repeat1($.option))),
 
   policy_parameter: ($) => seq(field('name', $.identifier), optional(field('type', $._type))),
 

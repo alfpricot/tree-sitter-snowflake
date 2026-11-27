@@ -294,6 +294,11 @@ export default {
   keyword_work: (_) => make_keyword('work'),
   keyword_natural: (_) => make_keyword('natural'),
   keyword_rule: (_) => make_keyword('rule'),
+  keyword_secret: (_) => make_keyword('secret'),
+  keyword_allowed_network_rules: (_) => make_keyword('allowed_network_rules'),
+  keyword_allowed_authentication_secrets: (_) => make_keyword('allowed_authentication_secrets'),
+  keyword_allowed_api_authentication_integrations: (_) =>
+    make_keyword('allowed_api_authentication_integrations'),
   keyword_commit: (_) => make_keyword('commit'),
   keyword_rollback: (_) => make_keyword('rollback'),
   keyword_session: (_) => make_keyword('session'),
@@ -346,8 +351,8 @@ export default {
       make_keyword('float8'),
       make_keyword('real'),
     ),
-  keyword_double: (_) => seq(make_keyword('double'), make_keyword('precision')),
-  keyword_double_prec_only: (_) => make_keyword('double'),
+  keyword_double: (_) => make_keyword('double'),
+  keyword_double_prec_only: (_) => seq(make_keyword('double'), make_keyword('precision')),
   keyword_boolean: (_) => make_keyword('boolean'),
   keyword_char: (_) =>
     choice(make_keyword('char'), make_keyword('character'), make_keyword('nchar')),
