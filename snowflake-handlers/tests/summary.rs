@@ -130,6 +130,20 @@ SELECT * FROM x WHERE EXISTS (WITH z AS (SELECT 1) SELECT * FROM z) AND y IN (SE
         ["w", "w", "x", "z"]
     );
     assert_eq!(
+        references(
+            "WITH w AS (SELECT 1) MERGE INTO w USING w AS s ON w.id = s.id \
+             WHEN MATCHED THEN DELETE;"
+        ),
+        ["w"]
+    );
+    assert_eq!(
+        references(
+            "WITH r AS (WITH s AS (SELECT 1) SELECT * FROM s UNION ALL SELECT * FROM r) \
+             SELECT * FROM r;"
+        ),
+        Vec::<String>::new()
+    );
+    assert_eq!(
         references("CREATE VIEW v AS WITH q AS (SELECT 1) SELECT q.* FROM q;"),
         Vec::<String>::new()
     );

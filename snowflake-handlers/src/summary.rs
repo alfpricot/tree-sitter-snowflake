@@ -7,7 +7,7 @@
 mod names;
 
 use crate::{Error, Language as RoutineLanguage, RoutineKind, descendants, error_ranges, extract};
-use std::{ops::Range, sync::OnceLock};
+use std::{collections::HashSet, ops::Range, sync::OnceLock};
 use tree_sitter::{Language, Node, Parser, Query, QueryCursor, StreamingIterator};
 
 /// Everything [`summary`] found. Every range is in bytes of the SQL text.
@@ -239,12 +239,12 @@ fn blocks(sql: &str, root: Node<'_>, query: &Query, decisions: &[Decision]) -> V
 // object reference is a use of a name.
 fn objects(sql: &str, root: Node<'_>) -> Vec<ObjectName> {
     let mut result = Vec::new();
-    let mut created = Vec::new();
-    for node in descendants(root) {
+    let mut created = HashSet::new();
+    names::walk(sql, root, |node, path| {
         if node.kind().starts_with("create_")
             && let Some(name) = node.child_by_field_name("name")
         {
-            created.push(name.id());
+            created.insert(name.id());
             result.push(ObjectName {
                 name: sql[name.byte_range()].to_owned(),
                 range: name.byte_range(),
@@ -252,8 +252,8 @@ fn objects(sql: &str, root: Node<'_>) -> Vec<ObjectName> {
             });
         } else if node.kind() == "object_reference"
             && !created.contains(&node.id())
-            && !names::is_column_qualifier(sql, node)
-            && !names::is_cte_use(sql, node)
+            && !names::is_column_qualifier(sql, path)
+            && !names::is_cte_use(sql, node, path)
         {
             result.push(ObjectName {
                 name: sql[node.byte_range()].to_owned(),
@@ -261,7 +261,7 @@ fn objects(sql: &str, root: Node<'_>) -> Vec<ObjectName> {
                 created_by: None,
             });
         }
-    }
+    });
     result.sort_by_key(|o| (o.range.start, o.range.end));
     result
 }
