@@ -1009,3 +1009,44 @@ CREATE TABLE t (a ARRAY(NUMBER(10,0) NOT NULL), b OBJECT(), c MAP(VARCHAR, ARRAY
         (column_definition
           (identifier)
           (keyword_int))))))
+
+================================================================================
+pattern operator chains group to the left
+================================================================================
+
+SELECT a LIKE 'x%' RLIKE 'y', b LIKE c LIKE d FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (keyword_like)
+              (literal
+                (literal)))
+            (keyword_rlike)
+            (literal
+              (literal))))
+        (term
+          (binary_expression
+            (binary_expression
+              (field
+                (identifier))
+              (keyword_like)
+              (field
+                (identifier)))
+            (keyword_like)
+            (field
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))

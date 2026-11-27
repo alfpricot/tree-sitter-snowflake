@@ -1,5 +1,20 @@
 [
   {
+    "type": "account_identifier",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "add_column_action",
     "named": true,
     "fields": {},
@@ -892,7 +907,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "object_reference",
             "named": true
           }
         ]
@@ -902,6 +917,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "account_identifier",
+          "named": true
+        },
         {
           "type": "group_property",
           "named": true
@@ -936,6 +955,10 @@
         },
         {
           "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_ignore",
           "named": true
         },
         {
@@ -1646,7 +1669,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "object_reference",
             "named": true
           }
         ]
@@ -1656,6 +1679,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "account_identifier",
+          "named": true
+        },
         {
           "type": "group_property",
           "named": true
@@ -1690,6 +1717,10 @@
         },
         {
           "type": "keyword_if",
+          "named": true
+        },
+        {
+          "type": "keyword_ignore",
           "named": true
         },
         {
@@ -2095,7 +2126,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "object_reference",
             "named": true
           }
         ]
@@ -11541,6 +11572,10 @@
         "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "account_identifier",
+            "named": true
+          },
           {
             "type": "literal",
             "named": true

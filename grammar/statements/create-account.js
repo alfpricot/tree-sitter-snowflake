@@ -14,13 +14,7 @@ function create_group(kind) {
         ...create_header($, [kind($), $.keyword_group], { name: $.identifier }),
         choice(
           seq($.keyword_as, $.identifier, $.identifier, $.object_reference),
-          repeat1(
-            choice(
-              $.group_property,
-              seq($.keyword_ignore, $.identifier, $.identifier),
-              $._with_tag,
-            ),
-          ),
+          repeat1(choice($.group_property, $._ignore_edition_check, $._with_tag)),
         ),
       ),
     );
@@ -100,7 +94,10 @@ export default {
       seq(...create_header($, typed_integration($), { name: $.identifier }), repeat1($.option)),
     ),
 
-  // CREATE [OR REPLACE] DATABASE ROLE [IF NOT EXISTS] [db.]name [options]
+  // CREATE [OR REPLACE] DATABASE ROLE [IF NOT EXISTS] [db.]name
+  //   [COMMENT = '...'] [[WITH] TAG (...)]
+  // COMMENT is the only option, so that a database named `role` keeps its own
+  // options: `DATABASE role CLONE prod` cannot be a role named CLONE.
   // The dynamic precedence reads `DATABASE ROLE r` as this rather than as a
   // database named `role` taking an option `r`.
   create_database_role: ($) =>
@@ -109,10 +106,22 @@ export default {
       prec.right(
         seq(
           ...create_header($, [$.keyword_database, $.keyword_role]),
-          repeat(choice($._with_tag, $.option)),
+          repeat(choice($._with_tag, alias($._comment_option, $.option))),
         ),
       ),
     ),
+
+  _comment_option: ($) =>
+    seq(
+      field('name', alias($.keyword_comment, $.identifier)),
+      '=',
+      field('value', $.literal),
+    ),
+
+  _ignore_edition_check: ($) => seq($.keyword_ignore, $.identifier, $.identifier),
+
+  // org.account, as a share or a replication group lists accounts.
+  account_identifier: ($) => seq($.identifier, optional(seq('.', $.identifier))),
 
   // CREATE [OR REPLACE] SHARE [IF NOT EXISTS] name [options]
   create_share: ($) =>
@@ -148,7 +157,7 @@ export default {
 
   // name = value [, value ...] — a property of a share or of a replication or
   // failover group, whose lists are not parenthesized. Two properties list
-  // kinds of object rather than objects.
+  // kinds of object and two list accounts, rather than objects.
   group_property: ($) =>
     prec.right(
       choice(
@@ -162,6 +171,17 @@ export default {
           ),
           '=',
           comma_list(field('value', alias($._replicated_kind, $.object_kind)), true),
+        ),
+        seq(
+          field(
+            'name',
+            choice(
+              alias($.keyword_accounts, $.identifier),
+              alias($.keyword_allowed_accounts, $.identifier),
+            ),
+          ),
+          '=',
+          comma_list(field('value', $.account_identifier), true),
         ),
         seq(
           field('name', $.identifier),

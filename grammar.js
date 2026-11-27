@@ -76,6 +76,9 @@ export default grammar({
     // `f(x) FROM first` — the NTH_VALUE direction vs. a FROM clause naming a
     // table `first`; settled by whether OVER follows.
     [$._expression, $.window_function],
+    // `ALTER REPLICATION GROUP g ADD a.b TO ...` — object names or accounts;
+    // settled by the list named after TO.
+    [$.object_reference, $.account_identifier],
   ],
 
   precedences: (_) => [

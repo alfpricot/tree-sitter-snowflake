@@ -401,6 +401,8 @@ export default {
   keyword_failover: (_) => make_keyword('failover'),
   keyword_move: (_) => make_keyword('move'),
   keyword_resource: (_) => make_keyword('resource'),
+  keyword_accounts: (_) => make_keyword('accounts'),
+  keyword_allowed_accounts: (_) => make_keyword('allowed_accounts'),
   keyword_object_types: (_) => make_keyword('object_types'),
   keyword_allowed_integration_types: (_) => make_keyword('allowed_integration_types'),
 };

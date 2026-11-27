@@ -3563,14 +3563,15 @@ DROP SHARE IF EXISTS s;
     (alter_share
       (keyword_alter)
       (keyword_share)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_add)
       (group_property
         (identifier)
-        (object_reference
+        (account_identifier
           (identifier)
           (identifier))
-        (object_reference
+        (account_identifier
           (identifier)
           (identifier)))
       (group_property
@@ -3583,23 +3584,25 @@ DROP SHARE IF EXISTS s;
       (keyword_share)
       (keyword_if)
       (keyword_exists)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_remove)
       (group_property
         (identifier)
-        (object_reference
+        (account_identifier
           (identifier)))))
   (statement
     (alter_share
       (keyword_alter)
       (keyword_share)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_set)
       (group_property
         (identifier)
-        (object_reference
+        (account_identifier
           (identifier))
-        (object_reference
+        (account_identifier
           (identifier)))
       (group_property
         (identifier)
@@ -3609,7 +3612,8 @@ DROP SHARE IF EXISTS s;
     (alter_share
       (keyword_alter)
       (keyword_share)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_set)
       (keyword_tag)
       (tag_assignment
@@ -3620,7 +3624,8 @@ DROP SHARE IF EXISTS s;
     (alter_share
       (keyword_alter)
       (keyword_share)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_unset)
       (identifier)))
   (statement
@@ -3984,10 +3989,10 @@ DROP FAILOVER GROUP g;
           (identifier)))
       (group_property
         (identifier)
-        (object_reference
+        (account_identifier
           (identifier)
           (identifier))
-        (object_reference
+        (account_identifier
           (identifier)
           (identifier)))
       (keyword_ignore)
@@ -4017,7 +4022,8 @@ DROP FAILOVER GROUP g;
       (keyword_group)
       (keyword_if)
       (keyword_exists)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_set)
       (group_property
         (identifier)
@@ -4036,7 +4042,8 @@ DROP FAILOVER GROUP g;
       (keyword_alter)
       (keyword_failover)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_add)
       (object_reference
         (identifier))
@@ -4049,7 +4056,8 @@ DROP FAILOVER GROUP g;
       (keyword_alter)
       (keyword_replication)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_remove)
       (object_reference
         (identifier))
@@ -4060,7 +4068,8 @@ DROP FAILOVER GROUP g;
       (keyword_alter)
       (keyword_replication)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_move)
       (identifier)
       (object_reference
@@ -4068,27 +4077,31 @@ DROP FAILOVER GROUP g;
       (keyword_to)
       (keyword_failover)
       (keyword_group)
-      (identifier)))
+      (object_reference
+        (identifier))))
   (statement
     (alter_replication_group
       (keyword_alter)
       (keyword_replication)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_refresh)))
   (statement
     (alter_failover_group
       (keyword_alter)
       (keyword_failover)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_primary)))
   (statement
     (alter_failover_group
       (keyword_alter)
       (keyword_failover)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_suspend)
       (keyword_immediate)))
   (statement
@@ -4096,17 +4109,20 @@ DROP FAILOVER GROUP g;
       (keyword_alter)
       (keyword_failover)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_resume)))
   (statement
     (alter_replication_group
       (keyword_alter)
       (keyword_replication)
       (keyword_group)
-      (identifier)
+      (object_reference
+        (identifier))
       (keyword_rename)
       (keyword_to)
-      (identifier)))
+      (object_reference
+        (identifier))))
   (statement
     (keyword_drop)
     (object_kind
@@ -4271,3 +4287,122 @@ ALTER FUNCTION f(INT) SET EXTERNAL_ACCESS_INTEGRATIONS = (i) SECRETS = ('k' = s)
         (identifier)
         (literal
           (literal))))))
+
+================================================================================
+account lists, edition checks and a database named role with options
+================================================================================
+
+CREATE DATABASE role CLONE prod;
+CREATE DATABASE ROLE r COMMENT = 'x' WITH TAG (a = 'b');
+ALTER REPLICATION GROUP g ADD org.a, org.b TO ALLOWED_ACCOUNTS IGNORE EDITION CHECK;
+ALTER FAILOVER GROUP g SET ALLOWED_ACCOUNTS = org.a IGNORE EDITION CHECK;
+ALTER FAILOVER GROUP g REMOVE org.a FROM ALLOWED_ACCOUNTS;
+ALTER REPLICATION GROUP g ADD db1 TO ALLOWED_DATABASES;
+SELECT accounts, allowed_accounts FROM t accounts;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_database
+      (keyword_create)
+      (keyword_database)
+      (object_reference
+        (identifier))
+      (option
+        (identifier))
+      (option
+        (identifier))))
+  (statement
+    (create_database_role
+      (keyword_create)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier))
+      (option
+        (identifier)
+        (literal
+          (literal)))
+      (keyword_with)
+      (keyword_tag)
+      (tag_assignment
+        (object_reference
+          (identifier))
+        (literal))))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (object_reference
+        (identifier)
+        (identifier))
+      (object_reference
+        (identifier)
+        (identifier))
+      (keyword_to)
+      (identifier)
+      (keyword_ignore)
+      (identifier)
+      (identifier)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_set)
+      (group_property
+        (identifier)
+        (account_identifier
+          (identifier)
+          (identifier)))
+      (keyword_ignore)
+      (identifier)
+      (identifier)))
+  (statement
+    (alter_failover_group
+      (keyword_alter)
+      (keyword_failover)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_remove)
+      (account_identifier
+        (identifier)
+        (identifier))
+      (keyword_from)
+      (identifier)))
+  (statement
+    (alter_replication_group
+      (keyword_alter)
+      (keyword_replication)
+      (keyword_group)
+      (object_reference
+        (identifier))
+      (keyword_add)
+      (object_reference
+        (identifier))
+      (keyword_to)
+      (identifier)))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (identifier)))))

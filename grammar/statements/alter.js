@@ -43,15 +43,33 @@ function alter_group(kind) {
         kind($),
         $.keyword_group,
         optional($._if_exists_clause),
-        field('name', $.identifier),
+        field('name', $.object_reference),
         choice(
-          seq($.keyword_rename, $.keyword_to, $.identifier),
-          seq($.keyword_set, repeat1($.group_property)),
+          seq($.keyword_rename, $.keyword_to, $.object_reference),
+          seq($.keyword_set, repeat1($.group_property), optional($._ignore_edition_check)),
           ...set_unset_tags($),
           seq($.keyword_unset, comma_list($.identifier, true)),
-          // ADD names TO list, REMOVE names FROM list
-          seq($.keyword_add, comma_list($.object_reference, true), $.keyword_to, $.identifier),
+          // ADD names TO list, REMOVE names FROM list. The ALLOWED_ACCOUNTS
+          // list holds accounts, which are not schema objects.
+          seq(
+            choice(
+              seq($.keyword_add, comma_list($.object_reference, true), $.keyword_to, $.identifier),
+              seq(
+                $.keyword_add,
+                comma_list($.account_identifier, true),
+                $.keyword_to,
+                alias($.keyword_allowed_accounts, $.identifier),
+              ),
+            ),
+            optional($._ignore_edition_check),
+          ),
           seq($.keyword_remove, comma_list($.object_reference, true), $.keyword_from, $.identifier),
+          seq(
+            $.keyword_remove,
+            comma_list($.account_identifier, true),
+            $.keyword_from,
+            alias($.keyword_allowed_accounts, $.identifier),
+          ),
           // MOVE {DATABASES | SHARES} names TO FAILOVER GROUP name
           seq(
             $.keyword_move,
@@ -60,7 +78,7 @@ function alter_group(kind) {
             $.keyword_to,
             choice($.keyword_failover, $.keyword_replication),
             $.keyword_group,
-            $.identifier,
+            $.object_reference,
           ),
           $.keyword_refresh,
           $.keyword_primary,
@@ -289,7 +307,7 @@ export default {
         $.keyword_alter,
         $.keyword_share,
         optional($._if_exists_clause),
-        field('name', $.identifier),
+        field('name', $.object_reference),
         choice(
           seq(choice($.keyword_add, $.keyword_remove, $.keyword_set), repeat1($.group_property)),
           ...set_unset_tags($),

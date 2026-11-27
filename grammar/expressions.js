@@ -3,11 +3,10 @@ import { paren_list, comma_list, wrapped_in_parenthesis } from './helpers.js';
 // x [NOT] {LIKE | ILIKE} pattern [ESCAPE char], and the quantified form
 // x [NOT] {LIKE | ILIKE} {ANY | ALL} (pattern, ...) [ESCAPE char]. Both are
 // binary_expression nodes; the quantified one has a `quantifier` field and a
-// list or subquery on its right. Right associativity makes ESCAPE belong to
-// the pattern it follows; with left associativity the parser would need many
-// more states to decide the same thing.
+// list or subquery on its right. Like the other pattern operators, a chain
+// groups to the left.
 function like_expression($) {
-  return prec.right(
+  return prec.left(
     'pattern_matching',
     seq(
       field('left', $._expression),
