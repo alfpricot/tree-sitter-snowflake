@@ -1,3 +1,5 @@
+//! Integration tests for extraction, offset mapping, and the restriction checks.
+
 use snowflake_handlers::{
     Analyzer, ExecutionRights, HandlerStatus, Language, Severity, source_point,
 };
@@ -18,7 +20,7 @@ fn ids(analysis: &snowflake_handlers::Analysis) -> Vec<&str> {
 fn decodes_quotes_escapes_unicode_and_maps_ranges() {
     let sql = "-- é\r\nCREATE PROCEDURE p() RETURNS STRING LANGUAGE JAVASCRIPT AS 'let x = ''é'';\\n\\u0065val(''a'');';";
     let result = Analyzer::new().unwrap().analyze(sql).unwrap();
-    assert!(result.sql_errors.is_empty());
+    assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
     let body = &result.handlers[0];
     assert_eq!(body.status, HandlerStatus::Parsed);
     let source = body.source.as_ref().unwrap();
@@ -70,7 +72,7 @@ fn numeric_and_unknown_escapes_and_empty_bodies() {
 
     // A three-digit octal escape and a two-digit hex escape both decode to
     // 'A' (0o101 == 0x41 == 65), each mapping back to its own source range.
-    let input = r#"CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS '\101\x41';"#;
+    let input = r"CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS '\101\x41';";
     let result = Analyzer::new().unwrap().analyze(input).unwrap();
     let source = result.handlers[0].source.as_ref().unwrap();
     assert_eq!(source.text(), "AA");
@@ -81,7 +83,7 @@ fn numeric_and_unknown_escapes_and_empty_bodies() {
     // is a handler with empty source.
     let input = "CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVASCRIPT AS $$$$;";
     let analysis = Analyzer::new().unwrap().analyze(input).unwrap();
-    assert!(analysis.sql_errors.is_empty());
+    assert!(analysis.sql_errors.is_empty(), "{:?}", analysis.sql_errors);
     assert_eq!(analysis.handlers[0].source.as_ref().unwrap().text(), "");
 }
 
@@ -107,8 +109,16 @@ fn distinguishes_syntax_failure_unavailable_and_invalid_encoding() {
     let mut analyzer = Analyzer::new().unwrap();
     let result = analyzer.analyze(&sql("JAVASCRIPT", "let = ;")).unwrap();
     assert_eq!(result.handlers[0].status, HandlerStatus::InvalidBody);
-    assert!(!result.handlers[0].parse_errors.is_empty());
-    assert!(result.handlers[0].findings.is_empty());
+    assert!(
+        !result.handlers[0].parse_errors.is_empty(),
+        "{:?}",
+        result.handlers[0].parse_errors
+    );
+    assert!(
+        result.handlers[0].findings.is_empty(),
+        "{:?}",
+        result.handlers[0].findings
+    );
     for (name, language) in [("JAVA", Language::Java), ("SCALA", Language::Scala)] {
         let result = analyzer.analyze(&sql(name, "class Handler {} ")).unwrap();
         if language.grammar().is_none() {
@@ -133,7 +143,7 @@ fn distinguishes_syntax_failure_unavailable_and_invalid_encoding() {
     let result = analyzer
         .analyze("CREATE PROCEDURE p( RETURNS STRING LANGUAGE JAVASCRIPT AS 'eval(1)';")
         .unwrap();
-    assert!(!result.sql_errors.is_empty());
+    assert!(!result.sql_errors.is_empty(), "{:?}", result.sql_errors);
     assert!(
         result
             .handlers
@@ -165,17 +175,19 @@ fn python_restrictions_are_scoped_to_procedures_and_literal_calls() {
     assert_eq!(result.handlers[0].rights, ExecutionRights::Caller);
     assert!(!ids(&result).contains(&"owner-temp-object"));
     let udf = sql("PYTHON", content).replace("PROCEDURE", "FUNCTION");
-    assert!(ids(&analyzer.analyze(&udf).unwrap()).is_empty());
+    let found = analyzer.analyze(&udf).unwrap();
+    assert!(ids(&found).is_empty(), "{:?}", ids(&found));
     let safe = "# subprocess.run()\ns = 'PUT file:///x @s'\nsession.sql(f'GET {stage} file:///x')\nsession.sql(query)\nsession.file.get('@s/exact.csv', '/tmp')\nsession.sql('CREATE TABLE t (x INT)')\n";
-    assert!(ids(&analyzer.analyze(&sql("PYTHON", safe)).unwrap()).is_empty());
+    let found = analyzer.analyze(&sql("PYTHON", safe)).unwrap();
+    assert!(ids(&found).is_empty(), "{:?}", ids(&found));
 }
 
 #[test]
 fn does_not_extract_sql_bodies_or_body_like_text_in_comments() {
     let input = "-- CREATE PROCEDURE fake() RETURNS STRING LANGUAGE JAVASCRIPT AS 'eval(1)';\nCREATE PROCEDURE p() RETURNS INT LANGUAGE SQL AS $$ BEGIN RETURN 1; END $$;";
     let result = Analyzer::new().unwrap().analyze(input).unwrap();
-    assert!(result.sql_errors.is_empty());
-    assert!(result.handlers.is_empty());
+    assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
+    assert!(result.handlers.is_empty(), "{:?}", result.handlers);
 }
 
 #[test]
@@ -224,9 +236,11 @@ fn multiple_routines_and_feature_independent_task_context() {
     let overloaded = format!(
         "{input} CREATE PROCEDURE p(x INT) RETURNS INT LANGUAGE SQL AS $$ BEGIN RETURN x; END $$;"
     );
-    assert!(analyzer.analyze(&overloaded).unwrap().findings.is_empty());
+    let found = analyzer.analyze(&overloaded).unwrap().findings;
+    assert!(found.is_empty(), "{found:?}");
     let warehouse = input.replace("TASK t AS", "TASK t WAREHOUSE=w AS");
-    assert!(analyzer.analyze(&warehouse).unwrap().findings.is_empty());
+    let found = analyzer.analyze(&warehouse).unwrap().findings;
+    assert!(found.is_empty(), "{found:?}");
     let input = sql("PYTHON", "session.sql('CREATE TEMP TABLE t (x INT)')")
         .replace(" AS $$", " EXECUTE AS OWNER AS $$");
     assert_eq!(
@@ -282,7 +296,7 @@ fn scala_queries_and_tasks() {
         sql("SCALA", content)
     );
     let result = Analyzer::new().unwrap().analyze(&input).unwrap();
-    assert!(result.sql_errors.is_empty());
+    assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
     assert_eq!(result.handlers[0].status, HandlerStatus::Parsed);
     assert_eq!(
         ids(&result),

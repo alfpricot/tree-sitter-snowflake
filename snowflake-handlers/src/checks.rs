@@ -3,6 +3,7 @@ use crate::{Error, ExecutionRights, Handler, Language, RoutineKind, descendants}
 use std::ops::Range;
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
+/// How firmly a rule's match points at a problem.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Severity {
@@ -12,11 +13,15 @@ pub enum Severity {
     Advisory,
 }
 
+/// One restriction the analyzer checks for.
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct Rule {
+    /// The stable identifier, one of the constants in [`rules`](crate::rules).
     pub id: &'static str,
+    /// What was matched and why it matters.
     pub message: &'static str,
+    /// How firmly the match points at a problem.
     pub severity: Severity,
 }
 
@@ -28,19 +33,32 @@ pub struct Rule {
 // fresh string literal — `finding_by_rule` still takes a plain
 // `&'static str`, so a hand-typed, mistyped literal at a new call site
 // would still compile and panic on ordinary input.
+/// A call to `eval` in JavaScript.
 pub const JS_EVAL: &str = "js-eval";
+/// A library import in JavaScript.
 pub const JS_IMPORT: &str = "js-import";
+/// A browser or network API in JavaScript.
 pub const JS_HOST_API: &str = "js-host-api";
+/// Process creation in a Python procedure.
 pub const PYTHON_PROCESS: &str = "python-process";
+/// A construct that may run work concurrently.
 pub const CONCURRENCY: &str = "concurrency";
+/// Building a new Snowpark session.
 pub const SESSION_BUILDER: &str = "session-builder";
+/// Access to the session's JDBC connection.
 pub const JDBC_CONNECTION: &str = "jdbc-connection";
+/// PUT or GET run from a Python procedure.
 pub const PYTHON_PUT_GET: &str = "python-put-get";
+/// A stage-path pattern passed to `file.get` in Python.
 pub const PYTHON_GET_PATTERN: &str = "python-get-pattern";
+/// A file download to a path outside `/tmp`.
 pub const LOCAL_WRITE_PATH: &str = "local-write-path";
+/// A named temporary object under owner's rights.
 pub const OWNER_TEMP_OBJECT: &str = "owner-temp-object";
+/// A task without a warehouse calling a Scala procedure.
 pub const SCALA_TASK_WAREHOUSE: &str = "scala-task-warehouse";
 
+/// Every rule, with its identifier, message, and severity.
 pub const RULES: &[Rule] = &[
     Rule {
         id: JS_EVAL,
@@ -104,11 +122,15 @@ pub const RULES: &[Rule] = &[
     },
 ];
 
+/// A rule that matched at a place in the SQL.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Finding {
+    /// The matched rule's identifier.
     pub rule_id: &'static str,
+    /// The matched rule's message.
     pub message: &'static str,
+    /// The matched rule's severity.
     pub severity: Severity,
     /// Absolute half-open byte range in the original SQL source.
     pub range: Range<usize>,
@@ -164,10 +186,10 @@ pub(crate) fn check(
         for (name, node) in query
             .capture_names()
             .iter()
-            .enumerate()
-            .flat_map(|(index, &name)| {
+            .zip(0u32..)
+            .flat_map(|(&name, index)| {
                 matched
-                    .nodes_for_capture_index(index as u32)
+                    .nodes_for_capture_index(index)
                     .map(move |node| (name, node))
             })
         {
@@ -205,7 +227,7 @@ pub(crate) fn check(
         }
     }
     if cursor.did_exceed_match_limit() {
-        return Err(Error("Restriction query match limit exceeded".into()));
+        return Err(Error::MatchLimitExceeded);
     }
     findings.sort_by_key(|f| (f.range.start, f.range.end, f.rule_id));
     findings.dedup();
@@ -219,9 +241,7 @@ fn check_sql(
     parser: &mut Parser,
     findings: &mut Vec<Finding>,
 ) -> Result<(), Error> {
-    let tree = parser
-        .parse(sql, None)
-        .ok_or_else(|| Error("Literal SQL parse cancelled".into()))?;
+    let tree = parser.parse(sql, None).ok_or(Error::Canceled)?;
     if tree.root_node().has_error() {
         return Ok(());
     }

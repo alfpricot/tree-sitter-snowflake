@@ -36,12 +36,19 @@ pub const LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_snowf
 /// [`node-types.json`]: https://tree-sitter.github.io/tree-sitter/using-parsers#static-node-types
 pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
 
+/// The syntax highlighting query.
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
+/// The injection query for foreign-language bodies.
 pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
+/// The structural analysis query.
 pub const STRUCTURE_QUERY: &str = include_str!("../../queries/structure.scm");
+/// The code navigation tags query.
 pub const TAGS_QUERY: &str = include_str!("../../queries/tags.scm");
+/// The scopes and definitions query.
 pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
+/// The folding query.
 pub const FOLDS_QUERY: &str = include_str!("../../queries/folds.scm");
+/// The indentation query, with nvim-treesitter capture names.
 pub const INDENTS_QUERY: &str = include_str!("../../queries/indents.scm");
 
 /// The exported C symbol name, `tree_sitter_snowflake`. Two grammars that
@@ -64,7 +71,7 @@ mod tests {
             .expect("Error loading Snowflake parser");
     }
 
-    /// The exported symbol must be `tree_sitter_snowflake` — see SYMBOL_NAME.
+    /// The exported symbol must be `tree_sitter_snowflake` — see `SYMBOL_NAME`.
     /// Checking the generated parser source is the cheapest reliable
     /// assertion: the symbol is emitted there as the parser's single
     /// entry point, and the extern declaration above fails to link under
