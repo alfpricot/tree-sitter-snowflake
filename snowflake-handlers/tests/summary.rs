@@ -150,6 +150,17 @@ SELECT * FROM x WHERE EXISTS (WITH z AS (SELECT 1) SELECT * FROM z) AND y IN (SE
 }
 
 #[test]
+fn shares_and_groups_are_references_but_accounts_are_not() {
+    assert_eq!(
+        references(
+            "ALTER SHARE s ADD ACCOUNTS = org.a; ALTER FAILOVER GROUP g REFRESH;
+ALTER REPLICATION GROUP r ADD org.b TO ALLOWED_ACCOUNTS;"
+        ),
+        ["s", "g", "r"]
+    );
+}
+
+#[test]
 fn lists_routines_and_counts_decisions() {
     let sql = "CREATE PROCEDURE p() RETURNS INT LANGUAGE SQL AS $$
 BEGIN

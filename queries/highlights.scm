@@ -228,6 +228,14 @@
   (keyword_action)
   (keyword_iceberg)
   (keyword_event)
+  (keyword_any)
+  (keyword_escape)
+  (keyword_volume)
+  (keyword_notebook)
+  (keyword_replication)
+  (keyword_failover)
+  (keyword_move)
+  (keyword_resource)
   (keyword_hybrid)
   (keyword_aggregation)
   (keyword_projection)
@@ -287,6 +295,7 @@
   (keyword_geography)
   (keyword_geometry)
   (keyword_vector)
+  (keyword_map)
 ] @type.builtin
 
 [

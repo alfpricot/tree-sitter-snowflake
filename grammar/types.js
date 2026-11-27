@@ -27,6 +27,9 @@ export default {
         $.keyword_geography,
         $.keyword_geometry,
         $.vector,
+        $.array_type,
+        $.object_type,
+        $.map_type,
         $.custom_type,
       ),
     ),
@@ -66,6 +69,26 @@ export default {
   // an element type and a fixed dimension.
   vector: ($) =>
     prec.right(seq($.keyword_vector, wrapped_in_parenthesis(seq($._type, ',', $.literal)))),
+
+  // ARRAY(type [NOT NULL]), OBJECT(key type [NOT NULL], ...) and
+  // MAP(key_type, value_type [NOT NULL]) — the structured types. A bare ARRAY
+  // or OBJECT stays the semi-structured keyword type.
+  array_type: ($) =>
+    seq($.keyword_array, wrapped_in_parenthesis(seq($._type, optional($._not_null)))),
+
+  object_type: ($) =>
+    seq($.keyword_object, wrapped_in_parenthesis(comma_list($.object_type_field, false))),
+
+  object_type_field: ($) =>
+    seq(field('name', $.identifier), field('type', $._type), optional($._not_null)),
+
+  map_type: ($) =>
+    seq(
+      $.keyword_map,
+      wrapped_in_parenthesis(
+        seq(field('key', $._type), ',', field('value', $._type), optional($._not_null)),
+      ),
+    ),
 
   // A user-defined or vendor type with an optional parameter list.
   custom_type: ($) =>

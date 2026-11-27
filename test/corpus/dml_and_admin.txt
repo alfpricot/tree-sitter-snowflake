@@ -1445,3 +1445,117 @@ REVOKE USAGE ON NETWORK RULE n FROM ROLE r;
         (grantee
           (keyword_role)
           (identifier))))))
+
+================================================================================
+grants on the new object kinds
+================================================================================
+
+GRANT USAGE ON NOTEBOOK n TO ROLE r;
+GRANT USAGE ON SECRET s TO ROLE r;
+GRANT USAGE ON EXTERNAL VOLUME v TO ROLE r;
+GRANT ALL ON ALL EVENT TABLES IN SCHEMA s TO ROLE r;
+GRANT ALL ON EVENT TABLE e TO ROLE r;
+GRANT MONITOR ON FAILOVER GROUP g TO ROLE r;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (object_kind
+          (keyword_notebook))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (object_kind
+          (keyword_secret))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (object_kind
+          (keyword_external)
+          (keyword_volume))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (keyword_all)
+        (keyword_on)
+        (keyword_all)
+        (object_kind
+          (keyword_event)
+          (identifier))
+        (keyword_in)
+        (keyword_schema)
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (keyword_all)
+        (keyword_on)
+        (object_kind
+          (keyword_event)
+          (keyword_table))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_monitor)))
+        (keyword_on)
+        (object_kind
+          (keyword_failover)
+          (keyword_group))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier))))))

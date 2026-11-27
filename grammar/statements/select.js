@@ -217,9 +217,22 @@ export default {
       ),
     ),
 
-  // IGNORE NULLS and RESPECT NULLS sit between the call and its OVER clause.
+  // IGNORE NULLS and RESPECT NULLS sit between the call and its OVER clause,
+  // after the FROM FIRST or FROM LAST that NTH_VALUE takes.
+  // The precedence matches invocation's, so that a FROM after the call stays
+  // open to both readings: `f(x) FROM first` reads a table named `first`
+  // until OVER or a null treatment shows otherwise.
   window_function: ($) =>
-    seq($.invocation, optional($._null_treatment), $.keyword_over, $.window_specification),
+    prec(
+      1,
+      seq(
+        $.invocation,
+        optional(seq($.keyword_from, field('from', choice($.keyword_first, $.keyword_last)))),
+        optional($._null_treatment),
+        $.keyword_over,
+        $.window_specification,
+      ),
+    ),
 
   _null_treatment: ($) => seq(choice($.keyword_ignore, $.keyword_respect), $.keyword_nulls),
 

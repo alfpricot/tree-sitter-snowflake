@@ -455,7 +455,7 @@ PACKAGES = ('numpy', 'pandas==2.0')
 IMPORTS = ('@stage/it''s.py')
 EXTERNAL_ACCESS_INTEGRATIONS = (web, \"Mail Gate\")
 HANDLER = 'f' AS $$x = 1$$;
-CREATE FUNCTION g() RETURNS INT LANGUAGE PYTHON PACKAGES = ('one') HANDLER = 'g';";
+CREATE FUNCTION g() RETURNS INT LANGUAGE PYTHON PACKAGES = ('one') IMPORTS = () HANDLER = 'g';";
     let result = Analyzer::new().unwrap().analyze(sql).unwrap();
     assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
     let [f, g] = &result.handlers[..] else {

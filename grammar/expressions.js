@@ -1,5 +1,30 @@
 import { paren_list, comma_list, wrapped_in_parenthesis } from './helpers.js';
 
+// x [NOT] {LIKE | ILIKE} pattern [ESCAPE char], and the quantified form
+// x [NOT] {LIKE | ILIKE} {ANY | ALL} (pattern, ...) [ESCAPE char]. Both are
+// binary_expression nodes; the quantified one has a `quantifier` field and a
+// list or subquery on its right. Like the other pattern operators, a chain
+// groups to the left.
+function like_expression($) {
+  return prec.left(
+    'pattern_matching',
+    seq(
+      field('left', $._expression),
+      field('operator', choice($.keyword_like, $.keyword_ilike, $.not_like, $.not_ilike)),
+      choice(
+        field('right', $._expression),
+        seq(
+          field('quantifier', choice($.keyword_any, $.keyword_all)),
+          field('right', choice($.list, $.subquery)),
+        ),
+      ),
+      // The escape character is a constant, which keeps a following clause
+      // keyword from being read as one.
+      optional(seq($.keyword_escape, field('escape', $.literal))),
+    ),
+  );
+}
+
 export default {
   _expression: ($) =>
     prec(
@@ -247,12 +272,8 @@ export default {
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
         [$.keyword_collate, 'postfix'],
-        [$.keyword_like, 'pattern_matching'],
-        [$.keyword_ilike, 'pattern_matching'],
         [$.keyword_regexp, 'pattern_matching'],
         [$.keyword_rlike, 'pattern_matching'],
-        [$.not_like, 'pattern_matching'],
-        [$.not_ilike, 'pattern_matching'],
         [$.not_regexp, 'pattern_matching'],
         [$.not_rlike, 'pattern_matching'],
         [$.distinct_from, 'binary_is'],
@@ -267,6 +288,7 @@ export default {
           ),
         ),
       ),
+      like_expression($),
       ...[
         [$.keyword_and, 'clause_connective'],
         [$.keyword_or, 'clause_disjunctive'],

@@ -73,12 +73,16 @@ export function set_unset_tags($) {
 }
 
 // The `SET <options> | UNSET <names>` alternative pair every ALTER
-// object shares. A plain function, not a named rule, so callers can
+// object shares. The options set at once are comma-separated unless `spaced`,
+// which also takes them separated by spaces. A statement that takes no tags
+// should not be spaced without need: the option list takes any word, so a tag
+// clause would read as two options instead of an error. A plain function, not a named rule, so callers can
 // spread it alongside their own alternatives in one surrounding
 // `choice`/`repeat1`.
-export function set_unset_properties($) {
+export function set_unset_properties($, { spaced = false } = {}) {
+  const separator = spaced ? optional(',') : ',';
   return [
-    seq($.keyword_set, comma_list($.option, true)),
+    seq($.keyword_set, $.option, repeat(seq(separator, $.option))),
     seq($.keyword_unset, comma_list($.identifier, true)),
   ];
 }
