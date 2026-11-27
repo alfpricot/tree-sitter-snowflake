@@ -16,6 +16,7 @@ export default {
         choice(
           alias($._grant_privilege_core, $.grant_core),
           seq($.keyword_role, comma_list(field('role', $.identifier), true), $._granted_to),
+          seq($._database_role_list, $._granted_to),
         ),
         optional(seq($.keyword_with, $.keyword_grant, $.keyword_option)),
         optional(seq($.keyword_granted, $.keyword_by, $.keyword_role, $.identifier)),
@@ -29,9 +30,14 @@ export default {
       choice(
         alias($._grant_privilege_core, $.grant_core),
         seq($.keyword_role, comma_list(field('role', $.identifier), true), $._revoked_from),
+        seq($._database_role_list, $._revoked_from),
       ),
       optional(choice($.keyword_cascade, $.keyword_restrict)),
     ),
+
+  // DATABASE ROLE [db.]name, the role a role grant hands out.
+  _database_role_list: ($) =>
+    seq($.keyword_database, $.keyword_role, comma_list(field('role', $.object_reference), true)),
 
   // <privileges> ON [ALL | FUTURE] <object kind> [<ref> | IN <database|schema> <ref>]
   // shared by GRANT and REVOKE through the alias above. The kind may be
@@ -77,6 +83,10 @@ export default {
           ),
         ),
         $.object_reference,
+        // ON DATABASE ROLE [db.]name, which always names the role.
+        seq(alias($._database_role_kind, $.object_kind), $.object_reference),
+        // ON DATABASE role: a database that happens to be named `role`.
+        seq(alias($._database_kind, $.object_kind), alias($._role_as_name, $.object_reference)),
       ),
       choice($._granted_to, $._revoked_from),
     ),
@@ -184,10 +194,13 @@ export default {
 
   _revoked_from: ($) => seq($.keyword_from, comma_list($.grantee, true)),
 
-  // ROLE r | USER u | SHARE s | PUBLIC | a bare role name
+  // ROLE r | DATABASE ROLE [db.]r | USER u | SHARE s | PUBLIC | a bare role
+  // name, which may be spelled `database`.
   grantee: ($) =>
     choice(
       seq($.keyword_role, $.identifier),
+      seq($.keyword_database, $.keyword_role, $.object_reference),
+      alias($.keyword_database, $.identifier),
       seq($.keyword_user, $.identifier),
       seq($.keyword_share, $.identifier),
       $.keyword_public,

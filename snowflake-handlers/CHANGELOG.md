@@ -28,10 +28,12 @@ Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree 
 - **Breaking:** requires tree-sitter-snowflake 0.4. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.
 - `ALTER TABLE ... RENAME TO`, `COMMIT WORK`, object constants, `NATURAL` joins, joins without a condition, routine `DROP` signatures, and many multi-word `DROP`, `GRANT`, and `REVOKE` kinds no longer appear in `Analysis::sql_errors`.
 - A `NATURAL JOIN` with an `ON` clause, an unquoted table alias spelled `natural`, and some `DROP`, `GRANT`, and `REVOKE` statements that use a kind word as an object name are now reported as syntax errors.
+- `GRANT` and `REVOKE` of a database role, to a database role, or on one no longer appear in `Analysis::sql_errors`.
 - Literal SQL inside a handler that uses a newly accepted form is now checked, where it was previously skipped as unparsable.
 
 ### Fixed
 
+- The `scala-task-warehouse` check matches a quoted name to the unquoted spelling Snowflake resolves it to, so `CALL p()` finds a procedure declared as `"P"`.
 - A `\x` or `\u` escape with a leading `+`, such as `\x+f`, is now reported as `InvalidEncoding` in a single-quoted body, and is no longer decoded inside an embedded string literal.
 
 ## [0.2.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.2.0) - 2026-11-05

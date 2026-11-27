@@ -294,7 +294,7 @@ fn scala_queries_and_tasks() {
         "ok"
     }}"#;
     let input = format!(
-        "{} CREATE TASK t AS CALL p(); CREATE TASK t2 WAREHOUSE=w AS CALL p();",
+        "{} CREATE TASK t AS CALL p(); CREATE TASK t2 WAREHOUSE=w AS CALL p(); CREATE TASK t3 AS CALL \"P\"();",
         sql("SCALA", content)
     );
     let result = Analyzer::new().unwrap().analyze(&input).unwrap();
@@ -311,9 +311,18 @@ fn scala_queries_and_tasks() {
             "local-write-path"
         ]
     );
-    assert_eq!(result.findings.len(), 1);
-    assert_eq!(result.findings[0].rule_id, "scala-task-warehouse");
-    assert_eq!(&input[result.findings[0].range.clone()], "CALL p()");
+    let calls: Vec<_> = result
+        .findings
+        .iter()
+        .map(|f| (f.rule_id, &input[f.range.clone()]))
+        .collect();
+    assert_eq!(
+        calls,
+        [
+            ("scala-task-warehouse", "CALL p()"),
+            ("scala-task-warehouse", "CALL \"P\"()")
+        ]
+    );
 }
 
 #[test]

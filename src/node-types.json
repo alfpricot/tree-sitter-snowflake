@@ -11365,6 +11365,10 @@
           {
             "type": "identifier",
             "named": true
+          },
+          {
+            "type": "object_reference",
+            "named": true
           }
         ]
       }
@@ -11387,6 +11391,10 @@
         },
         {
           "type": "keyword_by",
+          "named": true
+        },
+        {
+          "type": "keyword_database",
           "named": true
         },
         {
@@ -11429,6 +11437,10 @@
           "named": true
         },
         {
+          "type": "keyword_database",
+          "named": true
+        },
+        {
           "type": "keyword_public",
           "named": true
         },
@@ -11442,6 +11454,10 @@
         },
         {
           "type": "keyword_user",
+          "named": true
+        },
+        {
+          "type": "object_reference",
           "named": true
         }
       ]
@@ -16782,6 +16798,10 @@
           {
             "type": "identifier",
             "named": true
+          },
+          {
+            "type": "object_reference",
+            "named": true
           }
         ]
       }
@@ -16800,6 +16820,10 @@
         },
         {
           "type": "keyword_cascade",
+          "named": true
+        },
+        {
+          "type": "keyword_database",
           "named": true
         },
         {
