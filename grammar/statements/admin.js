@@ -121,7 +121,7 @@ export default {
       ),
     ),
 
-  commit_statement: ($) => $.keyword_commit,
+  commit_statement: ($) => prec.right(seq($.keyword_commit, optional($.keyword_work))),
 
   rollback_statement: ($) => prec.right(seq($.keyword_rollback, optional($.keyword_work))),
 };

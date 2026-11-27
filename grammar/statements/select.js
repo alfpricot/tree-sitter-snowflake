@@ -271,25 +271,38 @@ export default {
       seq($.stage_reference, optional(wrapped_in_parenthesis(comma_list($.named_argument, true)))),
     ),
 
+  // Snowflake makes ON optional (omitting it gives the Cartesian
+  // product). Only a join with a condition may nest another join before
+  // it, so `a JOIN b JOIN c` reads as two joins in sequence. Where a chain
+  // reads both ways, the parse with the fewest nested joins wins, so each
+  // condition binds to the nearest join still open. NATURAL
+  // implies its columns and takes no condition; it must be a keyword here,
+  // or a bare JOIN would read the word as the left table's alias.
   join: ($) =>
-    seq(
-      optional(
-        seq(
-          choice(
-            seq($.keyword_left, optional($.keyword_outer)),
-            seq($.keyword_right, optional($.keyword_outer)),
-            seq($.keyword_full, optional($.keyword_outer)),
-            $.keyword_inner,
+    choice(
+      seq(
+        optional($._join_type),
+        $.keyword_join,
+        $.relation,
+        optional(
+          seq(
+            optional(prec.dynamic(-1, $.join)),
+            choice(
+              seq($.keyword_on, field('predicate', $._expression)),
+              seq($.keyword_using, paren_list($.identifier, true)),
+            ),
           ),
         ),
       ),
-      $.keyword_join,
-      $.relation,
-      optional($.join),
-      choice(
-        seq($.keyword_on, field('predicate', $._expression)),
-        seq($.keyword_using, paren_list($.identifier, true)),
-      ),
+      seq($.keyword_natural, optional($._join_type), $.keyword_join, $.relation),
+    ),
+
+  _join_type: ($) =>
+    choice(
+      seq($.keyword_left, optional($.keyword_outer)),
+      seq($.keyword_right, optional($.keyword_outer)),
+      seq($.keyword_full, optional($.keyword_outer)),
+      $.keyword_inner,
     ),
 
   cross_join: ($) => seq($.keyword_cross, $.keyword_join, $.relation),

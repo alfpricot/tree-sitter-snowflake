@@ -68,6 +68,21 @@ export function set_unset_properties($) {
   ];
 }
 
+// The `<type> INTEGRATION` words CREATE, DROP, UNDROP, GRANT, and REVOKE
+// share for a typed integration.
+export function typed_integration($) {
+  return seq(
+    choice(
+      $.keyword_storage,
+      $.keyword_api,
+      $.keyword_security,
+      $.keyword_notification,
+      seq($.keyword_external, $.keyword_access),
+    ),
+    $.keyword_integration,
+  );
+}
+
 // A stage path, unquoted (the common form) or single-quoted — Snowflake
 // requires the quoted form when the internal path contains spaces or
 // characters the bare stage_reference token can't lex (PUT/GET/LIST/

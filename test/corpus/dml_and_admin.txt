@@ -1260,3 +1260,188 @@ LIST @db.sch.stg/path/;
     (list_statement
       (keyword_list)
       (stage_reference))))
+
+================================================================================
+commit work
+================================================================================
+
+COMMIT WORK;
+BEGIN
+  COMMIT WORK;
+END;
+
+---
+
+(program
+  (statement
+    (commit_statement
+      (keyword_commit)
+      (keyword_work)))
+  (statement
+    (block
+      (keyword_begin)
+      (statement
+        (commit_statement
+          (keyword_commit)
+          (keyword_work)))
+      (keyword_end))))
+
+================================================================================
+grant and revoke on plural multi-word kinds
+================================================================================
+
+GRANT SELECT ON FUTURE DYNAMIC TABLES IN SCHEMA s TO ROLE r;
+GRANT SELECT ON ALL MATERIALIZED VIEWS IN DATABASE d TO ROLE r;
+REVOKE USAGE ON ALL CORTEX SEARCH SERVICES IN SCHEMA s FROM ROLE r;
+GRANT APPLY ON FUTURE ROW ACCESS POLICIES IN SCHEMA s TO ROLE r;
+
+---
+
+(program
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_select)))
+        (keyword_on)
+        (keyword_future)
+        (object_kind
+          (keyword_dynamic)
+          (identifier))
+        (keyword_in)
+        (keyword_schema)
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_select)))
+        (keyword_on)
+        (keyword_all)
+        (object_kind
+          (keyword_materialized)
+          (identifier))
+        (keyword_in)
+        (keyword_database)
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (revoke_statement
+      (keyword_revoke)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (keyword_all)
+        (object_kind
+          (keyword_cortex)
+          (keyword_search)
+          (identifier))
+        (keyword_in)
+        (keyword_schema)
+        (object_reference
+          (identifier))
+        (keyword_from)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (identifier)))
+        (keyword_on)
+        (keyword_future)
+        (object_kind
+          (keyword_row)
+          (keyword_access)
+          (identifier))
+        (keyword_in)
+        (keyword_schema)
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier))))))
+
+================================================================================
+grant on singular multi-word kinds
+================================================================================
+
+GRANT SELECT ON DYNAMIC TABLE d.s.t TO ROLE r;
+GRANT SELECT ON EVENT TABLE t TO ROLE r;
+REVOKE USAGE ON NETWORK RULE n FROM ROLE r;
+
+---
+
+(program
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_select)))
+        (keyword_on)
+        (object_kind
+          (keyword_dynamic)
+          (keyword_table))
+        (object_reference
+          (identifier)
+          (identifier)
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_select)))
+        (keyword_on)
+        (object_kind
+          (keyword_event)
+          (keyword_table))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (revoke_statement
+      (keyword_revoke)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (object_kind
+          (keyword_network)
+          (keyword_rule))
+        (object_reference
+          (identifier))
+        (keyword_from)
+        (grantee
+          (keyword_role)
+          (identifier))))))

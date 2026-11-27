@@ -2935,3 +2935,221 @@ CREATE TABLE t (a INT REFERENCES u (id) NOT NULL, b INT REFERENCES v NOT ENFORCE
             (keyword_not)
             (keyword_enforced))
           (keyword_rely))))))
+
+================================================================================
+alter table rename
+================================================================================
+
+ALTER TABLE t RENAME TO t2;
+ALTER TABLE IF EXISTS db.s.t RENAME TO db.s.t2;
+
+---
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier))))
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (keyword_if)
+      (keyword_exists)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier))
+      (keyword_rename)
+      (keyword_to)
+      (object_reference
+        (identifier)
+        (identifier)
+        (identifier)))))
+
+================================================================================
+drop routines by signature
+================================================================================
+
+DROP PROCEDURE p(VARCHAR);
+DROP FUNCTION IF EXISTS db.s.f(INT, NUMBER(10, 2));
+DROP FUNCTION f() CASCADE;
+DROP PROCEDURE p;
+
+---
+
+(program
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_procedure))
+    (object_reference
+      (identifier))
+    (function_argument_types
+      (varchar
+        (keyword_varchar))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_function))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)
+      (identifier)
+      (identifier))
+    (function_argument_types
+      (keyword_int)
+      (number
+        (keyword_number)
+        (literal)
+        (literal))))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_function))
+    (object_reference
+      (identifier))
+    (function_argument_types)
+    (keyword_cascade))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_procedure))
+    (object_reference
+      (identifier))))
+
+================================================================================
+drop and undrop multi-word object kinds
+================================================================================
+
+DROP DYNAMIC TABLE t;
+DROP EXTERNAL TABLE IF EXISTS t CASCADE;
+DROP ICEBERG TABLE t;
+DROP SEMANTIC VIEW v;
+DROP CORTEX SEARCH SERVICE s;
+DROP STORAGE INTEGRATION i;
+DROP EXTERNAL ACCESS INTEGRATION IF EXISTS i;
+UNDROP DYNAMIC TABLE t;
+
+---
+
+(program
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_dynamic)
+      (keyword_table))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_external)
+      (keyword_table))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier))
+    (keyword_cascade))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_iceberg)
+      (keyword_table))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_semantic)
+      (keyword_view))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_cortex)
+      (keyword_search)
+      (keyword_service))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_storage)
+      (keyword_integration))
+    (object_reference
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_external)
+      (keyword_access)
+      (keyword_integration))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)))
+  (statement
+    (undrop_statement
+      (keyword_undrop)
+      (object_kind
+        (keyword_dynamic)
+        (keyword_table))
+      (object_reference
+        (identifier)))))
+
+================================================================================
+drop table takes no signature
+:error
+================================================================================
+
+DROP TABLE t(INT);
+
+---
+
+
+
+================================================================================
+drop database role and network rule
+================================================================================
+
+DROP DATABASE ROLE IF EXISTS d.r;
+DROP NETWORK RULE d.s.r;
+DROP DATABASE role;
+
+---
+
+(program
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_database)
+      (keyword_role))
+    (keyword_if)
+    (keyword_exists)
+    (object_reference
+      (identifier)
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_network)
+      (keyword_rule))
+    (object_reference
+      (identifier)
+      (identifier)
+      (identifier)))
+  (statement
+    (keyword_drop)
+    (object_kind
+      (keyword_database))
+    (object_reference
+      (identifier))))

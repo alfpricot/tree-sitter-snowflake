@@ -53,6 +53,20 @@ export default grammar({
     // `prior` — the PRIOR operator vs. a column of that name; settled by
     // whether an operand follows.
     [$._prior_field, $.unary_expression],
+    // `DROP PROCEDURE p` — a routine drop with an argument signature vs.
+    // the generic shape; settled by whether `(` follows the name.
+    [$.object_kind, $._routine_object_kind],
+    // `a JOIN b JOIN c ...` — the second join nests inside the first or
+    // follows it; ON / USING conditions that need nesting force it, and the
+    // join rule's dynamic precedence prefers the sequence otherwise.
+    [$.join],
+    // `GRANT ... ON ALL EXTERNAL ...` — a word of a singular kind vs. of a
+    // plural one; settled by where IN arrives.
+    [$._multi_word_object_kind, $._kind_word],
+    [$._kind_word, $.object_kind],
+    // `DROP DATABASE role` — a database named `role` vs. the DATABASE ROLE
+    // kind; settled by whether a name follows.
+    [$._database_kind, $._database_role_kind],
   ],
 
   precedences: (_) => [

@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis } from '../helpers.js';
+import { comma_list, paren_list, typed_integration, wrapped_in_parenthesis } from '../helpers.js';
 
 // Snowflake DDL: CREATE [OR REPLACE] across Snowflake's object families.
 // Option floods (warehouse parameters, task
@@ -509,14 +509,7 @@ export default {
       seq(
         $.keyword_create,
         optional($._or_replace),
-        choice(
-          $.keyword_storage,
-          $.keyword_api,
-          $.keyword_security,
-          $.keyword_notification,
-          seq($.keyword_external, $.keyword_access),
-        ),
-        $.keyword_integration,
+        typed_integration($),
         optional($._if_not_exists),
         field('name', $.identifier),
         repeat1($.option),

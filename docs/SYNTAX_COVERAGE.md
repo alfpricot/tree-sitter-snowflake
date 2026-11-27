@@ -5,13 +5,13 @@ What the grammar parses today. It covers Snowflake SQL only, so T-SQL and Postgr
 ## Queries and DML
 
 - `SELECT` with CTEs (including recursive), set operators, `QUALIFY`, window functions and named windows, `CONNECT BY`, `MATCH_RECOGNIZE`, `PIVOT`, `UNPIVOT`, and time travel
-- inner, outer, and cross joins, and `LATERAL` sources such as `FLATTEN`
+- inner, outer, cross, and natural joins, with or without `ON` or `USING`, and `LATERAL` sources such as `FLATTEN`
 - `GROUP BY ALL`, `GROUPING SETS`, `CUBE`, and `ROLLUP`
 - `INSERT` (including multi-table), `UPDATE`, `DELETE`, `TRUNCATE`, and `MERGE`
 
 ## Expressions
 
-The semi-structured `:` path operator, lambdas, `[...]` array literals, `IDENTIFIER(...)`, `* EXCLUDE` and `* RENAME`, session variables (`$var`), positional and named binds, and `=>` named arguments.
+The semi-structured `:` path operator, lambdas, `[...]` array literals, `{...}` object constants (including wildcards), `IDENTIFIER(...)`, `* EXCLUDE` and `* RENAME`, session variables (`$var`), positional and named binds, and `=>` named arguments.
 
 ## DDL
 
@@ -19,7 +19,7 @@ The semi-structured `:` path operator, lambdas, `[...]` array literals, `IDENTIF
 | --- | --- |
 | `CREATE` | table (including external, Iceberg, event, and hybrid), view, materialized view, dynamic table, semantic view, stage, file format, stream, pipe, task, alert, policy (masking, row access, aggregation, projection, network, password, session, authentication), warehouse, database, schema, role, user, sequence, tag, integration, Streamlit, Cortex search service, agent, procedure, function |
 | `ALTER` | table, view, task, warehouse, database, schema, stage, stream, sequence, role, user, pipe, integration, session, account, policy, alert, procedure, function |
-| `DROP`, `UNDROP` | single-word object kinds, materialized view, file format, and policies |
+| `DROP`, `UNDROP` | single-word object kinds, materialized view, file format, policies, dynamic, external, and Iceberg tables, semantic view, Cortex search service, integrations, database role (`DROP` only), and network rule; `DROP PROCEDURE` and `DROP FUNCTION` also take an argument signature |
 
 ## Administration and data transfer
 
@@ -35,14 +35,11 @@ These Snowflake forms produce `ERROR` or `MISSING` nodes:
 
 - `IGNORE NULLS` and `RESPECT NULLS`
 - `SAMPLE` and `TABLESAMPLE`
-- `NATURAL` and `ASOF ... MATCH_CONDITION` joins, and a non-cross `JOIN` with neither `ON` nor `USING`
+- `ASOF ... MATCH_CONDITION` joins
 - `LIKE ... ESCAPE`
-- `{ ... }` object literals
 - structured `ARRAY(INT)` and `OBJECT(a INT)` types
-- `COMMIT WORK`
-- `ALTER TABLE ... RENAME TO`
-- `DROP PROCEDURE` or `DROP FUNCTION` with an argument signature
-- `DROP` with other multi-word kinds, such as `DYNAMIC TABLE`
+- `DROP` with other multi-word kinds, such as `EXTERNAL VOLUME`
+- `GRANT` and `REVOKE` on one object of other multi-word kinds, such as `GIT REPOSITORY` (the plural forms parse)
 
 Two more forms parse without errors but not as what they are. `LIKE ANY (...)` reads as `LIKE` applied to a call of a function named `ANY`, and a structured `MAP(VARCHAR, INT)` type reads as a `custom_type`.
 

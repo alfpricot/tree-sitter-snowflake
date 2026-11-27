@@ -1304,3 +1304,346 @@ SELECT name, local, global, empty, matches, omit, unmatched, restricted FROM t;
       (relation
         (object_reference
           (identifier))))))
+
+================================================================================
+joins without a condition
+================================================================================
+
+SELECT * FROM a JOIN b;
+SELECT * FROM a INNER JOIN b JOIN c;
+SELECT * FROM a LEFT OUTER JOIN b WHERE b.k = 1;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_inner)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_left)
+        (keyword_outer)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+conditioned and unconditioned joins together
+================================================================================
+
+SELECT * FROM a JOIN b JOIN c ON b.k = c.k;
+SELECT * FROM a JOIN b ON a.k = b.k JOIN c;
+SELECT * FROM a JOIN b JOIN c USING (k) ON a.k = b.k;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (join
+          (keyword_join)
+          (relation
+            (object_reference
+              (identifier)))
+          (keyword_using)
+          (identifier))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+natural joins
+================================================================================
+
+SELECT * FROM a NATURAL JOIN b;
+SELECT * FROM a AS x NATURAL LEFT OUTER JOIN b NATURAL INNER JOIN c;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_natural)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (keyword_as)
+        (identifier))
+      (join
+        (keyword_natural)
+        (keyword_left)
+        (keyword_outer)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (join
+        (keyword_natural)
+        (keyword_inner)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+natural join takes no condition
+:error
+================================================================================
+
+SELECT * FROM a NATURAL JOIN b ON a.k = b.k;
+
+---
+
+
+
+================================================================================
+join chains bind each condition to the nearest open join
+================================================================================
+
+SELECT * FROM a JOIN b JOIN c JOIN d ON c.k = d.k ON b.k = c.k;
+SELECT * FROM a JOIN b JOIN c JOIN d ON c.k = d.k;
+
+---
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (join
+          (keyword_join)
+          (relation
+            (object_reference
+              (identifier)))
+          (keyword_on)
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier))))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))))
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))

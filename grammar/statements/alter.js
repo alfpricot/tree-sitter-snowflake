@@ -68,6 +68,7 @@ export default {
             $.cluster_by,
             seq($.keyword_drop, $.keyword_cluster, $.keyword_by),
             seq($.keyword_swap, $.keyword_with, $.object_reference),
+            seq($.keyword_rename, $.keyword_to, $.object_reference),
             seq($.keyword_add, $.keyword_search, $.keyword_optimization, optional($.keyword_on)),
             seq($.keyword_drop, $.keyword_search, $.keyword_optimization),
             ...set_unset_tags($),
