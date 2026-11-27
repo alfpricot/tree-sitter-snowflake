@@ -273,7 +273,9 @@ export default {
 
   // Snowflake makes ON optional (omitting it gives the Cartesian
   // product). Only a join with a condition may nest another join before
-  // it, so `a JOIN b JOIN c` reads as two joins in sequence. NATURAL
+  // it, so `a JOIN b JOIN c` reads as two joins in sequence. Where a chain
+  // reads both ways, the parse with the fewest nested joins wins, so each
+  // condition binds to the nearest join still open. NATURAL
   // implies its columns and takes no condition; it must be a keyword here,
   // or a bare JOIN would read the word as the left table's alias.
   join: ($) =>
@@ -284,7 +286,7 @@ export default {
         $.relation,
         optional(
           seq(
-            optional($.join),
+            optional(prec.dynamic(-1, $.join)),
             choice(
               seq($.keyword_on, field('predicate', $._expression)),
               seq($.keyword_using, paren_list($.identifier, true)),

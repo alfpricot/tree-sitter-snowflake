@@ -10758,42 +10758,47 @@
             ]
           },
           {
-            "type": "CHOICE",
+            "type": "SEQ",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "keyword_storage"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "keyword_api"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "keyword_security"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "keyword_notification"
-              },
-              {
-                "type": "SEQ",
+                "type": "CHOICE",
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "keyword_external"
+                    "name": "keyword_storage"
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "keyword_access"
+                    "name": "keyword_api"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "keyword_security"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "keyword_notification"
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "keyword_external"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "keyword_access"
+                      }
+                    ]
                   }
                 ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "keyword_integration"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "keyword_integration"
           },
           {
             "type": "CHOICE",
@@ -20054,8 +20059,12 @@
                       "type": "CHOICE",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "join"
+                          "type": "PREC_DYNAMIC",
+                          "value": -1,
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "join"
+                          }
                         },
                         {
                           "type": "BLANK"

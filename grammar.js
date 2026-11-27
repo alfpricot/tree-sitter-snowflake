@@ -57,7 +57,8 @@ export default grammar({
     // the generic shape; settled by whether `(` follows the name.
     [$.object_kind, $._routine_object_kind],
     // `a JOIN b JOIN c ...` — the second join nests inside the first or
-    // follows it; settled by how many ON / USING conditions arrive.
+    // follows it; ON / USING conditions that need nesting force it, and the
+    // join rule's dynamic precedence prefers the sequence otherwise.
     [$.join],
     // `GRANT ... ON ALL EXTERNAL ...` — a word of a singular kind vs. of a
     // plural one; settled by where IN arrives.

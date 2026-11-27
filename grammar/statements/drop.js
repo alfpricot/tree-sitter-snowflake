@@ -1,4 +1,4 @@
-import { comma_list } from '../helpers.js';
+import { comma_list, typed_integration } from '../helpers.js';
 
 // Snowflake DROP — one shape for most object kinds, with CASCADE and
 // RESTRICT accepted (and ignored by Snowflake) on tables. A procedure or
@@ -52,16 +52,7 @@ export default {
       seq($.keyword_semantic, $.keyword_view),
       seq($.keyword_network, $.keyword_rule),
       seq($.keyword_cortex, $.keyword_search, $.keyword_service),
-      seq(
-        choice(
-          $.keyword_storage,
-          $.keyword_api,
-          $.keyword_security,
-          $.keyword_notification,
-          seq($.keyword_external, $.keyword_access),
-        ),
-        $.keyword_integration,
-      ),
+      typed_integration($),
     ),
 
   // UNDROP {TABLE | SCHEMA | DATABASE | ...} name
