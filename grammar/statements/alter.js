@@ -227,18 +227,7 @@ export default {
     prec.right(
       seq(
         $.keyword_alter,
-        optional(
-          choice(
-            $.keyword_masking,
-            seq($.keyword_row, $.keyword_access),
-            $.keyword_aggregation,
-            $.keyword_projection,
-            $.keyword_network,
-            $.keyword_password,
-            $.keyword_session,
-            $.keyword_authentication,
-          ),
-        ),
+        optional($._policy_kind),
         $.keyword_policy,
         optional($._if_exists_clause),
         field('name', $.object_reference),

@@ -172,10 +172,6 @@ export default {
   _paren_options: ($) =>
     wrapped_in_parenthesis(seq($.option, repeat(seq(optional(','), $.option)))),
 
-  // The bare, unparenthesized spelling the warehouse/task/stage DDL uses:
-  // `WAREHOUSE_SIZE = 'XSMALL' AUTO_RESUME = TRUE`.
-  with_clause: ($) => prec.right(seq(optional($.keyword_with), repeat1($.option))),
-
   option: ($) =>
     prec.right(
       seq(

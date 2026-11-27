@@ -313,7 +313,6 @@ export default {
   keyword_ai_verified_queries: (_) => make_keyword('ai_verified_queries'),
   keyword_match_recognize: (_) => make_keyword('match_recognize'),
   keyword_match: (_) => make_keyword('match'),
-  keyword_recognize: (_) => make_keyword('recognize'),
   keyword_measures: (_) => make_keyword('measures'),
   keyword_per: (_) => make_keyword('per'),
   keyword_past: (_) => make_keyword('past'),

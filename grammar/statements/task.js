@@ -10,17 +10,13 @@
 //   ALTER TASK name {RESUME | SUSPEND | SET TAG ... | UNSET TAG ... |
 //     SET ... | UNSET ... |
 //     MODIFY AS <statement> | ADD AFTER t | REMOVE AFTER t}
-import { comma_list, set_unset_tags } from '../helpers.js';
+import { comma_list, create_header, set_unset_tags } from '../helpers.js';
 
 export default {
   create_task: ($) =>
     prec.right(
       seq(
-        $.keyword_create,
-        optional($._or_replace),
-        $.keyword_task,
-        optional($._if_not_exists),
-        field('name', $.object_reference),
+        ...create_header($, $.keyword_task),
         repeat(choice($._with_tag, $._with_contact, $.task_option)),
         $.keyword_as,
         field('body', $.statement),
