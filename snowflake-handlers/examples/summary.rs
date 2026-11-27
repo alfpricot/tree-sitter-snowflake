@@ -1,11 +1,22 @@
 //! Summarize local SQL files without printing source text or identifiers.
+//! With `--routines`, also list each foreign-language routine with its entry
+//! point, which prints names from those files.
 use snowflake_handlers::{Analyzer, HandlerStatus};
 use std::{collections::BTreeMap, error::Error, fs, path::PathBuf};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut pending: Vec<PathBuf> = std::env::args_os().skip(1).map(PathBuf::from).collect();
+    let mut list_routines = false;
+    let mut pending: Vec<PathBuf> = std::env::args_os()
+        .skip(1)
+        .filter(|argument| {
+            let flag = argument == "--routines";
+            list_routines |= flag;
+            !flag
+        })
+        .map(PathBuf::from)
+        .collect();
     if pending.is_empty() {
-        return Err("usage: summary <SQL file or corpus directory> ...".into());
+        return Err("usage: summary [--routines] <SQL file or corpus directory> ...".into());
     }
     let mut analyzer = Analyzer::new()?;
     let mut files = 0;
@@ -35,6 +46,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         files += 1;
         sql_failures += usize::from(!result.sql_errors.is_empty());
         for body in result.handlers {
+            if list_routines {
+                println!(
+                    "{:?} {:?} {}: {}",
+                    body.language,
+                    body.routine_kind,
+                    body.name,
+                    body.handler.as_deref().unwrap_or("(no HANDLER)")
+                );
+            }
             // An encoding error's byte range differs per body, so group by message.
             let status = match &body.status {
                 HandlerStatus::InvalidEncoding(error) => {

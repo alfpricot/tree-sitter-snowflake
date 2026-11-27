@@ -1,7 +1,8 @@
 //! Shared extraction, parsing, and advisory checks for Snowflake handler bodies.
 //! Returned embedded trees use decoded-body byte offsets; translate them through
-//! [`HandlerSource`] before reporting findings in the SQL file. This crate computes
-//! no complexity totals. Consumers attribute their measurements to the SQL file.
+//! [`HandlerSource`] before reporting findings in the SQL file. This crate measures
+//! no handler body's complexity; the `summary` feature counts only the decision
+//! points of the SQL itself. Consumers attribute their measurements to the SQL file.
 
 #![doc = include_str!("../README.md")]
 
@@ -34,6 +35,7 @@ pub mod rules {
 
 /// The language of an embedded handler body.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[non_exhaustive]
 pub enum Language {
     /// `LANGUAGE JAVASCRIPT`.
@@ -91,6 +93,7 @@ impl Language {
 
 /// Which statement declared a handler.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[non_exhaustive]
 pub enum RoutineKind {
     /// `CREATE PROCEDURE`.
@@ -197,6 +200,15 @@ pub struct Handler {
     pub handler: Option<String>,
     /// The `RUNTIME_VERSION` option, without its quotes.
     pub runtime_version: Option<String>,
+    /// The `PACKAGES` list, such as package names with their versions, without
+    /// quotes. Empty when the routine names none.
+    pub packages: Vec<String>,
+    /// The `IMPORTS` list, such as staged file paths, without quotes. Empty when
+    /// the routine names none.
+    pub imports: Vec<String>,
+    /// The `EXTERNAL_ACCESS_INTEGRATIONS` list, each name as written. Empty when
+    /// the routine names none.
+    pub external_access_integrations: Vec<String>,
     /// The body including its delimiters, as a byte range in the SQL. A staged
     /// handler has an empty range at the end of its statement.
     pub body_range: Range<usize>,

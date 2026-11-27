@@ -25,6 +25,16 @@ export function walkSql(dir, out = []) {
   return out;
 }
 
+// Children of a statement that do not say what it does: comments, and the
+// parts of a leading WITH clause.
+const NOT_STATEMENT_KINDS = new Set([
+  'comment',
+  'marginalia',
+  'keyword_with',
+  'keyword_recursive',
+  'cte',
+]);
+
 export function parseSummaryFromXml(xml, starts) {
   const statements = [];
   const errors = [];
@@ -97,8 +107,7 @@ export function parseSummaryFromXml(xml, starts) {
       currentTopLevelStatement &&
       parent === currentTopLevelStatement &&
       currentTopLevelStatement.statementEntry.kind === 'unknown' &&
-      tag !== 'comment' &&
-      tag !== 'marginalia'
+      !NOT_STATEMENT_KINDS.has(tag)
     ) {
       currentTopLevelStatement.statementEntry.kind = tag;
     }

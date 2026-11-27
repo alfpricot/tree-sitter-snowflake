@@ -446,3 +446,29 @@ fn a_body_lost_to_a_syntax_error_is_not_staged() {
         assert_eq!(result.handlers[0].status, HandlerStatus::Staged, "{staged}");
     }
 }
+
+#[test]
+fn lists_handler_dependencies() {
+    let sql = "CREATE FUNCTION f() RETURNS INT LANGUAGE PYTHON
+PACKAGES = ('old')
+PACKAGES = ('numpy', 'pandas==2.0')
+IMPORTS = ('@stage/it''s.py')
+EXTERNAL_ACCESS_INTEGRATIONS = (web, \"Mail Gate\")
+HANDLER = 'f' AS $$x = 1$$;
+CREATE FUNCTION g() RETURNS INT LANGUAGE PYTHON PACKAGES = ('one') HANDLER = 'g';";
+    let result = Analyzer::new().unwrap().analyze(sql).unwrap();
+    assert!(result.sql_errors.is_empty(), "{:?}", result.sql_errors);
+    let [f, g] = &result.handlers[..] else {
+        panic!("{:?}", result.handlers);
+    };
+    assert_eq!(f.packages, ["numpy", "pandas==2.0"]);
+    assert_eq!(f.imports, ["@stage/it's.py"]);
+    assert_eq!(f.external_access_integrations, ["web", "\"Mail Gate\""]);
+    assert_eq!(g.packages, ["one"]);
+    assert!(g.imports.is_empty(), "{:?}", g.imports);
+    assert!(
+        g.external_access_integrations.is_empty(),
+        "{:?}",
+        g.external_access_integrations
+    );
+}
