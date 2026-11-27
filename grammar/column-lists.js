@@ -133,7 +133,8 @@ export default {
       seq($.keyword_no, $.keyword_action),
     ),
 
-  // Table-level constraint, also the shape ALTER TABLE ... ADD accepts.
+  // Table-level constraint inside a column list. ALTER TABLE ... ADD has its
+  // own rule, constraint_action.
   table_constraint: ($) =>
     prec.right(
       seq(
