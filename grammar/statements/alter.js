@@ -227,7 +227,6 @@ export default {
     prec.right(
       seq(
         $.keyword_alter,
-        optional($._if_exists_clause),
         optional(
           choice(
             $.keyword_masking,

@@ -151,7 +151,6 @@ export default {
             paren_list($.identifier, true),
             $.referential_clause,
           ),
-          seq($.keyword_check, wrapped_in_parenthesis($._expression)),
         ),
       ),
     ),

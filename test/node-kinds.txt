@@ -282,7 +282,6 @@ keyword_case
 keyword_cast
 keyword_changes
 keyword_char
-keyword_check
 keyword_clone
 keyword_close
 keyword_cluster

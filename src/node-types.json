@@ -16284,59 +16284,7 @@
       "required": true,
       "types": [
         {
-          "type": "array_constructor",
-          "named": true
-        },
-        {
-          "type": "between_expression",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "bind_variable",
-          "named": true
-        },
-        {
-          "type": "case",
-          "named": true
-        },
-        {
-          "type": "cast",
-          "named": true
-        },
-        {
-          "type": "cast_expression",
-          "named": true
-        },
-        {
-          "type": "exists",
-          "named": true
-        },
-        {
-          "type": "extract_expression",
-          "named": true
-        },
-        {
-          "type": "field",
-          "named": true
-        },
-        {
           "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "identifier_function",
-          "named": true
-        },
-        {
-          "type": "invocation",
-          "named": true
-        },
-        {
-          "type": "keyword_check",
           "named": true
         },
         {
@@ -16372,39 +16320,7 @@
           "named": true
         },
         {
-          "type": "lambda_expression",
-          "named": true
-        },
-        {
-          "type": "literal",
-          "named": true
-        },
-        {
-          "type": "object_constructor",
-          "named": true
-        },
-        {
-          "type": "parenthesized_expression",
-          "named": true
-        },
-        {
           "type": "referential_clause",
-          "named": true
-        },
-        {
-          "type": "semi_structured",
-          "named": true
-        },
-        {
-          "type": "subquery",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
-          "named": true
-        },
-        {
-          "type": "window_function",
           "named": true
         }
       ]
@@ -18659,10 +18575,6 @@
   },
   {
     "type": "keyword_changes",
-    "named": true
-  },
-  {
-    "type": "keyword_check",
     "named": true
   },
   {

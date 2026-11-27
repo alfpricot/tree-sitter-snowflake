@@ -914,10 +914,6 @@
       "type": "PATTERN",
       "value": "[rR][eE][fF][eE][rR][eE][nN][cC][eE][sS]"
     },
-    "keyword_check": {
-      "type": "PATTERN",
-      "value": "[cC][hH][eE][cC][kK]"
-    },
     "keyword_enforced": {
       "type": "PATTERN",
       "value": "[eE][nN][fF][oO][rR][cC][eE][dD]"
@@ -3048,32 +3044,6 @@
                   {
                     "type": "SYMBOL",
                     "name": "referential_clause"
-                  }
-                ]
-              },
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "keyword_check"
-                  },
-                  {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": "("
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "_expression"
-                      },
-                      {
-                        "type": "STRING",
-                        "value": ")"
-                      }
-                    ]
                   }
                 ]
               }
@@ -16802,18 +16772,6 @@
           {
             "type": "SYMBOL",
             "name": "keyword_alter"
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_if_exists_clause"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
           },
           {
             "type": "CHOICE",
