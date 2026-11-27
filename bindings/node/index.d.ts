@@ -41,11 +41,12 @@ declare const binding: {
   language: unknown;
 
   /**
-   * The content of the `node-types.json` file for this grammar.
+   * The content of the `node-types.json` file for this grammar, or
+   * `undefined` where the file cannot be read.
    *
    * @see {@linkplain https://tree-sitter.github.io/tree-sitter/using-parsers/6-static-node-types Static Node Types}
    */
-  nodeTypeInfo: NodeInfo[];
+  nodeTypeInfo?: NodeInfo[];
 
   /** The syntax highlighting query for this grammar. */
   HIGHLIGHTS_QUERY?: string;
@@ -61,6 +62,12 @@ declare const binding: {
 
   /** The locals query for this grammar. */
   LOCALS_QUERY?: string;
+
+  /** The folding query for this grammar. */
+  FOLDS_QUERY?: string;
+
+  /** The indentation query for this grammar. */
+  INDENTS_QUERY?: string;
 };
 
 export default binding;
