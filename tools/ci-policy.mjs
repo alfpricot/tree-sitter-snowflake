@@ -3,8 +3,39 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
 
 export function docsOnly(files) {
-  // Only prose outside source/test trees can skip compilation.
-  return files.length > 0 && files.every((path) => /^(?:[^/]+\.md|docs\/.*\.md)$/.test(path));
+  // Only prose and repository metadata that nothing builds or tests can skip compilation.
+  // LICENSE (package check), .editorconfig (formatter), and .gitattributes (line endings)
+  // are read by the build jobs, so they are not on this list.
+  return (
+    files.length > 0 &&
+    files.every((path) =>
+      /^(?:[^/]+\.md|docs\/.*\.md|NOTICE|\.github\/(?:CODEOWNERS|dependabot\.yml))$/.test(path),
+    )
+  );
+}
+
+export function needsRustFloor(files) {
+  // What the crates compile or embed, plus the workflow that defines the floor build.
+  return files.some((path) =>
+    /^(?:grammar(?:\.js$|\/)|src\/|queries\/|Cargo\.|bindings\/rust\/|snowflake-handlers\/|\.github\/workflows\/verify\.yml$)/.test(
+      path,
+    ),
+  );
+}
+
+export function needsScannerFuzz(files) {
+  return files.some((path) => /^(?:src\/scanner\.c|\.github\/workflows\/verify\.yml)$/.test(path));
+}
+
+export function handlersChangelogDated(cargoToml, changelog) {
+  const version = cargoToml.match(/^version\s*=\s*"([^"]+)"\s*$/m)?.[1];
+  assert(version, 'snowflake-handlers/Cargo.toml has no version');
+  const heading = changelog.split(/\r?\n/).find((line) => line.startsWith(`## [${version}]`));
+  assert(heading, `snowflake-handlers/CHANGELOG.md has no section for ${version}`);
+  assert(
+    !/Unreleased\s*$/.test(heading),
+    `snowflake-handlers/CHANGELOG.md still says Unreleased for ${version}; date it before the release`,
+  );
 }
 
 export function needsWindowsBinding(files) {
@@ -59,6 +90,7 @@ export function verifyResults(needs, event, draft) {
       needs.changes?.outputs?.build === 'false'
     )
       expected = 'skipped';
+    if (job === 'consumer-pin' && needs.changes?.outputs?.rust === 'false') expected = 'skipped';
     assert.equal(value.result, expected, `${job} must finish as ${expected}`);
   }
 }
@@ -66,19 +98,27 @@ export function verifyResults(needs, event, draft) {
 if (process.argv[2] === 'changes') {
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
   let build = true;
+  let rust = true;
+  let scanner = false;
   let windows = process.env.GITHUB_REF === 'refs/heads/main';
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
     if (canSkipEditedBuild(event, process.env.PRIOR_VERIFIED === 'true')) {
       build = false;
+      rust = false;
       windows = false;
     } else {
       const { base, head } = event.pull_request;
       const files = changedPaths(base.sha, head.sha);
       build = !docsOnly(files);
+      rust = needsRustFloor(files);
+      scanner = needsScannerFuzz(files);
       windows = needsWindowsBinding(files);
     }
   }
-  appendFileSync(process.env.GITHUB_OUTPUT, `build=${build}\nwindows=${windows}\n`);
+  appendFileSync(
+    process.env.GITHUB_OUTPUT,
+    `build=${build}\nrust=${rust}\nscanner=${scanner}\nwindows=${windows}\n`,
+  );
 } else if (process.argv[2] === 'verify') {
   verifyResults(
     JSON.parse(process.env.JOB_RESULTS),
@@ -92,4 +132,10 @@ if (process.argv[2] === 'changes') {
     readFileSync('tree-sitter.json', 'utf8'),
   );
   console.log('package.json and tree-sitter.json versions match Cargo.toml');
+} else if (process.argv[2] === 'handlers-changelog') {
+  handlersChangelogDated(
+    readFileSync('snowflake-handlers/Cargo.toml', 'utf8'),
+    readFileSync('snowflake-handlers/CHANGELOG.md', 'utf8'),
+  );
+  console.log('The snowflake-handlers changelog section is dated');
 }

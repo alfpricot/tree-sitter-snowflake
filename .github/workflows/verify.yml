@@ -17,10 +17,14 @@
 #                      pull request, docs-only ones included; skipped on
 #                      pull requests from forks, which cannot read the
 #                      leak check's key), probe both
-#                      identifier slots for every keyword, build and test
-#                      the Rust binding (against the tree-sitter version
-#                      that is snowflake-handlers' declared floor, and
-#                      against the latest), build and test the Node
+#                      identifier slots for every keyword, compile the
+#                      scanner with warnings as errors and fuzz it when it
+#                      changes, require a dated handlers changelog section
+#                      on pull requests to main, build and test the Rust
+#                      binding (against the latest tree-sitter, and, when a
+#                      path a crate builds from changes, against the version
+#                      that is snowflake-handlers' declared floor), build
+#                      and test the Node
 #                      binding, validate the PR title, scan the working
 #                      tree and Git history for secrets, and lint
 #                      workflow/YAML files. A final aggregate job
@@ -62,6 +66,8 @@ jobs:
       checks: read
     outputs:
       build: ${{ steps.paths.outputs.build }}
+      rust: ${{ steps.paths.outputs.rust }}
+      scanner: ${{ steps.paths.outputs.scanner }}
       windows: ${{ steps.paths.outputs.windows }}
     env:
       GITLEAKS_VERSION: '8.30.1'
@@ -166,6 +172,12 @@ jobs:
         # gala refuses to plan a release when they disagree; failing here
         # catches the drift on the pull request instead of on main.
         run: node tools/ci-policy.mjs versions
+
+      - name: Require a dated handlers changelog section on a promotion
+        # release.yml refuses to tag an undated section, and by then the
+        # crate is already published, so catch it before the merge to main.
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: node tools/ci-policy.mjs handlers-changelog
 
       - name: Validate YAML files
         run: |
@@ -285,6 +297,9 @@ jobs:
           node tools/node-kinds.mjs > test/node-kinds.txt
           git diff --exit-code -- test/node-kinds.txt
 
+      - name: Compile the scanner with warnings as errors
+        run: cc -std=c11 -Wall -Wextra -Wpedantic -Werror -fsyntax-only -Isrc src/scanner.c
+
       - name: Lint the grammar and tooling JS
         run: npm run lint
 
@@ -293,6 +308,20 @@ jobs:
 
       - name: Run corpus and highlight tests
         run: npx --no-install tree-sitter test
+
+      - name: Fuzz the parser when the scanner changes
+        if: needs.changes.outputs.scanner == 'true'
+        # `tree-sitter fuzz` exits 0 when a case parses wrongly, so read its
+        # summary too. The excluded case already fails incremental parsing,
+        # independently of the scanner.
+        run: |
+          set -euo pipefail
+          npx --no-install tree-sitter fuzz --iterations 100 \
+            --exclude 'tags on roles, users, tasks, streams, and dynamic tables' 2>&1 | tee "$RUNNER_TEMP/fuzz.log"
+          if grep -q 'failed fuzzing' "$RUNNER_TEMP/fuzz.log"; then
+            echo "tree-sitter fuzz reported failures" >&2
+            exit 1
+          fi
 
       - name: Parse every fixture and fail on ERROR/MISSING or zero-width nodes
         run: node tools/fixture-check.mjs
@@ -317,7 +346,7 @@ jobs:
   consumer-pin:
     name: Rust build/test against tree-sitter 0.26 (snowflake-handlers' declared floor)
     needs: changes
-    if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true'
+    if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true' && needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

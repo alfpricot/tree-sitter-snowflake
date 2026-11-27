@@ -41,7 +41,7 @@ npm run lint
 npm run format:check
 ```
 
-These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the three manifests, and Rust and JavaScript style. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. It also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the three manifests, and Rust and JavaScript style. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. When a path a crate builds from changes, it also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. CI compiles `src/scanner.c` with `-Wall -Wextra -Wpedantic -Werror` and fuzzes the parser when the scanner changes. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting.
 
 ## Pull requests
 

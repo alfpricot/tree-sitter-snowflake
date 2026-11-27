@@ -57,9 +57,6 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-env:
-  PREBUILDIFY_VERSION: '6.0.1'
-
 permissions:
   contents: read
 
@@ -141,15 +138,14 @@ jobs:
         with:
           node-version: '24.x'
       - name: Install dependencies
-        # node-addon-api is a runtime dependency binding.gyp resolves at gyp
-        # configure time (`require('node-addon-api').targets`); prebuildify
-        # only installs itself into npx's own temporary cache, which that
-        # require can't see. --ignore-scripts skips this package's own
+        # Installs the locked prebuildify, and node-addon-api, which
+        # binding.gyp resolves at gyp configure time
+        # (`require('node-addon-api').targets`). --ignore-scripts skips this package's own
         # "install": "node-gyp-build" script, which would otherwise try (and
         # fail, since there's nothing built yet) to load the addon.
         run: npm ci --ignore-scripts
       - name: Build the native Node addon prebuild
-        run: npx --yes prebuildify@${{ env.PREBUILDIFY_VERSION }} --napi --strip
+        run: npx --no-install prebuildify --napi --strip
       - name: Upload the prebuild
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -273,11 +269,9 @@ jobs:
   publish-npm:
     name: Publish to npm
     needs: [verify, prebuild]
-    # A prebuild failure on one platform is not fatal: node-gyp-build falls
-    # back to a source build where no matching prebuild exists. Waiting for
-    # `prebuild` without hard-requiring every leg keeps that fallback instead
-    # of blocking the publish on one platform's toolchain problem.
-    if: ${{ !cancelled() && needs.verify.result == 'success' }}
+    # Every prebuild leg must succeed, which the default success() gate on
+    # `needs` enforces: a published version is skipped on a rerun, so a
+    # binary missing now could never be added to it.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -296,7 +290,9 @@ jobs:
         with:
           ref: ${{ needs.verify.outputs.policy }}
           path: .release-tools
-          sparse-checkout: tools/release-policy.mjs
+          sparse-checkout: |
+            tools/release-policy.mjs
+            tools/prebuild-check.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - name: Set up Node.js
@@ -315,6 +311,8 @@ jobs:
         env:
           RELEASE_COMMIT: ${{ needs.verify.outputs.commit }}
         run: node .release-tools/tools/release-policy.mjs check-npm
+      - name: Fail if the tarball lacks a prebuilt addon
+        run: node .release-tools/tools/prebuild-check.mjs
       - name: Publish (skip if this version is already live)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -331,11 +329,9 @@ jobs:
   publish-github-packages:
     name: Publish to GitHub Packages
     needs: [verify, prebuild]
-    # A prebuild failure on one platform is not fatal: node-gyp-build falls
-    # back to a source build where no matching prebuild exists. Waiting for
-    # `prebuild` without hard-requiring every leg keeps that fallback instead
-    # of blocking the publish on one platform's toolchain problem.
-    if: ${{ !cancelled() && needs.verify.result == 'success' }}
+    # Every prebuild leg must succeed, which the default success() gate on
+    # `needs` enforces: a published version is skipped on a rerun, so a
+    # binary missing now could never be added to it.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -357,7 +353,9 @@ jobs:
         with:
           ref: ${{ needs.verify.outputs.policy }}
           path: .release-tools
-          sparse-checkout: tools/release-policy.mjs
+          sparse-checkout: |
+            tools/release-policy.mjs
+            tools/prebuild-check.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - name: Set up Node.js
@@ -377,6 +375,8 @@ jobs:
           set -euo pipefail
           npm pkg set "name=@${OWNER}/tree-sitter-snowflake"
           node .release-tools/tools/release-policy.mjs check-npm
+      - name: Fail if the tarball lacks a prebuilt addon
+        run: node .release-tools/tools/prebuild-check.mjs
       - name: Publish (skip if this version is already live)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -485,6 +485,7 @@ jobs:
             exit 1
           fi
           if [[ "$heading" =~ Unreleased[[:space:]]*$ ]]; then
-            echo "::warning file=snowflake-handlers/CHANGELOG.md::The ${VERSION} heading still says Unreleased; date it in the next pull request."
+            echo "::error file=snowflake-handlers/CHANGELOG.md::The ${VERSION} heading still says Unreleased, so ${tag} was not created."
+            exit 1
           fi
           printf '%s\n' "$notes" | gh release create "$tag" --target "$COMMIT" --title "snowflake-handlers v${VERSION}" --notes-file - --latest=false
