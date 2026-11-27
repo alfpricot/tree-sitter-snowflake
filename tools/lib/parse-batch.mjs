@@ -1,5 +1,5 @@
 // The batched `tree-sitter parse -x` run shared by the parse summary, the
-// parse-rate harness, and the keyword probe: one process for many files,
+// parse-rate tool, and the keyword probe: one process for many files,
 // because a process per file dominates the run time of all three.
 
 import { Buffer } from 'node:buffer';
