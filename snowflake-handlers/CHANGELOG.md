@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.3.0) - 2026-11-26
+## [0.3.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.3.0) - 2026-11-27
 
 Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree the analyzer returns and what it reports as a syntax error.
 
