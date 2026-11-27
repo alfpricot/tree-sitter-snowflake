@@ -18,7 +18,7 @@ npx --no-install tree-sitter generate
 cargo build
 ```
 
-The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, update its `allowScripts` entry before installing, then regenerate the lockfile. `tools/cli-version.test.mjs` fails CI when that entry, an npm script, or a workflow pins a `tree-sitter-cli` version that lags the devDependency.
+The CLI version is pinned in `package.json` and resolved by `package-lock.json`; CI uses the same lockfile. When changing it, regenerate the lockfile and the parser. The `allowScripts` entries name packages without a version, so they need no edit. `tools/cli-version.test.mjs` fails CI when an npm script or a workflow pins a `tree-sitter-cli` version that lags the devDependency.
 
 The generated parser (`src/parser.c`, `src/grammar.json`, `src/node-types.json`) is committed: regenerate and commit its diff after every `grammar.js` change. `.gitattributes` marks `src/parser.c` with `-diff` — a grammar change renumbers the parse states, so its diff is a whole-file rewrite that carries no reviewable information. Review `grammar.js`, `src/grammar.json`, and the corpus tests instead, and on a merge conflict in `src/parser.c` resolve `grammar.js` with both sides' changes, then regenerate rather than editing the C file by hand. A failed `generate` writes nothing, so check `src/parser.c`'s modification time before trusting a test run; a stale parser passes tests with a straight face. On Windows without MSVC, set `CC=gcc CXX=g++`.
 
@@ -41,7 +41,7 @@ npm run lint
 npm run format:check
 ```
 
-These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the three manifests, and Rust and JavaScript style. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. When a path a crate builds from changes, it also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. CI compiles `src/scanner.c` with `-Wall -Wextra -Wpedantic -Werror` and fuzzes the parser when the scanner changes. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting.
+These cover corpus trees, the node-kind snapshot, whole-file fixtures, source-identifier leaks, keyword handling, package contents, the repository's own script tests, version agreement across the three manifests, and Rust and JavaScript style. `npm run lint` also type-checks `tools/` and `bindings/node/`. CI also fails when the regenerated `src/parser.c`, `src/grammar.json`, or `src/node-types.json` differs from the committed copy. When a path a crate builds from changes, it also checks both crates at their minimum Rust versions and tests them against tree-sitter 0.26. CI compiles `src/scanner.c` with `-Wall -Wextra -Wpedantic -Werror` and fuzzes the parser when the scanner changes. Secret scanning, workflow and YAML linting, the PR title check, and the Node binding tests run there too. To run those tests locally, run `npm ci` (which builds the addon) and then `npm test`; Windows needs MSVC. `npm run format` applies formatting.
 
 ## Pull requests
 

@@ -42,10 +42,10 @@ BEGIN
 END
 $$;`);
   assert.equal(tree.rootNode.hasError, false);
-  const folded = new Parser.Query(language, language.FOLDS_QUERY)
+  const folded = new Parser.Query(language, /** @type {string} */ (language.FOLDS_QUERY))
     .captures(tree.rootNode)
     .map(({ node }) => node.type);
-  assert.deepEqual(folded.sort(), ['block', 'cte', 'dollar_quoted_script']);
+  assert.deepEqual(folded.toSorted(), ['block', 'cte', 'dollar_quoted_script']);
 });
 
 test('exports the snowflake language name', async () => {

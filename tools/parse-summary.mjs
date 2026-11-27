@@ -32,6 +32,7 @@ export function parseSummaryFromXml(xml, starts) {
   const stack = [];
   const re = /<(\/?)([A-Za-z_][\w.]*)([^>]*)>/g;
   let m;
+  /** @type {any} */
   let currentTopLevelStatement = null;
 
   const sourceEndIdx = xml.indexOf('</source>');
@@ -154,7 +155,7 @@ if (isMain) {
   }
 
   const isDirectory = statSync(inputPath).isDirectory();
-  const files = isDirectory ? walkSql(inputPath).sort() : [inputPath];
+  const files = isDirectory ? walkSql(inputPath).toSorted() : [inputPath];
 
   if (files.length === 0) {
     process.exit(0);

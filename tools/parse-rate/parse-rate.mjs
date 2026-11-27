@@ -137,7 +137,7 @@ if (isMain) {
 
   const cli = resolveTreeSitterCli(repoDir, grammarDir);
 
-  const files = walk(corpusRoot, []).sort();
+  const files = walk(corpusRoot, []).toSorted();
   const scratch = join(os.tmpdir(), `parse-rate-${process.pid}`);
   process.on('exit', () => rmSync(scratch, { recursive: true, force: true }));
   const normalized = [];

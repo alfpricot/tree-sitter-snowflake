@@ -25,14 +25,16 @@ function check(paths, required, prefix = '', generated = []) {
   console.log(`Validated ${files.length} package entries (${prefix || 'grammar'}).`);
 }
 
-for (const [name, prefix, required] of [
+/** @type {[name: string, prefix: string, required: string[]][]} */
+const crates = [
   [
     'tree-sitter-snowflake',
     '',
     [...common, ...queries, 'bindings/rust/lib.rs', 'bindings/rust/build.rs'],
   ],
   ['snowflake-handlers', 'snowflake-handlers/', ['LICENSE', 'README.md', 'src/lib.rs']],
-]) {
+];
+for (const [name, prefix, required] of crates) {
   // The release workflow runs this script from main against an older tag's tree, which can
   // predate the companion crate's current directory; skip it there rather than fail the run.
   if (prefix && !existsSync(`${prefix}Cargo.toml`)) {

@@ -46,6 +46,7 @@ export function needsWindowsBinding(files) {
   );
 }
 
+/** @param {(command: string, args: string[], options: object) => any} [run] */
 export function changedPaths(base, head, run = execFileSync) {
   return run('git', ['diff', '--no-renames', '--name-only', '-z', `${base}...${head}`], {
     encoding: 'utf8',
@@ -96,7 +97,9 @@ export function verifyResults(needs, event, draft) {
 }
 
 if (process.argv[2] === 'changes') {
-  const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+  const event = JSON.parse(
+    readFileSync(/** @type {string} */ (process.env.GITHUB_EVENT_PATH), 'utf8'),
+  );
   let build = true;
   let rust = true;
   let scanner = false;
@@ -116,12 +119,12 @@ if (process.argv[2] === 'changes') {
     }
   }
   appendFileSync(
-    process.env.GITHUB_OUTPUT,
+    /** @type {string} */ (process.env.GITHUB_OUTPUT),
     `build=${build}\nrust=${rust}\nscanner=${scanner}\nwindows=${windows}\n`,
   );
 } else if (process.argv[2] === 'verify') {
   verifyResults(
-    JSON.parse(process.env.JOB_RESULTS),
+    JSON.parse(/** @type {string} */ (process.env.JOB_RESULTS)),
     process.env.GITHUB_EVENT_NAME,
     process.env.IS_DRAFT === 'true',
   );

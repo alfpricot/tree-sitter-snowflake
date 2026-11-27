@@ -47,13 +47,15 @@ test('batchParse splits the items into batches and pairs each with its XML', () 
   assert(results.every(({ body }) => body.includes('<program>')));
 });
 
+const partialRun = () => ({ stdout: source('/a.sql'), stderr: 'no compiler', status: 1 });
+
+const parsePartial = (items) => [
+  ...batchParse({ tool: 't', cli: 'ts', cwd: '.', items, path: (f) => f, run: partialRun }),
+];
+
 test('batchParse refuses a batch the CLI did not fully report', () => {
-  const run = () => ({ stdout: source('/a.sql'), stderr: 'no compiler', status: 1 });
-  const parse = (items) => [
-    ...batchParse({ tool: 't', cli: 'ts', cwd: '.', items, path: (f) => f, run }),
-  ];
-  assert.throws(() => parse(['/a.sql', '/b.sql']), /parsed only 1\/2.*no compiler/s);
-  assert.throws(() => parse(['/b.sql']), /could not match/);
+  assert.throws(() => parsePartial(['/a.sql', '/b.sql']), /parsed only 1\/2.*no compiler/s);
+  assert.throws(() => parsePartial(['/b.sql']), /could not match/);
   const missing = batchParse({
     tool: 't',
     cli: 'ts',

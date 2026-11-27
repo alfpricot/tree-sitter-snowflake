@@ -1,3 +1,5 @@
+# This is the reference copy shared with other tree-sitter grammar repositories.
+# A fix made here should be carried over to them.
 # Every stable rustfmt option (per `rustfmt --help=config`), pinned explicitly so a
 # future rustfmt version's own default drift doesn't silently reformat the codebase.
 # Only edition, style_edition, and newline_style deviate from rustfmt's own defaults.

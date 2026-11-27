@@ -1,3 +1,6 @@
+// This is the reference copy shared with other tree-sitter grammar repositories.
+// A fix made here should be carried over to them.
+
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -42,6 +45,10 @@ export function writesVersionFiles(galaToml) {
   return /^\[\[versionFile\]\]\s*$/m.test(galaToml ?? '');
 }
 
+/**
+ * @param {string | undefined} tag
+ * @param {(command: string, args: string[], options: object) => any} [run]
+ */
 export function resolveRelease(tag, run = execFileSync) {
   // Validate before passing the ref to git; branch names and option-like input fail closed.
   releaseVersion(tag, `[package]\nversion = "${tag?.slice(1)}"\n`);
@@ -100,11 +107,14 @@ export function runCommand(command, env = process.env) {
   if (command === 'resolve') {
     const commit = resolveRelease(env.TAG);
     const policy = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-    appendFileSync(env.GITHUB_OUTPUT, `commit=${commit}\npolicy=${policy}\n`);
+    appendFileSync(
+      /** @type {string} */ (env.GITHUB_OUTPUT),
+      `commit=${commit}\npolicy=${policy}\n`,
+    );
   } else if (command === 'check-npm' || command === 'prepare-npm') {
     prepareNpm(env.TAG);
     const provenance = canAttest(env.TAG, env.RELEASE_COMMIT, env.GITHUB_REF, env.GITHUB_SHA);
-    appendFileSync(env.GITHUB_OUTPUT, `provenance=${provenance}\n`);
+    appendFileSync(/** @type {string} */ (env.GITHUB_OUTPUT), `provenance=${provenance}\n`);
   } else if (command === 'versions') {
     const version = checkVersions();
     console.log(`Cargo.toml, package.json, and tree-sitter.json all carry ${version}`);

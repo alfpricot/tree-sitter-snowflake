@@ -115,7 +115,7 @@ if (!key) {
 }
 
 function keyedHash(text) {
-  return createHmac('sha256', key).update(text).digest('hex');
+  return createHmac('sha256', /** @type {string} */ (key)).update(text).digest('hex');
 }
 
 // The keyed hash of a fixed public string under the key the needles were
