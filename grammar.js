@@ -73,13 +73,10 @@ export default grammar({
     [
       'postfix',
       'unary_sign',
-      'binary_exp',
       'binary_times',
       'binary_plus',
-      'unary_other',
       'binary_other',
       'binary_in',
-      'binary_compare',
       'binary_relation',
       'binary_is',
       'pattern_matching',
@@ -89,6 +86,8 @@ export default grammar({
       'clause_disjunctive',
     ],
   ],
+
+  inline: ($) => [$._policy_kind],
 
   word: ($) => $._identifier,
 

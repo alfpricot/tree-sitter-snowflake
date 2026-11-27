@@ -47,6 +47,21 @@ export function paren_list(field, requireFirst) {
   return wrapped_in_parenthesis(comma_list(field, requireFirst));
 }
 
+// CREATE [OR REPLACE] [modifiers] kind [IF NOT EXISTS] name — the header
+// most CREATE statements open with. Returns the sequence members, so a
+// caller spreads them into its own `seq`. `kind` is one rule or a list of
+// them. Statements that take no IF NOT EXISTS spell their header out.
+export function create_header($, kind, { modifiers = [], name = $.object_reference } = {}) {
+  return [
+    $.keyword_create,
+    optional($._or_replace),
+    ...modifiers,
+    ...[kind].flat(),
+    optional($._if_not_exists),
+    field('name', name),
+  ];
+}
+
 // The `SET TAG tag = 'value', ... | UNSET TAG tag, ...` pair the ALTER
 // statements for taggable objects share. Kept apart from
 // set_unset_properties because some ALTERs (SESSION) take no tags.

@@ -9,7 +9,7 @@ Embedded handler code is exposed as nodes so a second parser can take over. The 
 ## Major components
 
 ### [grammar.js](grammar.js) and [grammar/](grammar)
-The grammar source: shared rules, expressions, clauses, scripting, types, keywords, and one module per statement family under `grammar/statements/`.
+The grammar source: shared rules, expressions, column lists, scripting, types, keywords, and one module per statement family under `grammar/statements/`.
 
 ### [src/](src)
 The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the hand-written `scanner.c`, which lexes `$$`-delimited bodies. The scanner must be compiled alongside the parser; vendoring one without the other produces a link error or a parser that cannot lex a dollar-quoted body.
