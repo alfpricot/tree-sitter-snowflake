@@ -78,6 +78,10 @@ impl HandlerSource {
                     'x' | 'u' => {
                         let count = if escaped == 'x' { 2 } else { 4 };
                         let digits = text.get(i..i + count).ok_or("Incomplete numeric escape")?;
+                        // `from_str_radix` alone would accept a leading `+`.
+                        if !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+                            return Err("Invalid numeric escape".into());
+                        }
                         let value = u32::from_str_radix(digits, 16)
                             .map_err(|_| "Invalid numeric escape")?;
                         i += count;
@@ -133,4 +137,113 @@ pub fn source_point(sql: &str, offset: usize) -> Option<tree_sitter::Point> {
         .rposition(|&b| b == b'\n')
         .map_or(offset, |i| offset - i - 1);
     Some(tree_sitter::Point::new(row, column))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Where the decoded body starts in the pretend SQL file.
+    const START: usize = 7;
+
+    fn decode(body: &str) -> Result<HandlerSource, String> {
+        HandlerSource::quoted(body, START)
+    }
+
+    #[test]
+    fn decodes_escapes_and_doubled_apostrophes() {
+        for (body, text) in [
+            ("", ""),
+            ("a''", "a'"),
+            ("''''", "''"),
+            (r"\n\r\t\b\f", "\n\r\t\u{8}\u{c}"),
+            (r"\x41\u00e9\101\0", "A\u{e9}A\0"),
+            (r"\q\\\'", "q\\'"),
+            ("é", "é"),
+        ] {
+            assert_eq!(decode(body).unwrap().text(), text, "{body:?}");
+        }
+    }
+
+    #[test]
+    fn rejects_malformed_escapes() {
+        for body in [
+            "'", "a\\", r"\x4", r"\u041", r"\x+f", r"\u+041", r"\x-1", "\\x4é", "\\xé", "\\u00é",
+            r"\xff", r"\ud800", r"\12", r"\1", r"\200",
+        ] {
+            assert!(decode(body).is_err(), "{body:?} decoded");
+        }
+    }
+
+    #[test]
+    fn offsets_inside_escapes_and_characters_map_to_their_start() {
+        // é written as an escape (two output bytes, six source bytes), then raw.
+        let source = decode("\\u00e9é").unwrap();
+        assert_eq!(source.text(), "éé");
+        assert_eq!(source.source_offset(0), Some(START));
+        assert_eq!(source.source_offset(1), Some(START));
+        assert_eq!(source.source_offset(2), Some(START + 6));
+        assert_eq!(source.source_offset(3), Some(START + 7));
+        assert_eq!(source.source_offset(4), Some(START + 8));
+        assert_eq!(source.source_offset(5), None);
+        assert_eq!(source.source_offset(usize::MAX), None);
+        assert_eq!(source.source_range(1..2), Some(START..START + 6));
+        assert_eq!(source.source_range(0..4), Some(START..START + 8));
+        assert_eq!(source.source_range(4..4), Some(START + 8..START + 8));
+        assert_eq!(source.source_range(0..5), None);
+    }
+
+    #[test]
+    fn verbatim_text_maps_byte_for_byte() {
+        let source = HandlerSource::verbatim("aé\\n", START);
+        assert_eq!(source.text(), "aé\\n");
+        assert_eq!(source.source_range(1..3), Some(START + 1..START + 3));
+        assert_eq!(source.source_offset(5), Some(START + 5));
+    }
+
+    /// The offset map's invariant: the SQL slice behind any run of whole
+    /// output characters decodes to exactly that run.
+    #[test]
+    fn every_mapped_slice_decodes_to_the_text_it_maps_from() {
+        const ALPHABET: [&str; 17] = [
+            "a", "'", "\\", "n", "x", "u", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "é",
+        ];
+        // Every string up to four characters, plus longer escapes around them.
+        let mut bodies = vec![String::new()];
+        let mut previous = bodies.clone();
+        for _ in 0..4 {
+            previous = previous
+                .iter()
+                .flat_map(|body| ALPHABET.iter().map(move |c| format!("{body}{c}")))
+                .collect();
+            bodies.extend_from_slice(&previous);
+        }
+        for pair in ALPHABET {
+            for escape in ["\\u00e9", "\\x41", "\\101", "''", "\\0"] {
+                bodies.push(format!("{pair}{escape}{pair}"));
+                bodies.push(format!("{escape}{pair}{escape}"));
+            }
+        }
+        let mut decoded = 0;
+        for body in &bodies {
+            let Ok(source) = decode(body) else { continue };
+            decoded += 1;
+            let text = source.text();
+            let boundaries: Vec<_> = (0..=text.len())
+                .filter(|&i| text.is_char_boundary(i))
+                .collect();
+            for (index, &from) in boundaries.iter().enumerate() {
+                for &to in &boundaries[index..] {
+                    let mapped = source.source_range(from..to).unwrap();
+                    let slice = &body[mapped.start - START..mapped.end - START];
+                    assert_eq!(
+                        decode(slice).unwrap().text(),
+                        &text[from..to],
+                        "{body:?} {from}..{to}"
+                    );
+                }
+            }
+        }
+        assert!(decoded > 10_000, "only {decoded} bodies decoded");
+    }
 }

@@ -18,6 +18,10 @@ Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree 
 - A `NATURAL JOIN` with an `ON` clause, an unquoted table alias spelled `natural`, and some `DROP`, `GRANT`, and `REVOKE` statements that use a kind word as an object name are now reported as syntax errors.
 - Literal SQL inside a handler that uses a newly accepted form is now checked, where it was previously skipped as unparsable.
 
+### Fixed
+
+- A `\x` or `\u` escape with a leading `+`, such as `\x+f`, is now reported as `InvalidEncoding` in a single-quoted body, and is no longer decoded inside an embedded string literal.
+
 ## [0.2.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.2.0) - 2026-11-05
 
 Built against the tree-sitter-snowflake 0.3 grammar, whose routine, Scripting, and statement rules changed what the analyzer sees.

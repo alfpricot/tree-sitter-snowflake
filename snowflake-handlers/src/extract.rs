@@ -1,11 +1,36 @@
 use crate::{
     ExecutionRights, Handler, HandlerSource, HandlerStatus, Language, RoutineKind, descendants,
 };
-use tree_sitter::Tree;
+use tree_sitter::Node;
 
-pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
+/// The statements the analyzer reads, gathered in one pass over the SQL tree.
+pub(crate) struct Statements<'tree> {
+    /// Every `CREATE PROCEDURE` and `CREATE FUNCTION`.
+    pub routines: Vec<Node<'tree>>,
+    /// Every `CREATE TASK`.
+    pub tasks: Vec<Node<'tree>>,
+}
+
+impl<'tree> Statements<'tree> {
+    pub fn collect(root: Node<'tree>) -> Self {
+        let mut statements = Self {
+            routines: Vec::new(),
+            tasks: Vec::new(),
+        };
+        for node in descendants(root) {
+            match node.kind() {
+                "create_procedure" | "create_function" => statements.routines.push(node),
+                "create_task" => statements.tasks.push(node),
+                _ => {}
+            }
+        }
+        statements
+    }
+}
+
+pub(crate) fn handlers(sql: &str, routines: &[Node<'_>]) -> Vec<Handler> {
     let mut result = Vec::new();
-    for routine in descendants(tree.root_node()) {
+    for &routine in routines {
         let kind = match routine.kind() {
             "create_procedure" => RoutineKind::Procedure,
             "create_function" => RoutineKind::Function,
@@ -14,22 +39,19 @@ pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
         let Some(language_node) = routine.child_by_field_name("language") else {
             continue;
         };
-        let language = descendants(language_node)
-            .into_iter()
-            .find_map(|node| match node.kind() {
-                "keyword_javascript" => Some(Language::JavaScript),
-                "keyword_python" => Some(Language::Python),
-                "keyword_java" => Some(Language::Java),
-                "keyword_scala" => Some(Language::Scala),
-                _ => None,
-            });
+        let language = descendants(language_node).find_map(|node| match node.kind() {
+            "keyword_javascript" => Some(Language::JavaScript),
+            "keyword_python" => Some(Language::Python),
+            "keyword_java" => Some(Language::Java),
+            "keyword_scala" => Some(Language::Scala),
+            _ => None,
+        });
         let Some(language) = language else { continue };
         let Some(wrapper) = routine.child_by_field_name("body") else {
             continue;
         };
-        let form = descendants(wrapper)
-            .into_iter()
-            .find(|n| matches!(n.kind(), "string_body" | "dollar_quoted_body"));
+        let form =
+            descendants(wrapper).find(|n| matches!(n.kind(), "string_body" | "dollar_quoted_body"));
         let mut rights = if kind == RoutineKind::Procedure {
             ExecutionRights::Owner
         } else {
@@ -37,18 +59,16 @@ pub(crate) fn handlers(sql: &str, tree: &Tree) -> Vec<Handler> {
         };
         if kind == RoutineKind::Procedure {
             for node in descendants(routine)
-                .into_iter()
                 .filter(|n| n.kind() == "execute_as_clause" && n.end_byte() <= wrapper.start_byte())
             {
-                rights = if descendants(node)
-                    .iter()
-                    .any(|n| n.kind() == "keyword_caller")
-                {
+                let mut owner = false;
+                let caller = descendants(node).any(|n| {
+                    owner |= n.kind() == "keyword_owner";
+                    n.kind() == "keyword_caller"
+                });
+                rights = if caller {
                     ExecutionRights::Caller
-                } else if descendants(node)
-                    .iter()
-                    .any(|n| n.kind() == "keyword_owner")
-                {
+                } else if owner {
                     ExecutionRights::Owner
                 } else {
                     ExecutionRights::Unknown
