@@ -26524,6 +26524,19 @@
                     "name": "_granted_to"
                   }
                 ]
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_database_role_list"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_granted_to"
+                  }
+                ]
               }
             ]
           },
@@ -26673,6 +26686,19 @@
                   "name": "_revoked_from"
                 }
               ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_database_role_list"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_revoked_from"
+                }
+              ]
             }
           ]
         },
@@ -26694,6 +26720,52 @@
             },
             {
               "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_database_role_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "keyword_database"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "keyword_role"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "role",
+              "content": {
+                "type": "SYMBOL",
+                "name": "object_reference"
+              }
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ","
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "role",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "object_reference"
+                    }
+                  }
+                ]
+              }
             }
           ]
         }
@@ -26968,6 +27040,47 @@
             {
               "type": "SYMBOL",
               "name": "object_reference"
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_database_role_kind"
+                  },
+                  "named": true,
+                  "value": "object_kind"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "object_reference"
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_database_kind"
+                  },
+                  "named": true,
+                  "value": "object_kind"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_role_as_name"
+                  },
+                  "named": true,
+                  "value": "object_reference"
+                }
+              ]
             }
           ]
         },
@@ -27453,6 +27566,32 @@
               "name": "identifier"
             }
           ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "keyword_database"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "keyword_role"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "object_reference"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "keyword_database"
+          },
+          "named": true,
+          "value": "identifier"
         },
         {
           "type": "SEQ",

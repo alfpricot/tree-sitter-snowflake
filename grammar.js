@@ -67,8 +67,8 @@ export default grammar({
     // plural one; settled by where IN arrives.
     [$._multi_word_object_kind, $._kind_word],
     [$._kind_word, $.object_kind],
-    // `DROP DATABASE role` — a database named `role` vs. the DATABASE ROLE
-    // kind; settled by whether a name follows.
+    // `DROP DATABASE role` or `GRANT ... ON DATABASE role` — a database named
+    // `role` vs. the DATABASE ROLE kind; settled by whether a name follows.
     [$._database_kind, $._database_role_kind],
     // `CREATE DATABASE ROLE r` — the DATABASE ROLE kind vs. a database named
     // `role`; settled by whether a name follows.

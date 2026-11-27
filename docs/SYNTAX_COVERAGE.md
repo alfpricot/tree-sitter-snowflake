@@ -23,7 +23,7 @@ What the grammar parses today. It covers Snowflake SQL only, so T-SQL and Postgr
 
 ## Administration and data transfer
 
-`GRANT` and `REVOKE` (including future grants), `COPY INTO` in both directions, `PUT`, `GET`, `LIST`, `REMOVE`, `CALL`, `USE`, `SET`, `UNSET`, `SHOW`, `DESCRIBE`, `EXPLAIN`, `COMMENT ON`, and transactions.
+`GRANT` and `REVOKE` (including future grants and database roles), `COPY INTO` in both directions, `PUT`, `GET`, `LIST`, `REMOVE`, `CALL`, `USE`, `SET`, `UNSET`, `SHOW`, `DESCRIBE`, `EXPLAIN`, `COMMENT ON`, and transactions.
 
 ## Snowflake Scripting
 

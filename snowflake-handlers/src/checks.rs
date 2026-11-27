@@ -409,23 +409,26 @@ pub(crate) fn tasks(sql: &str, statements: &Statements<'_>, handlers: &[Handler]
     result
 }
 
-fn canonical_name(name: &str) -> String {
-    // Preserve quoted identifiers exactly, including dots and doubled quotes.
+/// The parts of a name as Snowflake resolves them: an unquoted part folds to
+/// uppercase, and a quoted part keeps its text, dots included, with `""` read
+/// as one quote.
+fn canonical_name(name: &str) -> Vec<String> {
+    let mut parts = Vec::new();
+    let mut part = String::new();
     let mut quoted = false;
-    name.chars()
-        .flat_map(|c| {
-            if c == '"' {
-                quoted = !quoted;
-            }
-            if quoted || c == '"' {
-                vec![c]
-            } else if c.is_whitespace() {
-                Vec::new()
-            } else {
-                c.to_uppercase().collect()
-            }
-        })
-        .collect()
+    let mut chars = name.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' if quoted && chars.next_if_eq(&'"').is_some() => part.push('"'),
+            '"' => quoted = !quoted,
+            _ if quoted => part.push(c),
+            '.' => parts.push(std::mem::take(&mut part)),
+            _ if c.is_whitespace() => {}
+            _ => part.extend(c.to_uppercase()),
+        }
+    }
+    parts.push(part);
+    parts
 }
 
 #[cfg(test)]
@@ -456,6 +459,34 @@ mod tests {
             "/tmp\\out",
         ] {
             assert!(!within_tmp(path), "{path}");
+        }
+    }
+
+    #[test]
+    fn names_compare_as_snowflake_resolves_them() {
+        for (left, right) in [
+            ("p", r#""P""#),
+            ("db.s.p", r#""DB" . "S"."P""#),
+            (r#""a""b""#, r#""a""b""#),
+        ] {
+            assert_eq!(
+                canonical_name(left),
+                canonical_name(right),
+                "{left} {right}"
+            );
+        }
+        for (left, right) in [
+            ("p", r#""p""#),
+            ("a.b", r#""A.B""#),
+            (r#""a b""#, r#""ab""#),
+            (r#""a""b""#, r#""ab""#),
+            ("s.p", "p"),
+        ] {
+            assert_ne!(
+                canonical_name(left),
+                canonical_name(right),
+                "{left} {right}"
+            );
         }
     }
 

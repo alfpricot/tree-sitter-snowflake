@@ -40,7 +40,7 @@ export default {
   _database_kind: ($) => $.keyword_database,
   _role_as_name: ($) => field('name', alias($.keyword_role, $.identifier)),
 
-  // DATABASE ROLE is a kind DROP names but a grant's ON clause does not.
+  // DATABASE ROLE, a kind DROP and a grant's ON clause name.
   _database_role_kind: ($) => seq($.keyword_database, $.keyword_role),
 
   // The multi-word kinds DROP, UNDROP, GRANT, and REVOKE share. They stay

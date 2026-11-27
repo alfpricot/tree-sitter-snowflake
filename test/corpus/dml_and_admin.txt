@@ -1559,3 +1559,114 @@ GRANT MONITOR ON FAILOVER GROUP g TO ROLE r;
         (grantee
           (keyword_role)
           (identifier))))))
+
+================================================================================
+database role grants
+================================================================================
+
+GRANT DATABASE ROLE db.r TO ROLE x;
+GRANT DATABASE ROLE a, db.b TO DATABASE ROLE db.r2;
+REVOKE DATABASE ROLE db.r FROM DATABASE ROLE db.r2 CASCADE;
+GRANT USAGE ON SCHEMA db.s TO DATABASE ROLE db.r;
+GRANT OWNERSHIP ON DATABASE ROLE db.r TO ROLE x;
+GRANT USAGE ON DATABASE role TO database;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier)
+        (identifier))
+      (keyword_to)
+      (grantee
+        (keyword_role)
+        (identifier))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier))
+      (object_reference
+        (identifier)
+        (identifier))
+      (keyword_to)
+      (grantee
+        (keyword_database)
+        (keyword_role)
+        (object_reference
+          (identifier)
+          (identifier)))))
+  (statement
+    (revoke_statement
+      (keyword_revoke)
+      (keyword_database)
+      (keyword_role)
+      (object_reference
+        (identifier)
+        (identifier))
+      (keyword_from)
+      (grantee
+        (keyword_database)
+        (keyword_role)
+        (object_reference
+          (identifier)
+          (identifier)))
+      (keyword_cascade)))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (object_kind
+          (keyword_schema))
+        (object_reference
+          (identifier)
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_database)
+          (keyword_role)
+          (object_reference
+            (identifier)
+            (identifier))))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (keyword_ownership)
+        (keyword_on)
+        (object_kind
+          (keyword_database)
+          (keyword_role))
+        (object_reference
+          (identifier)
+          (identifier))
+        (keyword_to)
+        (grantee
+          (keyword_role)
+          (identifier)))))
+  (statement
+    (grant_statement
+      (keyword_grant)
+      (grant_core
+        (privilege_list
+          (privilege
+            (keyword_usage)))
+        (keyword_on)
+        (object_kind
+          (keyword_database))
+        (object_reference
+          (identifier))
+        (keyword_to)
+        (grantee
+          (identifier))))))
