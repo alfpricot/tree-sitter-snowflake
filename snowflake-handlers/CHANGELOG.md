@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0](https://github.com/alfpricot/tree-sitter-snowflake/releases/tag/snowflake-handlers-v0.3.0) - 2026-11-27
 
-Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree the analyzer returns and what it reports as a syntax error.
+Built against the tree-sitter-snowflake 1.0 grammar, which changes the SQL tree the analyzer returns and what it reports as a syntax error.
 
 ### Changed
 
@@ -25,7 +25,7 @@ Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree 
 - `Analyzer::with_limits` sets an optional maximum body size and parse timeout.
 - `HandlerSource::included_ranges` returns the SQL ranges that spell a decoded body, so an embedded parser can read the SQL text directly.
 - A decoded body's offset map stores only its escapes and doubled quotes, in place of a range for every byte.
-- **Breaking:** requires tree-sitter-snowflake 0.4. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.
+- **Breaking:** requires tree-sitter-snowflake 1.0. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.
 - `ALTER TABLE ... RENAME TO`, `COMMIT WORK`, object constants, `NATURAL` joins, joins without a condition, routine `DROP` signatures, and many multi-word `DROP`, `GRANT`, and `REVOKE` kinds no longer appear in `Analysis::sql_errors`.
 - A `NATURAL JOIN` with an `ON` clause, an unquoted table alias spelled `natural`, and some `DROP`, `GRANT`, and `REVOKE` statements that use a kind word as an object name are now reported as syntax errors.
 - `GRANT` and `REVOKE` of a database role, to a database role, or on one no longer appear in `Analysis::sql_errors`.

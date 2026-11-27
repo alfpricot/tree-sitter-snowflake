@@ -16,6 +16,20 @@ All notable changes to this project will be documented in this file.
 * **grammar:** reject CHECK constraints and a misplaced IF EXISTS (#91)
 * **grammar:** parse missing drop, grant, join, and constant forms (#89)
 
+### Migration Notes
+
+Upgrading from 0.3.1:
+
+* A `NATURAL JOIN` with an `ON` clause, and a grant or revoke that names a bare object spelled like a kind word, are now errors (#89).
+* `CHECK` constraints and `ALTER IF EXISTS ... POLICY` now produce `ERROR` nodes, and the `keyword_check` node kind is removed (#91).
+* In the Node type declarations, `nodeTypeInfo` stays required, and the `fields` and `children` of its entries are no longer optional. `children` is typed as both a single child entry and an array of them (#99).
+* `keyword_double` now matches `DOUBLE` and `keyword_double_prec_only` matches `DOUBLE PRECISION`, the reverse of before. `keyword_not_enforced` is gone: `keyword_not` and `keyword_enforced` are direct children of the surrounding node. The `create_stream` field `table` is now named `source` (#103).
+* `asof`, `sample`, and `tablesample` are no longer accepted as bare table aliases, and an expression ending in a function call can no longer take the bare alias `ignore` or `respect`. Write `AS` before such an alias, or quote it (#106).
+* `CREATE DATABASE ROLE` is `create_database_role`, no longer a database named `role`. `LIKE ANY` is a quantified `binary_expression`, no longer a call of a function named `ANY`. `MAP(...)` is `map_type`, no longer `custom_type` (#109).
+* An alias spelled `escape` directly after a `LIKE` pattern now needs `AS`, and the `SHARE`, `SECRET`, and `NOTEBOOK` object kinds hold keyword nodes instead of an identifier (#109).
+
+The `snowflake-handlers` crate keeps its own version; its breaking changes (#96, #104) are listed in [its changelog](snowflake-handlers/CHANGELOG.md).
+
 ### Features
 
 * add Go bindings and highlight more single-quoted bodies (#108)
