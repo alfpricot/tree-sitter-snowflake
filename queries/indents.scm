@@ -18,8 +18,6 @@
   (column_definitions)
 ] @indent.begin
 
-(block (keyword_begin) @indent.branch)
-
 (exception_section) @indent.branch
 (elseif_clause) @indent.branch
 (if_statement (else_clause) @indent.branch)

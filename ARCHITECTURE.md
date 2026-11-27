@@ -72,7 +72,7 @@ The workflow then dispatches `release.yml`. From the verified commit, it publish
 | --- | --- |
 | `grammar.js`, `grammar/` | Grammar source |
 | `src/` | Generated parser and external scanner |
-| `queries/` | Highlight, injection, locals, structure, and tags queries |
+| `queries/` | Highlight, injection, locals, structure, tags, folds, and indents queries |
 | `bindings/` | Rust and Node bindings |
 | `snowflake-handlers/` | Embedded handler extraction crate |
 | `test/`, `tools/` | Corpus, fixtures, and verification scripts |
