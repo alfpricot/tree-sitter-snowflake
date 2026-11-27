@@ -1,4 +1,30 @@
-import { create_header, typed_integration } from '../helpers.js';
+import {
+  comma_list,
+  create_header,
+  stage_reference_or_quoted,
+  typed_integration,
+} from '../helpers.js';
+
+// CREATE {REPLICATION | FAILOVER} GROUP [IF NOT EXISTS] name
+//   {properties [IGNORE EDITION CHECK] | AS REPLICA OF org.account.name}
+function create_group(kind) {
+  return ($) =>
+    prec.right(
+      seq(
+        ...create_header($, [kind($), $.keyword_group], { name: $.identifier }),
+        choice(
+          seq($.keyword_as, $.identifier, $.identifier, $.object_reference),
+          repeat1(
+            choice(
+              $.group_property,
+              seq($.keyword_ignore, $.identifier, $.identifier),
+              $._with_tag,
+            ),
+          ),
+        ),
+      ),
+    );
+}
 
 // Account objects: warehouses, databases, schemas, roles, users, and
 // integrations.
@@ -21,7 +47,12 @@ export default {
   create_database: ($) =>
     prec.right(
       seq(
-        ...create_header($, $.keyword_database, { modifiers: [optional($.keyword_transient)] }),
+        ...create_header($, $.keyword_database, {
+          modifiers: [optional($.keyword_transient)],
+          // A database may be named `role`, which DATABASE ROLE would
+          // otherwise swallow.
+          name: choice($.object_reference, alias($._role_as_name, $.object_reference)),
+        }),
         repeat(choice($._with_tag, $._with_contact, $.option)),
       ),
     ),
@@ -67,5 +98,96 @@ export default {
   create_integration: ($) =>
     prec.right(
       seq(...create_header($, typed_integration($), { name: $.identifier }), repeat1($.option)),
+    ),
+
+  // CREATE [OR REPLACE] DATABASE ROLE [IF NOT EXISTS] [db.]name [options]
+  // The dynamic precedence reads `DATABASE ROLE r` as this rather than as a
+  // database named `role` taking an option `r`.
+  create_database_role: ($) =>
+    prec.dynamic(
+      1,
+      prec.right(
+        seq(
+          ...create_header($, [$.keyword_database, $.keyword_role]),
+          repeat(choice($._with_tag, $.option)),
+        ),
+      ),
+    ),
+
+  // CREATE [OR REPLACE] SHARE [IF NOT EXISTS] name [options]
+  create_share: ($) =>
+    prec.right(
+      seq(
+        ...create_header($, $.keyword_share, { name: $.identifier }),
+        repeat(choice($._with_tag, $.option)),
+      ),
+    ),
+
+  // CREATE [OR REPLACE] EXTERNAL VOLUME [IF NOT EXISTS] name
+  //   STORAGE_LOCATIONS = ((...), ...) [options]
+  create_external_volume: ($) =>
+    prec.right(
+      seq(
+        ...create_header($, [$.keyword_external, $.keyword_volume], { name: $.identifier }),
+        repeat1($.option),
+      ),
+    ),
+
+  // CREATE [OR REPLACE] NOTEBOOK [IF NOT EXISTS] name [FROM 'location']
+  //   [options]
+  create_notebook: ($) =>
+    prec.right(
+      seq(
+        ...create_header($, $.keyword_notebook),
+        repeat(choice(seq($.keyword_from, stage_reference_or_quoted($)), $._with_tag, $.option)),
+      ),
+    ),
+
+  create_replication_group: create_group(($) => $.keyword_replication),
+  create_failover_group: create_group(($) => $.keyword_failover),
+
+  // name = value [, value ...] — a property of a share or of a replication or
+  // failover group, whose lists are not parenthesized. Two properties list
+  // kinds of object rather than objects.
+  group_property: ($) =>
+    prec.right(
+      choice(
+        seq(
+          field(
+            'name',
+            choice(
+              alias($.keyword_object_types, $.identifier),
+              alias($.keyword_allowed_integration_types, $.identifier),
+            ),
+          ),
+          '=',
+          comma_list(field('value', alias($._replicated_kind, $.object_kind)), true),
+        ),
+        seq(
+          field('name', $.identifier),
+          '=',
+          comma_list(field('value', choice($.literal, $.object_reference)), true),
+        ),
+      ),
+    ),
+
+  // DATABASES, ROLES, ACCOUNT PARAMETERS, SECURITY INTEGRATIONS, ...
+  _replicated_kind: ($) =>
+    choice(
+      $.identifier,
+      $.keyword_roles,
+      seq(
+        choice(
+          $.keyword_account,
+          $.keyword_network,
+          $.keyword_resource,
+          $.keyword_security,
+          $.keyword_api,
+          $.keyword_storage,
+          $.keyword_notification,
+          seq($.keyword_external, $.keyword_access),
+        ),
+        $.identifier,
+      ),
     ),
 };

@@ -11,15 +11,15 @@ What the grammar parses today. It covers Snowflake SQL only, so T-SQL and Postgr
 
 ## Expressions
 
-The semi-structured `:` path operator, lambdas, `[...]` array literals, `{...}` object constants (including wildcards), `IDENTIFIER(...)`, `* EXCLUDE` and `* RENAME`, session variables (`$var`), positional and named binds, and `=>` named arguments.
+`LIKE` and `ILIKE`, including the quantified `ANY` and `ALL` forms and `ESCAPE`, structured `ARRAY(...)`, `OBJECT(...)`, and `MAP(...)` types, `NTH_VALUE(...) FROM FIRST` or `FROM LAST`, the semi-structured `:` path operator, lambdas, `[...]` array literals, `{...}` object constants (including wildcards), `IDENTIFIER(...)`, `* EXCLUDE` and `* RENAME`, session variables (`$var`), positional and named binds, and `=>` named arguments.
 
 ## DDL
 
 | Statement | Object families |
 | --- | --- |
-| `CREATE` | table (including external, Iceberg, event, and hybrid), view, materialized view, dynamic table, semantic view, stage, file format, stream, pipe, task, alert, secret, network rule, policy (masking, row access, aggregation, projection, network, password, session, authentication), warehouse, database, schema, role, user, sequence, tag, integration, Streamlit, Cortex search service, agent, procedure, function |
-| `ALTER` | table, view, task, warehouse, database, schema, stage, stream, sequence, role, user, pipe, integration, session, account, policy, alert, procedure, function |
-| `DROP`, `UNDROP` | single-word object kinds, materialized view, file format, policies, dynamic, external, and Iceberg tables, semantic view, Cortex search service, integrations, database role (`DROP` only), and network rule; `DROP PROCEDURE` and `DROP FUNCTION` also take an argument signature |
+| `CREATE` | table (including external, Iceberg, event, and hybrid, and an event table without a column list), view, materialized view, dynamic table, semantic view, stage, file format, stream, pipe, task, alert, secret, network rule, policy (masking, row access, aggregation, projection, network, password, session, authentication), warehouse, database, schema, role, database role, user, sequence, tag, integration, share, external volume, notebook, replication group, failover group, Streamlit, Cortex search service, agent, procedure, function |
+| `ALTER` | table, view, task, warehouse, database, schema, stage, stream, sequence, role, database role, user, pipe, integration (typed or not), session, account, policy, alert, secret, network rule, share, external volume, notebook, replication group, failover group, procedure, function |
+| `DROP`, `UNDROP` | single-word object kinds, materialized view, file format, policies, dynamic, external, and Iceberg tables, semantic view, Cortex search service, integrations, database role (`DROP` only), network rule, share, secret, notebook, external volume, event table, replication group, and failover group; `DROP PROCEDURE` and `DROP FUNCTION` also take an argument signature |
 
 ## Administration and data transfer
 
@@ -33,13 +33,10 @@ Blocks, branches, loops, cursors, `RESULTSET`, `EXECUTE IMMEDIATE`, and `EXCEPTI
 
 These Snowflake forms produce `ERROR` or `MISSING` nodes:
 
-- `LIKE ... ESCAPE`
-- `NTH_VALUE(...) FROM FIRST` or `FROM LAST`
-- structured `ARRAY(INT)` and `OBJECT(a INT)` types
-- `DROP` with other multi-word kinds, such as `EXTERNAL VOLUME`
+- `DROP` with other multi-word kinds, such as `GIT REPOSITORY`
 - `GRANT` and `REVOKE` on one object of other multi-word kinds, such as `GIT REPOSITORY` (the plural forms parse)
 
-Two more forms parse without errors but not as what they are. `LIKE ANY (...)` reads as `LIKE` applied to a call of a function named `ANY`, and a structured `MAP(VARCHAR, INT)` type reads as a `custom_type`.
+`ESCAPE` right after a `LIKE` pattern is always the escape clause, so an alias spelled `escape` there needs `AS`.
 
 ## Related
 

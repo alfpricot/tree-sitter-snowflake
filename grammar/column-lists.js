@@ -179,6 +179,13 @@ export default {
               seq('=', field('value', $._option_value)),
               $._paren_options,
               seq('=', $._paren_options),
+              // PACKAGES = () — an empty list.
+              seq('=', wrapped_in_parenthesis()),
+              // STORAGE_LOCATIONS = ((...), (...)) — a list of option groups.
+              seq(
+                '=',
+                wrapped_in_parenthesis(comma_list(alias($._paren_options, $.option_group), true)),
+              ),
             ),
           ),
         ),

@@ -82,7 +82,7 @@ export default {
     ),
 
   // Table kinds a grant names that DROP spells as plain TABLE.
-  _grant_table_kind: ($) => seq(choice($.keyword_event, $.keyword_hybrid), $.keyword_table),
+  _grant_table_kind: ($) => seq($.keyword_hybrid, $.keyword_table),
 
   // DYNAMIC TABLES, MATERIALIZED VIEWS, ROW ACCESS POLICIES, ...: any run
   // of two or more words before IN. The keywords listed are the ones that
@@ -100,6 +100,7 @@ export default {
       $.keyword_dynamic,
       $.keyword_event,
       $.keyword_external,
+      $.keyword_failover,
       $.keyword_file,
       $.keyword_hybrid,
       $.keyword_iceberg,
@@ -109,6 +110,7 @@ export default {
       $.keyword_notification,
       $.keyword_password,
       $.keyword_projection,
+      $.keyword_replication,
       $.keyword_row,
       $.keyword_search,
       $.keyword_security,
@@ -168,6 +170,9 @@ export default {
       $.keyword_streamlit,
       $.keyword_agent,
       $.keyword_alert,
+      $.keyword_share,
+      $.keyword_secret,
+      $.keyword_notebook,
       seq(optional($._policy_kind), $.keyword_policy),
       $.identifier,
     ),

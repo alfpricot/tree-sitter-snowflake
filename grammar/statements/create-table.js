@@ -8,7 +8,16 @@ export default {
   //   | LIKE other_table
   //   | CLONE other_table }
   //   [COPY GRANTS] [WITH TAG (...)] ...
-  create_table: ($) =>
+  create_table: ($) => choice($._create_table_definition, $._create_bare_event_table),
+
+  // CREATE EVENT TABLE name [options] — an event table's columns are fixed,
+  // so it is usually declared without a column list.
+  _create_bare_event_table: ($) =>
+    prec.right(
+      seq(...create_header($, [$.keyword_event, $.keyword_table]), repeat($.table_option)),
+    ),
+
+  _create_table_definition: ($) =>
     prec.right(
       seq(
         ...create_header($, $.keyword_table, {

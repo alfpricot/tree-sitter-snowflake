@@ -9,26 +9,68 @@ import {
   paren_list,
   set_unset_properties,
   set_unset_tags,
+  typed_integration,
   wrapped_in_parenthesis,
 } from '../helpers.js';
 
 // `tags: false` leaves out SET TAG / UNSET TAG for an object Snowflake
 // doesn't tag.
-function alter_object(keyword, actions = [], { tags = true } = {}) {
+function alter_object(
+  keyword,
+  actions = [],
+  { tags = true, spaced = false, name = ($) => $.object_reference } = {},
+) {
   return ($) =>
     seq(
       $.keyword_alter,
       keyword($),
       optional($._if_exists_clause),
-      field('name', $.object_reference),
+      field('name', name($)),
       choice(
         ...actions.map((action) => action($)),
         ...(tags ? set_unset_tags($) : []),
-        ...set_unset_properties($),
+        ...set_unset_properties($, { spaced }),
         seq($.keyword_rename, $.keyword_to, $.object_reference),
       ),
     );
 }
+// ALTER {REPLICATION | FAILOVER} GROUP [IF EXISTS] name action
+function alter_group(kind) {
+  return ($) =>
+    prec.right(
+      seq(
+        $.keyword_alter,
+        kind($),
+        $.keyword_group,
+        optional($._if_exists_clause),
+        field('name', $.identifier),
+        choice(
+          seq($.keyword_rename, $.keyword_to, $.identifier),
+          seq($.keyword_set, repeat1($.group_property)),
+          ...set_unset_tags($),
+          seq($.keyword_unset, comma_list($.identifier, true)),
+          // ADD names TO list, REMOVE names FROM list
+          seq($.keyword_add, comma_list($.object_reference, true), $.keyword_to, $.identifier),
+          seq($.keyword_remove, comma_list($.object_reference, true), $.keyword_from, $.identifier),
+          // MOVE {DATABASES | SHARES} names TO FAILOVER GROUP name
+          seq(
+            $.keyword_move,
+            $.identifier,
+            comma_list($.object_reference, true),
+            $.keyword_to,
+            choice($.keyword_failover, $.keyword_replication),
+            $.keyword_group,
+            $.identifier,
+          ),
+          $.keyword_refresh,
+          $.keyword_primary,
+          seq($.keyword_suspend, optional($.keyword_immediate)),
+          $.keyword_resume,
+        ),
+      ),
+    );
+}
+
 export default {
   _alter_statement: ($) =>
     choice(
@@ -49,12 +91,21 @@ export default {
       $.alter_account,
       $.alter_policy,
       $.alter_alert,
+      $.alter_database_role,
+      $.alter_share,
+      $.alter_external_volume,
+      $.alter_notebook,
+      $.alter_secret,
+      $.alter_network_rule,
+      $.alter_replication_group,
+      $.alter_failover_group,
     ),
 
   alter_table: ($) =>
     prec.right(
       seq(
         $.keyword_alter,
+        optional($.keyword_event),
         $.keyword_table,
         optional($._if_exists_clause),
         field('name', $.object_reference),
@@ -185,6 +236,8 @@ export default {
       ($) => seq($.keyword_enable, $.keyword_failsafe),
       ($) => seq($.keyword_disable, $.keyword_failsafe),
     ],
+    // A database may be named `role`, as in CREATE DATABASE.
+    { name: ($) => choice($.object_reference, alias($._role_as_name, $.object_reference)) },
   ),
 
   alter_schema: alter_object(
@@ -204,10 +257,59 @@ export default {
       ($) => $.keyword_refresh,
     ],
   ),
-  alter_integration: alter_object(
-    ($) => $.keyword_integration,
-    [($) => seq($.keyword_set, comma_list($.option, true))],
+  // ALTER [{STORAGE | API | SECURITY | NOTIFICATION | EXTERNAL ACCESS}]
+  //   INTEGRATION ...
+  alter_integration: alter_object(($) => choice($.keyword_integration, typed_integration($)), [], {
+    spaced: true,
+  }),
+
+  // The dynamic precedence reads `DATABASE ROLE r` as this rather than as a
+  // database named `role`.
+  alter_database_role: ($) =>
+    prec.dynamic(1, alter_object((rules) => seq(rules.keyword_database, rules.keyword_role))($)),
+
+  alter_secret: alter_object(($) => $.keyword_secret, [], { spaced: true }),
+  alter_network_rule: alter_object(($) => seq($.keyword_network, $.keyword_rule), [], {
+    spaced: true,
+  }),
+  alter_notebook: alter_object(
+    ($) => $.keyword_notebook,
+    [
+      // ADD LIVE VERSION FROM LAST
+      ($) => seq($.keyword_add, $.identifier, $.identifier, $.keyword_from, $.keyword_last),
+    ],
+    { spaced: true },
   ),
+
+  // ALTER SHARE name {{ADD | REMOVE | SET} property ... | SET TAG ... |
+  //   UNSET ...}
+  alter_share: ($) =>
+    prec.right(
+      seq(
+        $.keyword_alter,
+        $.keyword_share,
+        optional($._if_exists_clause),
+        field('name', $.identifier),
+        choice(
+          seq(choice($.keyword_add, $.keyword_remove, $.keyword_set), repeat1($.group_property)),
+          ...set_unset_tags($),
+          seq($.keyword_unset, comma_list($.identifier, true)),
+        ),
+      ),
+    ),
+
+  alter_external_volume: alter_object(
+    ($) => seq($.keyword_external, $.keyword_volume),
+    [
+      ($) => seq($.keyword_add, $.option),
+      ($) => seq($.keyword_remove, $.identifier, alias($._single_quote_string, $.literal)),
+      ($) => seq($.keyword_update, repeat1($.option)),
+    ],
+    { spaced: true },
+  ),
+
+  alter_replication_group: alter_group(($) => $.keyword_replication),
+  alter_failover_group: alter_group(($) => $.keyword_failover),
 
   alter_session: ($) =>
     prec.right(seq($.keyword_alter, $.keyword_session, choice(...set_unset_properties($)))),

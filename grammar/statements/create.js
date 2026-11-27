@@ -32,6 +32,12 @@ export default {
       $.create_alert,
       $.create_secret,
       $.create_network_rule,
+      $.create_database_role,
+      $.create_share,
+      $.create_external_volume,
+      $.create_notebook,
+      $.create_replication_group,
+      $.create_failover_group,
     ),
 
   // CREATE [OR REPLACE] CORTEX SEARCH SERVICE name ON column
