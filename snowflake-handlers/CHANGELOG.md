@@ -13,6 +13,10 @@ Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree 
 
 ### Changed
 
+- **Breaking:** `Error` is an enum (`Language`, `Query`, `Canceled`, `MatchLimitExceeded`) that exposes the underlying error through `source()`, in place of an opaque message.
+- **Breaking:** `HandlerStatus::InvalidEncoding` holds an `EncodingError` with the message and the SQL byte range of the offending text, in place of a `String`.
+- **Breaking:** `Language`, `RoutineKind`, and `ExecutionRights` are `#[non_exhaustive]`, so a `match` on them needs a wildcard arm.
+- The rule identifiers are exported from `snowflake_handlers::rules`.
 - **Breaking:** requires tree-sitter-snowflake 0.4. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.
 - `ALTER TABLE ... RENAME TO`, `COMMIT WORK`, object constants, `NATURAL` joins, joins without a condition, routine `DROP` signatures, and many multi-word `DROP`, `GRANT`, and `REVOKE` kinds no longer appear in `Analysis::sql_errors`.
 - A `NATURAL JOIN` with an `ON` clause, an unquoted table alias spelled `natural`, and some `DROP`, `GRANT`, and `REVOKE` statements that use a kind word as an object name are now reported as syntax errors.

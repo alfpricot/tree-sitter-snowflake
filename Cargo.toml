@@ -2,6 +2,12 @@
 members = ["snowflake-handlers"]
 resolver = "3"
 
+[workspace.lints.rust]
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = "warn"
+
 [package]
 name = "tree-sitter-snowflake"
 description = "Tree-sitter grammar for Snowflake SQL"
@@ -21,6 +27,9 @@ include = ["/LICENSE", "/NOTICE", "/README.md", "/tree-sitter.json", "/bindings/
 
 [lib]
 path = "bindings/rust/lib.rs"
+
+[lints]
+workspace = true
 
 [dependencies]
 tree-sitter-language = "0.1"

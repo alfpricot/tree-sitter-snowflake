@@ -1,3 +1,5 @@
+//! Compiles the generated parser and the external scanner.
+
 fn main() {
     let src_dir = std::path::Path::new("src");
 

@@ -35,8 +35,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         files += 1;
         sql_failures += usize::from(!result.sql_errors.is_empty());
         for body in result.handlers {
+            // An encoding error's byte range differs per body, so group by message.
+            let status = match &body.status {
+                HandlerStatus::InvalidEncoding(error) => {
+                    format!("InvalidEncoding({:?})", error.message)
+                }
+                other => format!("{other:?}"),
+            };
             *statuses
-                .entry(format!("{:?}: {:?}", body.language, body.status))
+                .entry(format!("{:?}: {status}", body.language))
                 .or_default() += 1;
             if body.status == HandlerStatus::Parsed {
                 let source = body.source.as_ref().unwrap();

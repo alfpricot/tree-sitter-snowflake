@@ -9,6 +9,9 @@ repository = "https://github.com/alfpricot/tree-sitter-snowflake.git"
 readme = "README.md"
 include = ["/src/**", "/queries/**", "/README.md", "/LICENSE"]
 
+[lints]
+workspace = true
+
 [features]
 default = []
 java = ["dep:tree-sitter-java"]

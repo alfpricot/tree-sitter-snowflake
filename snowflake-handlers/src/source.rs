@@ -1,5 +1,24 @@
 use std::ops::Range;
 
+/// Why a single-quoted body could not be decoded, and where.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct EncodingError {
+    /// What is wrong with the escape or apostrophe.
+    pub message: &'static str,
+    /// The offending text, as a byte range in the SQL.
+    pub range: Range<usize>,
+}
+
+impl std::fmt::Display for EncodingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Range { start, end } = self.range;
+        write!(f, "{} at bytes {start}..{end}", self.message)
+    }
+}
+
+impl std::error::Error for EncodingError {}
+
 /// Decoded UTF-8 text with byte positions in the original SQL file.
 #[derive(Debug, Clone)]
 pub struct HandlerSource {
@@ -10,12 +29,15 @@ pub struct HandlerSource {
 }
 
 impl HandlerSource {
+    /// The body without its delimiters, with escapes decoded.
+    #[must_use]
     pub fn text(&self) -> &str {
         &self.text
     }
 
     /// Map an output byte offset, including EOF, to an absolute SQL byte offset.
     /// An offset inside a decoded Unicode character maps to its source start.
+    #[must_use]
     pub fn source_offset(&self, offset: usize) -> Option<usize> {
         if offset == self.text.len() {
             Some(self.end)
@@ -26,6 +48,7 @@ impl HandlerSource {
 
     /// Map a half-open output range. Escapes are included in their entirety.
     /// Empty ranges map to an empty range at the corresponding source position.
+    #[must_use]
     pub fn source_range(&self, range: Range<usize>) -> Option<Range<usize>> {
         if range.start > range.end || range.end > self.text.len() {
             return None;
@@ -47,9 +70,9 @@ impl HandlerSource {
         }
     }
 
-    /// Decode only content already bounded by a valid string_body node. Numeric
+    /// Decode only content already bounded by a valid `string_body` node. Numeric
     /// escapes may span the grammar's escape node and its following content node.
-    pub(crate) fn quoted(text: &str, start: usize) -> Result<Self, String> {
+    pub(crate) fn quoted(text: &str, start: usize) -> Result<Self, EncodingError> {
         let mut result = Self {
             text: String::with_capacity(text.len()),
             origins: Vec::with_capacity(text.len()),
@@ -60,14 +83,22 @@ impl HandlerSource {
             let begin = i;
             let c = text[i..].chars().next().unwrap();
             i += c.len_utf8();
+            // The offending text runs from this character to `end`.
+            let fail = |message, end| EncodingError {
+                message,
+                range: start + begin..start + end,
+            };
             if c == '\'' {
                 if !text[i..].starts_with('\'') {
-                    return Err("Unpaired apostrophe in body content".into());
+                    return Err(fail("Unpaired apostrophe in body content", i));
                 }
                 i += 1;
                 result.push('\'', start + begin..start + i);
             } else if c == '\\' {
-                let escaped = text[i..].chars().next().ok_or("Incomplete escape")?;
+                let escaped = text[i..]
+                    .chars()
+                    .next()
+                    .ok_or_else(|| fail("Incomplete escape", i))?;
                 i += escaped.len_utf8();
                 let decoded = match escaped {
                     'n' => '\n',
@@ -77,18 +108,30 @@ impl HandlerSource {
                     'f' => '\u{c}',
                     'x' | 'u' => {
                         let count = if escaped == 'x' { 2 } else { 4 };
-                        let digits = text.get(i..i + count).ok_or("Incomplete numeric escape")?;
+                        // Where the digits would end, kept on a character boundary.
+                        let end = i + text[i..]
+                            .chars()
+                            .take(count)
+                            .map(char::len_utf8)
+                            .sum::<usize>();
+                        let digits = text
+                            .get(i..i + count)
+                            .ok_or_else(|| fail("Incomplete numeric escape", end))?;
                         // `from_str_radix` alone would accept a leading `+`.
                         if !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
-                            return Err("Invalid numeric escape".into());
+                            return Err(fail("Invalid numeric escape", end));
                         }
                         let value = u32::from_str_radix(digits, 16)
-                            .map_err(|_| "Invalid numeric escape")?;
+                            .map_err(|_| fail("Invalid numeric escape", end))?;
                         i += count;
                         if escaped == 'x' && value > 0x7f {
-                            return Err("Non-ASCII hexadecimal escape is not supported; use a Unicode escape".into());
+                            return Err(fail(
+                                "Non-ASCII hexadecimal escape is not supported; use a Unicode escape",
+                                i,
+                            ));
                         }
-                        char::from_u32(value).ok_or("Escape is not a Unicode scalar value")?
+                        char::from_u32(value)
+                            .ok_or_else(|| fail("Escape is not a Unicode scalar value", i))?
                     }
                     '0'..='7' => {
                         let mut value = escaped.to_digit(8).unwrap();
@@ -103,9 +146,12 @@ impl HandlerSource {
                             count += 1;
                         }
                         if (count != 3 && !(escaped == '0' && count == 1)) || value > 0x7f {
-                            return Err("Expected a three-digit ASCII octal escape or \\0".into());
+                            return Err(fail(
+                                "Expected a three-digit ASCII octal escape or \\0",
+                                i,
+                            ));
                         }
-                        char::from_u32(value).ok_or("Invalid octal escape")?
+                        char::from_u32(value).ok_or_else(|| fail("Invalid octal escape", i))?
                     }
                     // Snowflake discards the backslash for unrecognized escapes.
                     other => other,
@@ -129,9 +175,11 @@ impl HandlerSource {
 }
 
 /// A zero-based row and UTF-8 byte column, matching tree-sitter coordinates.
+#[must_use]
 pub fn source_point(sql: &str, offset: usize) -> Option<tree_sitter::Point> {
     let prefix = sql.as_bytes().get(..offset)?;
-    let row = prefix.iter().filter(|&&b| b == b'\n').count();
+    // Splitting on newlines yields one more piece than there are newlines.
+    let row = prefix.split(|&b| b == b'\n').count() - 1;
     let column = prefix
         .iter()
         .rposition(|&b| b == b'\n')
@@ -146,7 +194,7 @@ mod tests {
     /// Where the decoded body starts in the pretend SQL file.
     const START: usize = 7;
 
-    fn decode(body: &str) -> Result<HandlerSource, String> {
+    fn decode(body: &str) -> Result<HandlerSource, EncodingError> {
         HandlerSource::quoted(body, START)
     }
 
@@ -172,6 +220,28 @@ mod tests {
             r"\xff", r"\ud800", r"\12", r"\1", r"\200",
         ] {
             assert!(decode(body).is_err(), "{body:?} decoded");
+        }
+    }
+
+    #[test]
+    fn errors_report_the_offending_sql_bytes() {
+        for (body, message, range) in [
+            ("ab'cd", "Unpaired apostrophe in body content", 2..3),
+            ("ab\\", "Incomplete escape", 2..3),
+            (r"ab\x4", "Incomplete numeric escape", 2..5),
+            ("ab\\x4\u{e9}z", "Incomplete numeric escape", 2..7),
+            (r"ab\x+fz", "Invalid numeric escape", 2..6),
+            (r"ab\xffz", "Non-ASCII hexadecimal", 2..6),
+            (r"ab\ud800z", "not a Unicode scalar value", 2..8),
+            (r"ab\12z", "three-digit ASCII octal", 2..5),
+        ] {
+            let error = decode(body).unwrap_err();
+            assert!(error.message.contains(message), "{body:?}: {error}");
+            assert_eq!(
+                error.range,
+                START + range.start..START + range.end,
+                "{body:?}"
+            );
         }
     }
 
