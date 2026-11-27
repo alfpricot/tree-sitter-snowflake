@@ -1902,3 +1902,37 @@ SELECT * FROM a ASOF JOIN b MATCH_CONDITION (a.ts <= b.ts) USING (k) LEFT JOIN c
             (object_reference
               (identifier))
             (identifier)))))))
+
+================================================================================
+call aliases spelled ignore and respect need AS
+================================================================================
+
+SELECT COUNT(*) AS ignore, MAX(a) AS respect FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (all_fields))
+          (keyword_as)
+          (identifier))
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (field
+              (identifier)))
+          (keyword_as)
+          (identifier))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))

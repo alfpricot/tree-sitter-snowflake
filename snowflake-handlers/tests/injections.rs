@@ -7,8 +7,9 @@ use snowflake_handlers::{
 };
 use tree_sitter_snowflake::{INJECTIONS_QUERY, LANGUAGE};
 
-/// The ranges the query injects as `language`, across the whole SQL text.
-fn injected(sql: &str, language: &str) -> Vec<Range> {
+/// The text of each match the query injects as `language`, across the whole
+/// SQL text, with the ranges an injected parser would be given.
+fn injected(sql: &str, language: &str) -> Vec<Vec<Range>> {
     let grammar = LANGUAGE.into();
     let mut parser = Parser::new();
     parser.set_language(&grammar).unwrap();
@@ -18,76 +19,89 @@ fn injected(sql: &str, language: &str) -> Vec<Range> {
     let content = query.capture_index_for_name("injection.content").unwrap();
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&query, tree.root_node(), sql.as_bytes());
-    let mut ranges = Vec::new();
+    let mut documents = Vec::new();
     while let Some(matched) = matches.next() {
-        let injects = query
-            .property_settings(matched.pattern_index)
-            .iter()
-            .any(|p| {
-                p.key.as_ref() == "injection.language" && p.value.as_deref() == Some(language)
-            });
+        let settings = query.property_settings(matched.pattern_index);
+        let injects = settings.iter().any(|p| {
+            p.key.as_ref() == "injection.language" && p.value.as_deref() == Some(language)
+        });
         if injects {
-            ranges.extend(
+            assert!(
+                settings
+                    .iter()
+                    .all(|p| p.key.as_ref() != "injection.combined"),
+                "each body is its own document"
+            );
+            documents.push(
                 matched
                     .nodes_for_capture_index(content)
-                    .map(|node| node.range()),
+                    .map(|node| node.range())
+                    .collect(),
             );
         }
     }
-    ranges.sort_by_key(|r| r.start_byte);
-    ranges
+    documents
 }
 
-fn text(sql: &str, ranges: &[Range]) -> String {
-    ranges
+fn texts<'sql>(sql: &'sql str, documents: &[Vec<Range>]) -> Vec<&'sql str> {
+    documents
         .iter()
-        .map(|r| &sql[r.start_byte..r.end_byte])
+        .map(|ranges| {
+            assert_eq!(ranges.len(), 1, "{ranges:?}");
+            &sql[ranges[0].start_byte..ranges[0].end_byte]
+        })
         .collect()
 }
 
 #[test]
-fn single_quoted_bodies_inject_their_content_and_escapes() {
-    for (name, body, expected) in [
-        (
-            "JAVASCRIPT",
-            r"var a = ''x''; return a + \'y\';",
-            r"var a = x; return a + \'y\';",
-        ),
-        (
-            "PYTHON",
-            r"def run(a):\n    return a",
-            r"def run(a):\n    return a",
-        ),
+fn each_plain_single_quoted_body_is_injected_on_its_own() {
+    for (name, first, second) in [
+        ("JAVASCRIPT", "return a", "return b"),
+        ("PYTHON", "def f(a):\n  return a", "def g(b):\n  return b"),
     ] {
-        let sql = format!("CREATE PROCEDURE p() RETURNS STRING LANGUAGE {name} AS '{body}';");
-        let ranges = injected(&sql, &name.to_lowercase());
-        assert_eq!(text(&sql, &ranges), expected, "{name}");
+        let sql = format!(
+            "CREATE FUNCTION f(a FLOAT) RETURNS FLOAT LANGUAGE {name} AS '{first}';
+CREATE FUNCTION g(b FLOAT) RETURNS FLOAT LANGUAGE {name} AS '{second}';"
+        );
+        let documents = injected(&sql, &name.to_lowercase());
+        assert_eq!(texts(&sql, &documents), [first, second], "{name}");
     }
 }
 
 #[test]
-fn a_plain_single_quoted_body_parses_as_its_language() {
+fn a_body_that_needs_decoding_is_not_injected() {
+    for name in ["JAVASCRIPT", "PYTHON"] {
+        for body in ["a = ''x''", r"a = \'x\'", r"return a\n", "x''", ""] {
+            let sql = format!("CREATE PROCEDURE p() RETURNS STRING LANGUAGE {name} AS '{body}';");
+            let documents = injected(&sql, &name.to_lowercase());
+            assert!(documents.is_empty(), "{name} {body:?}: {documents:?}");
+        }
+    }
+}
+
+#[test]
+fn an_injected_single_quoted_body_parses_as_its_language() {
     let sql = "CREATE PROCEDURE p() RETURNS STRING LANGUAGE JAVASCRIPT AS '
   var total = 1;
   return total;
 ';";
-    let ranges = injected(sql, "javascript");
+    let documents = injected(sql, "javascript");
     let mut parser = Parser::new();
     parser
         .set_language(&Language::JavaScript.grammar().unwrap())
         .unwrap();
-    parser.set_included_ranges(&ranges).unwrap();
+    parser.set_included_ranges(&documents[0]).unwrap();
     let tree: tree_sitter::Tree = parser.parse(sql, None).unwrap();
     assert!(
-        tree.root_node().to_sexp().contains("variable_declaration"),
+        !tree.root_node().has_error(),
         "{}",
         tree.root_node().to_sexp()
     );
 }
 
 #[test]
-fn only_javascript_and_python_single_quoted_bodies_are_injected() {
+fn java_single_quoted_bodies_are_not_injected() {
     let sql = "CREATE FUNCTION f() RETURNS STRING LANGUAGE JAVA AS 'class A {}';";
-    let ranges = injected(sql, "java");
-    assert!(ranges.is_empty(), "{ranges:?}");
+    let documents = injected(sql, "java");
+    assert!(documents.is_empty(), "{documents:?}");
 }

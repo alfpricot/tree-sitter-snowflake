@@ -11,14 +11,13 @@
 ; injected parse starts after the opening `$$` and stops before the
 ; closing one.
 ;
-; A single-quoted body (the common form) is not the embedded language's
-; source, so its injection is approximate and only for highlighting
-; JavaScript and Python. The `body_content` and `escape` nodes are combined
-; into one injected document: escapes appear undecoded, each `''` is left
-; out, and with `injection.combined` every single-quoted body of one
-; language in a file shares that document. To analyze such a body, decode it
-; first and keep a position-mapping table, as the snowflake-handlers crate
-; does. See docs/CONSUMER_INTEGRATION.md.
+; A single-quoted body (the common form) is the embedded language's source only
+; when it holds no `''` and no backslash escape: it is then one `body_content`
+; child, which the anchors below select, and JavaScript and Python bodies of
+; that shape are injected, each on its own. Any other single-quoted body must be
+; decoded first, with a position-mapping table, as the snowflake-handlers crate
+; does. It is not injected: joining its pieces would highlight text the body does
+; not contain. See docs/CONSUMER_INTEGRATION.md.
 ;
 ; The wildcard parent matches every routine node that carries a foreign
 ; `language` and an inline body: `create_procedure` and `create_function`
@@ -47,12 +46,10 @@
 
 ((_
    (foreign_language (keyword_javascript))
-   body: (function_body (string_body [(body_content) (escape)] @injection.content)))
- (#set! injection.language "javascript")
- (#set! injection.combined))
+   body: (function_body (string_body . (body_content) @injection.content .)))
+ (#set! injection.language "javascript"))
 
 ((_
    (foreign_language (keyword_python))
-   body: (function_body (string_body [(body_content) (escape)] @injection.content)))
- (#set! injection.language "python")
- (#set! injection.combined))
+   body: (function_body (string_body . (body_content) @injection.content .)))
+ (#set! injection.language "python"))
