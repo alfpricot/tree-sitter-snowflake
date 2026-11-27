@@ -13,11 +13,11 @@
 ;
 ; A single-quoted body (the common form) is the embedded language's source only
 ; when it holds no `''` and no backslash escape: it is then one `body_content`
-; child, which the anchors below select, and JavaScript and Python bodies of
-; that shape are injected, each on its own. Any other single-quoted body must be
-; decoded first, with a position-mapping table, as the snowflake-handlers crate
-; does. It is not injected: joining its pieces would highlight text the body does
-; not contain. See docs/CONSUMER_INTEGRATION.md.
+; child, which the anchors below select, and bodies of that shape are injected,
+; each on its own. Any other single-quoted body must be decoded first, with a
+; position-mapping table, as the snowflake-handlers crate does. A query cannot
+; inject it: joining its pieces would highlight text the body does not contain.
+; See docs/CONSUMER_INTEGRATION.md.
 ;
 ; The wildcard parent matches every routine node that carries a foreign
 ; `language` and an inline body: `create_procedure` and `create_function`
@@ -53,3 +53,13 @@
    (foreign_language (keyword_python))
    body: (function_body (string_body . (body_content) @injection.content .)))
  (#set! injection.language "python"))
+
+((_
+   (foreign_language (keyword_java))
+   body: (function_body (string_body . (body_content) @injection.content .)))
+ (#set! injection.language "java"))
+
+((_
+   (foreign_language (keyword_scala))
+   body: (function_body (string_body . (body_content) @injection.content .)))
+ (#set! injection.language "scala"))

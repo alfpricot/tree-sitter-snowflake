@@ -23,8 +23,8 @@
 #                      on pull requests to main, build and test the Rust
 #                      binding (against the latest tree-sitter, and, when a
 #                      path a crate builds from changes, against the version
-#                      that is snowflake-handlers' declared floor), build
-#                      and test the Node
+#                      that is snowflake-handlers' declared floor), test the
+#                      Go binding, build and test the Node
 #                      and Python bindings, validate the PR title, scan the working
 #                      tree and Git history for secrets, and lint
 #                      workflow/YAML files. A final aggregate job
@@ -341,6 +341,17 @@ jobs:
         run: |
           cargo test --workspace
           cargo test -p snowflake-handlers --all-features
+
+      - name: Set up Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+          # cgo does not track the parser sources bindings/go includes from
+          # src/, so a restored build cache could test an old parser.
+          cache: false
+
+      - name: Test the Go binding
+        run: go test ./bindings/go
 
       - name: Verify package contents
         run: node tools/package-check.mjs
