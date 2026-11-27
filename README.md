@@ -28,11 +28,11 @@ let tree = parser.parse("SELECT 1;", None);
 ```js
 import Snowflake from 'tree-sitter-snowflake';
 
-const program = Snowflake.nodeTypeInfo.find((node) => node.type === 'program');
+const program = Snowflake.nodeTypeInfo?.find((node) => node.type === 'program');
 console.log(program?.children?.types);
 ```
 
-`nodeTypeInfo` holds the entries from `src/node-types.json`; an entry's optional `children` property is an object with `multiple`, `required`, and `types` properties, not an array, and leaf entries can omit both `fields` and `children`.
+`nodeTypeInfo` holds the entries from `src/node-types.json`, or is `undefined` where that file cannot be read; an entry's optional `children` property is an object with `multiple`, `required`, and `types` properties, not an array, and leaf entries can omit both `fields` and `children`.
 
 Procedure and function bodies in JavaScript, Python, Java, and Scala are exposed as nodes; the companion [`snowflake-handlers`](snowflake-handlers/README.md) crate extracts and parses them. See [Embedded bodies](docs/EMBEDDED_BODIES.md) and [Consumer integration](docs/CONSUMER_INTEGRATION.md).
 

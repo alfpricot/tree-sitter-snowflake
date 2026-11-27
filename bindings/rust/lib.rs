@@ -41,6 +41,8 @@ pub const INJECTIONS_QUERY: &str = include_str!("../../queries/injections.scm");
 pub const STRUCTURE_QUERY: &str = include_str!("../../queries/structure.scm");
 pub const TAGS_QUERY: &str = include_str!("../../queries/tags.scm");
 pub const LOCALS_QUERY: &str = include_str!("../../queries/locals.scm");
+pub const FOLDS_QUERY: &str = include_str!("../../queries/folds.scm");
+pub const INDENTS_QUERY: &str = include_str!("../../queries/indents.scm");
 
 /// The exported C symbol name, `tree_sitter_snowflake`. Two grammars that
 /// share a name export the same symbol, and a linker that sees both
@@ -96,6 +98,8 @@ mod tests {
         tree_sitter::Query::new(&language, STRUCTURE_QUERY).unwrap();
         tree_sitter::Query::new(&language, TAGS_QUERY).unwrap();
         tree_sitter::Query::new(&language, LOCALS_QUERY).unwrap();
+        tree_sitter::Query::new(&language, FOLDS_QUERY).unwrap();
+        tree_sitter::Query::new(&language, INDENTS_QUERY).unwrap();
     }
 
     /// The injected range must be the embedded source alone: an injected
