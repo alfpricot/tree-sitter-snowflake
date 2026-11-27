@@ -53,6 +53,10 @@ let analyzer = Analyzer::new()?.with_limits(limits);
 
 `max_body_bytes` counts the SQL bytes between a body's delimiters; a longer body is not decoded and reports `AnalysisFailed(BodyTooLarge)`. It does not bound the SQL text itself, which is parsed before any body is measured. `parse_timeout` applies to each parse separately: a body, or SQL text inside it, that runs longer reports `AnalysisFailed(TimedOut)`, while a SQL text that runs longer fails the call with `Error::Canceled`. The parser checks the clock periodically, so a parse can run somewhat past the timeout. A restriction query that overflows the match limit reports `AnalysisFailed(MatchLimitExceeded)`. A failed handler has no findings, which does not mean it has none to find.
 
+## SQL summary
+
+With the `summary` feature, `snowflake_handlers::summary::summary(sql)` returns what a SQL text contains: the kind and range of each top-level statement, the definitions the grammar's structure query captures (procedures, functions, policies, and alerts), every name the SQL creates or refers to, and the syntax error ranges. A created name carries the kind of its `CREATE` node; references include the names of called functions. Foreign-language handler bodies are not read. The `serde` feature, which turns `summary` on, derives `Serialize` for these types.
+
 ## Restriction catalog
 
 These are bounded syntax checks, not an execution validator. `RULES` provides stable IDs, messages, and severities, and `rules` names each ID as a constant. Warnings identify documented restrictions through literal syntax; advisories identify proxies. All name-based matches require review because there is no symbol resolution, alias tracking, type inference, interprocedural analysis, or constant propagation. For example, a locally defined `eval` or `session.sql` can match, while an aliased API can escape detection. A result with no findings is not a guarantee of runtime validity.

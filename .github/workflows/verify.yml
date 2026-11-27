@@ -25,7 +25,7 @@
 #                      path a crate builds from changes, against the version
 #                      that is snowflake-handlers' declared floor), build
 #                      and test the Node
-#                      binding, validate the PR title, scan the working
+#                      and Python bindings, validate the PR title, scan the working
 #                      tree and Git history for secrets, and lint
 #                      workflow/YAML files. A final aggregate job
 #                      rolls every check up into a single `Verify` status
@@ -69,6 +69,8 @@ jobs:
       rust: ${{ steps.paths.outputs.rust }}
       scanner: ${{ steps.paths.outputs.scanner }}
       windows: ${{ steps.paths.outputs.windows }}
+      python: ${{ steps.paths.outputs.python }}
+      wheels: ${{ steps.paths.outputs.wheels }}
     env:
       GITLEAKS_VERSION: '8.30.1'
       ACTIONLINT_VERSION: '1.7.12'
@@ -398,7 +400,7 @@ jobs:
             (cd "$consumer" && cargo "+$toolchain" check)
           }
           check_floor 1.85 "tree-sitter-snowflake = { path = \"$GITHUB_WORKSPACE\" }"
-          check_floor 1.90 "snowflake-handlers = { path = \"$GITHUB_WORKSPACE/snowflake-handlers\", features = [\"java\", \"scala\"] }"
+          check_floor 1.90 "snowflake-handlers = { path = \"$GITHUB_WORKSPACE/snowflake-handlers\", features = [\"java\", \"scala\", \"serde\"] }"
 
       # The dev-dependency tracks the latest tree-sitter, so the `verify`
       # job above covers the newest release. This job covers the other
@@ -446,9 +448,60 @@ jobs:
       - name: Run the Node binding tests
         run: npm test
 
+  python-binding:
+    name: Python binding build/test
+    needs: changes
+    if: github.event.pull_request.draft != true && needs.changes.outputs.build == 'true' && needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.10'
+
+      # Installing from the sdist shows the published archive carries every
+      # file the extension compiles from.
+      - name: Build the source distribution and install it
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --quiet build
+          python -m build --sdist --outdir "$RUNNER_TEMP/dist"
+          python -m pip install --disable-pip-version-check --quiet "$RUNNER_TEMP"/dist/*.tar.gz 'tree-sitter~=0.25' pytest
+
+      - name: Run the Python binding tests
+        run: python -m pytest bindings/python/tests
+
+  # The same build release.yml runs, before there is a tag to spend on it.
+  python-wheels:
+    name: Python wheels (${{ matrix.os }})
+    needs: changes
+    if: github.event.pull_request.draft != true && needs.changes.outputs.wheels == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build and test the wheels
+        uses: pypa/cibuildwheel@f9b966cfadf4109556cadc5bb39ddb72d0ce664e # v4.3.5
+        env:
+          CIBW_ARCHS: auto64
+
   ci:
     name: ${{ github.event_name == 'push' && 'Verify (push)' || 'Verify' }}
-    needs: [changes, verify, consumer-pin, node-binding, pr-title]
+    needs: [changes, verify, consumer-pin, node-binding, python-binding, python-wheels, pr-title]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

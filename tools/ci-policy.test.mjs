@@ -10,6 +10,8 @@ import {
   handlersChangelogDated,
   needsRustFloor,
   needsScannerFuzz,
+  needsPython,
+  needsWheels,
   needsWindowsBinding,
   verifyResults,
   versionsAgree,
@@ -26,6 +28,32 @@ test('Node packaging changes receive Windows binding verification before merge',
   ])
     assert(needsWindowsBinding([path]));
   assert(!needsWindowsBinding(['README.md', 'grammar.js', 'snowflake-handlers/src/lib.rs']));
+});
+
+test('the Python job runs for what the package builds, ships, or tests against', () => {
+  for (const path of [
+    'bindings/python/tree_sitter_snowflake/binding.c',
+    'pyproject.toml',
+    'setup.py',
+    'src/parser.c',
+    'queries/tags.scm',
+    'test/fixtures/external_access.sql',
+    '.github/workflows/verify.yml',
+  ])
+    assert(needsPython([path]), path);
+  assert(!needsPython(['README.md', 'bindings/node/index.js', 'snowflake-handlers/src/lib.rs']));
+});
+
+test('wheels build when the Python build changes and on every promotion', () => {
+  for (const path of [
+    'pyproject.toml',
+    'setup.py',
+    'bindings/python/tree_sitter_snowflake/binding.c',
+    '.github/workflows/release.yml',
+  ])
+    assert(needsWheels([path], 'dev'), path);
+  assert(!needsWheels(['src/parser.c', 'README.md'], 'dev'));
+  assert(needsWheels(['src/parser.c'], 'main'));
 });
 
 test('renames include the removed source path when classifying prose', () => {
@@ -88,18 +116,29 @@ test('a promotion needs a dated section for the handlers version', () => {
   assert.throws(() => handlersChangelogDated(cargo, '## [Unreleased]\n'), /no section/);
 });
 
-function results(build = 'true', event = 'pull_request', rust = build) {
+function results(
+  build = 'true',
+  event = 'pull_request',
+  rust = build,
+  python = build,
+  wheels = 'false',
+) {
+  const jobs = ['changes', 'verify', 'consumer-pin', 'node-binding', 'python-binding', 'pr-title'];
+  jobs.push('python-wheels');
   return Object.fromEntries(
-    ['changes', 'verify', 'consumer-pin', 'node-binding', 'pr-title'].map((job) => [
+    jobs.map((job) => [
       job,
       {
         result:
           (job === 'pr-title' && event !== 'pull_request') ||
-          (['verify', 'consumer-pin', 'node-binding'].includes(job) && build === 'false') ||
-          (job === 'consumer-pin' && rust === 'false')
+          (['verify', 'consumer-pin', 'node-binding', 'python-binding'].includes(job) &&
+            build === 'false') ||
+          (job === 'consumer-pin' && rust === 'false') ||
+          (job === 'python-binding' && python === 'false') ||
+          (job === 'python-wheels' && wheels !== 'true')
             ? 'skipped'
             : 'success',
-        ...(job === 'changes' ? { outputs: { build, rust } } : {}),
+        ...(job === 'changes' ? { outputs: { build, rust, python, wheels } } : {}),
       },
     ]),
   );
@@ -107,12 +146,14 @@ function results(build = 'true', event = 'pull_request', rust = build) {
 
 test('aggregate accepts only deliberate skips', () => {
   for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
-    for (const [build, rust] of [
-      ['true', 'true'],
-      ['true', 'false'],
-      ['false', 'false'],
+    for (const [build, rust, python, wheels] of [
+      ['true', 'true', 'true', 'true'],
+      ['true', 'true', 'true'],
+      ['true', 'true', 'false'],
+      ['true', 'false', 'true'],
+      ['false', 'false', 'false'],
     ]) {
-      const valid = results(build, event, rust);
+      const valid = results(build, event, rust, python, wheels);
       verifyResults(valid, event, false);
       assert.throws(() => verifyResults(valid, event, true));
       for (const job of Object.keys(valid)) {
@@ -143,11 +184,14 @@ test('canSkipEditedBuild only skips a title/body edit whose prior run already ve
   );
 });
 
-test('versionsAgree passes when all three manifests match', () => {
+const PYPROJECT = '[project]\nversion = "0.1.1"\n';
+
+test('versionsAgree passes when every manifest matches', () => {
   versionsAgree(
     '[package]\nversion = "0.1.1"\n',
     '{"version":"0.1.1"}',
     '{"metadata":{"version":"0.1.1"}}',
+    PYPROJECT,
   );
 });
 
@@ -157,6 +201,7 @@ test('versionsAgree rejects a package.json or tree-sitter.json version drift', (
       '[package]\nversion = "0.1.1"\n',
       '{"version":"0.1.0"}',
       '{"metadata":{"version":"0.1.1"}}',
+      PYPROJECT,
     ),
   );
   assert.throws(() =>
@@ -164,15 +209,27 @@ test('versionsAgree rejects a package.json or tree-sitter.json version drift', (
       '[package]\nversion = "0.1.1"\n',
       '{"version":"0.1.1"}',
       '{"metadata":{"version":"0.1.0"}}',
+      PYPROJECT,
     ),
+  );
+  assert.throws(
+    () =>
+      versionsAgree(
+        '[package]\nversion = "0.1.1"\n',
+        '{"version":"0.1.1"}',
+        '{"metadata":{"version":"0.1.1"}}',
+        '[project]\nversion = "0.1.0"\n',
+      ),
+    /pyproject\.toml/,
   );
 });
 
-test('Cargo.toml, package.json, and tree-sitter.json agree on the current version', () => {
+test('every version file agrees on the current version', () => {
   const root = fileURLToPath(new URL('..', import.meta.url));
   versionsAgree(
     readFileSync(join(root, 'Cargo.toml'), 'utf8'),
     readFileSync(join(root, 'package.json'), 'utf8'),
     readFileSync(join(root, 'tree-sitter.json'), 'utf8'),
+    readFileSync(join(root, 'pyproject.toml'), 'utf8'),
   );
 });

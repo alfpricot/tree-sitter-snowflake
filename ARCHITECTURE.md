@@ -18,10 +18,10 @@ The generated parser (`parser.c`, `grammar.json`, `node-types.json`) and the han
 `highlights.scm`, `injections.scm` (dollar-quoted bodies only, since single-quoted bodies need decoding), `locals.scm`, `structure.scm`, `tags.scm`, `folds.scm`, and `indents.scm` (nvim-treesitter capture names). `tree-sitter.json` has no key for the last two, so consumers load them directly or through the bindings.
 
 ### [bindings/](bindings)
-`bindings/rust` exposes `LANGUAGE`, the node-type JSON (`NODE_TYPES`), and one constant per query file (`HIGHLIGHTS_QUERY`, `INJECTIONS_QUERY`, `LOCALS_QUERY`, `STRUCTURE_QUERY`, `TAGS_QUERY`, `FOLDS_QUERY`, `INDENTS_QUERY`). `bindings/node` loads the native addon and adds `nodeTypeInfo` and the same query strings.
+`bindings/rust` exposes `LANGUAGE`, the node-type JSON (`NODE_TYPES`), and one constant per query file (`HIGHLIGHTS_QUERY`, `INJECTIONS_QUERY`, `LOCALS_QUERY`, `STRUCTURE_QUERY`, `TAGS_QUERY`, `FOLDS_QUERY`, `INDENTS_QUERY`). `bindings/node` loads the native addon and adds `nodeTypeInfo` and the same query strings. `bindings/python`, built by `pyproject.toml` and `setup.py`, exposes `language()` and the query strings.
 
 ### [snowflake-handlers/](snowflake-handlers)
-A separate crate that decodes handler bodies, maps offsets back to the SQL file, parses JavaScript and Python (Java and Scala behind Cargo features), and runs advisory restriction checks.
+A separate crate that decodes handler bodies, maps offsets back to the SQL file, parses JavaScript and Python (Java and Scala behind Cargo features), and runs advisory restriction checks. Its `summary` feature lists a SQL text's statements, definitions, object names, and syntax errors.
 
 ### [test/](test) and [tools/](tools)
 `test/corpus` holds per-construct tree assertions, `test/highlight` holds highlight assertions, `test/fixtures` holds synthetic whole files, and `test/node-kinds.txt` snapshots the exported node kinds and their fields. `tools/` holds the CI and release policy scripts, the checks CI runs (fixtures, source-identifier leaks, keyword probe, node kinds, package contents), and the parse summary and parse-rate tools.
@@ -38,13 +38,14 @@ There are none at runtime; this is a library. Input is SQL text, and output is a
 
 - the changed paths, the pull request title, and workflow and YAML syntax
 - the working tree and Git history for secrets, and tracked files for source-corpus identifiers
-- the unit tests for the repository's own scripts, and version agreement across the three manifests
+- the unit tests for the repository's own scripts, and version agreement across the manifests
 - grammar regeneration (the committed parser and node-kind snapshot must match)
 - JavaScript lint and formatting, corpus and highlight tests, fixtures, and keyword handling
 - the scanner compiled with warnings as errors, and a fuzz run when the scanner or `verify.yml` changes
 - Rust format, lint, and tests
 - each crate's minimum Rust version and a run against tree-sitter 0.26, the companion's declared floor, when a path a crate builds from changes
-- package contents and the Node binding
+- package contents, the Node binding, and the Python binding when a path it builds from changes
+- Python wheels on Linux and Windows when the package build changes, and on pull requests to `main`
 
 A pull request that changes only docs, `NOTICE`, `CODEOWNERS`, or the Dependabot config skips the build jobs, and a draft fails the final check. That aggregate job, named `Verify`, is the required check on `dev` and `main`.
 
@@ -53,14 +54,14 @@ A pull request that changes only docs, `NOTICE`, `CODEOWNERS`, or the Dependabot
 Feature pull requests go to `dev`. A promotion pull request from `dev` to `main` cuts the release. `gala-release.yml` runs gala (`.gala.toml`), which:
 
 1. Computes the next version from Conventional Commits.
-2. Bumps it in `Cargo.toml`, `package.json`, `tree-sitter.json`, and `snowflake-handlers`' dependency on the grammar crate.
+2. Bumps it in `Cargo.toml`, `package.json`, `tree-sitter.json`, `pyproject.toml`, and `snowflake-handlers`' dependency on the grammar crate.
 3. Refreshes the lockfiles and regenerates the parser, whose metadata embeds the `tree-sitter.json` version.
 4. Writes `CHANGELOG.md`, commits, tags `v<version>`, and pushes with a deploy key that only the release step receives.
 5. Fast-forwards `dev` to the release commit.
 
-The workflow then dispatches `release.yml`. From the verified commit, it publishes the crate to crates.io and the npm package to npm and GitHub Packages, with prebuilt native addons for Linux and Windows. It also attaches a WASM build and the node-kind snapshot to the GitHub Release.
+The workflow then dispatches `release.yml`. From the verified commit, it publishes the crate to crates.io and the npm package to npm and GitHub Packages, with prebuilt native addons for Linux and Windows. It also attaches a WASM build and the node-kind snapshot to the GitHub Release. Separately, it builds Python wheels for 64-bit Linux and Windows and a source distribution and publishes them to PyPI; the GitHub Release does not wait for that.
 
-crates.io and npm are published through trusted publishing (OIDC), so the repository stores no registry token. Each crate and the npm package name `release.yml` and the `publish` environment as their trusted publisher on the registry; update those settings if the file, environment, or repository is renamed. A new package needs its first version published by hand before a trusted publisher can be set. GitHub Packages uses the job's `GITHUB_TOKEN`.
+crates.io, npm, and PyPI are published through trusted publishing (OIDC), so the repository stores no registry token. Each crate, the npm package, and the PyPI project name `release.yml` and the `publish` environment as their trusted publisher on the registry; update those settings if the file, environment, or repository is renamed. A new crate or npm package needs its first version published by hand before a trusted publisher can be set; PyPI accepts a pending publisher for a project that does not exist yet. GitHub Packages uses the job's `GITHUB_TOKEN`.
 
 `snowflake-handlers` keeps its own version. Bump it by hand in `snowflake-handlers/Cargo.toml` and add its `CHANGELOG.md` section, headed `## [<version>](<release URL>) - <date>`, in the pull request that changes it. `release.yml` publishes it with the grammar when that version is not on crates.io yet. It then tags `snowflake-handlers-v<version>` at the release commit and creates its GitHub Release from that section. A missing or empty section fails that job, and so does a heading still marked `Unreleased`. Verify rejects an `Unreleased` heading on every pull request to `main`, because by the time the release job runs the crate is already published.
 
