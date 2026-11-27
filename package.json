@@ -20,7 +20,7 @@
     "node-gyp-build": "4.8.4"
   },
   "devDependencies": {
-    "@types/node": "26.6.6",
+    "@types/node": "24.19.2",
     "node-gyp": "13.1.0",
     "oxfmt": "0.79.0",
     "oxlint": "1.94.0",

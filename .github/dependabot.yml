@@ -101,6 +101,12 @@ updates:
       semver-major-days: 7
       semver-minor-days: 4
       semver-patch-days: 2
+    ignore:
+      # The Node types stay on the major CI runs; newer ones let the type check
+      # accept APIs that runtime lacks. Raise both together.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
     commit-message:
       prefix: chore
       include: scope
