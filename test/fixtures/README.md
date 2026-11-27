@@ -1,31 +1,14 @@
 # Test fixtures
 
-Whole-file Snowflake sources, one construct family per file, parsed by
-`tools/fixture-check.mjs` on every change (zero `ERROR`/`MISSING` nodes and
-zero zero-width nodes required; see that script). The corpus tests in
-`test/corpus/` assert exact tree shapes; these files assert that realistic
-whole files parse end to end, which is also the shape the parse-rate
-baseline is measured against.
+Whole-file Snowflake sources, one construct family per file, parsed by `tools/fixture-check.mjs` on every change (zero `ERROR`/`MISSING` nodes and zero zero-width nodes required; see that script). The corpus tests in `test/corpus/` assert exact tree shapes; these files assert that realistic whole files parse end to end, which is also the shape the parse-rate baseline is measured against.
 
 ## Scrubbing
 
-Fixtures are fully synthetic. Identifiers follow a short generic scheme —
-`DB1`/`DB2` (databases), `S1`/`S2`/`S3` (schemas), `T1`..`T6` (tables),
-`V1`/`V2` (views), `C1`..`C7` (`"Col_A"` where a quoted spelling is part of
-the construct), `P1`..`P5` (procedures), `F1`..`F3` (functions),
-`TASK1`..`TASK3`, `ROLE1`/`ROLE2`, `WH1`, `STG1`, `FF1`, `INT1`, `STRM1`,
-`PIPE1`, `SEQ1`, `TAG1`, `SL1`, `AGENT1`, `SEMV1` — so nothing in this
-directory resembles a real warehouse. `tools/fixture-leak-grep.mjs` asserts
-that: it greps every fixture for the identifiers and names observed in the
-source repositories the shapes were mined from, and fails on any hit. Run
-it whenever a fixture is added or edited. The identifiers are stored as
-keyed hashes, so the check needs the `FIXTURE_LEAK_KEY` key (a repository
-secret CI passes in): without it the check prints a skip line and exits 0,
-which is not a pass, and with a wrong key it refuses to run.
+Fixtures are fully synthetic. Identifiers follow a short generic scheme — `DB1`/`DB2` (databases), `S1`/`S2`/`S3` (schemas), `T1`..`T6` (tables), `V1`/`V2` (views), `C1`..`C7` (`"Col_A"` where a quoted spelling is part of the construct), `P1`..`P5` (procedures), `F1`..`F3` (functions), `TASK1`..`TASK3`, `ROLE1`/`ROLE2`, `WH1`, `STG1`, `FF1`, `INT1`, `STRM1`, `PIPE1`, `SEQ1`, `TAG1`, `SL1`, `AGENT1`, `SEMV1` — so nothing in this directory resembles a real warehouse.
 
-A fixture parsing clean is not proof it is valid Snowflake — a parser has
-no semantic layer. Shapes not verified against a real engine are marked
-*docs-derived* below.
+`tools/fixture-leak-grep.mjs` checks that claim. It scans tracked text files (all but generated files, lockfiles, and itself) for identifiers and names observed in the source repositories the shapes were mined from, and fails on any hit. A few everyday words are checked only in `test/fixtures/*.sql`. Run it whenever a fixture is added or edited. The identifiers are stored as keyed hashes, so the check needs the `FIXTURE_LEAK_KEY` key (a repository secret CI passes in). Without it the check prints a skip line and exits 0, which is not a pass, so CI requires the key wherever the secret is available. With a wrong key it refuses to run.
+
+A fixture parsing clean is not proof it is valid Snowflake — a parser has no semantic layer. Shapes not verified against a real engine are marked *docs-derived* below.
 
 ## Files
 
@@ -39,6 +22,7 @@ no semantic layer. Shapes not verified against a real engine are marked
 | `materialized_dynamic_tables.sql` | `MATERIALIZED VIEW`; `DYNAMIC TABLE` with `TARGET_LAG`/`WAREHOUSE` (docs-derived) |
 | `file_format_and_stage.sql` | `FILE FORMAT` options, external `STAGE` (`URL`, `STORAGE_INTEGRATION`, `FILE_FORMAT = db.schema.ff`), stage/file-format grants |
 | `stream_and_pipe.sql` | `STREAM ON TABLE`; `PIPE ... AS COPY INTO t (cols) FROM (SELECT $1, $2 FROM @stage/path)` (docs-derived) |
+| `user_sequence_tag_streamlit.sql` | `CREATE USER`, `CREATE SEQUENCE`, `CREATE TAG ... ALLOWED_VALUES`, `CREATE STREAMLIT` |
 | `warehouse_options.sql` | warehouse option flood incl. identifier-valued `SCALING_POLICY=STANDARD` |
 | `storage_integration.sql` | `STORAGE INTEGRATION` with `STORAGE_ALLOWED_LOCATIONS=('azure://...')` |
 | `role_grants.sql` | `CREATE ROLE IF NOT EXISTS`, role hierarchy, schema-scope privileges incl. `MASKING POLICY`, `ZEROCOPY CONNECTOR`, future grants, `REVOKE` |

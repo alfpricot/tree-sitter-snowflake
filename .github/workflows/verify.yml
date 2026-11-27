@@ -375,11 +375,10 @@ jobs:
       # job above covers the newest release. This job covers the other
       # end of the range: snowflake-handlers/Cargo.toml declares
       # `tree-sitter = ">=0.26, <0.28"`, and the generated parser's ABI
-      # must stay one that floor accepts. Every known consumer has moved to
-      # `tree-sitter = "0.27"` (cadence verified 2026-09-26), so no known
-      # consumer pins 0.26 — this job now exists solely to
-      # keep the companion's declared floor honest, not to track a
-      # consumer. Edit the manifest in-job and test there. The
+      # must stay one that floor accepts. No known consumer still pins
+      # 0.26, so this job exists solely to keep the companion's declared
+      # floor honest, not to track a consumer. Edit the manifest in-job
+      # and test there. The
       # `^tree-sitter = ` anchor matches only the dev-dependency —
       # `tree-sitter-language` in [dependencies] has a different prefix.
       # Pin the companion's runtime dependency too, so its returned trees
