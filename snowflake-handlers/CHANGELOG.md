@@ -18,9 +18,10 @@ Built against the tree-sitter-snowflake 0.4 grammar, which changes the SQL tree 
 - **Breaking:** `Language`, `RoutineKind`, and `ExecutionRights` are `#[non_exhaustive]`, so a `match` on them needs a wildcard arm.
 - The rule identifiers are exported from `snowflake_handlers::rules`.
 - `Handler` carries the `HANDLER` and `RUNTIME_VERSION` options as `handler` and `runtime_version`.
+- `Handler` lists the `PACKAGES`, `IMPORTS`, and `EXTERNAL_ACCESS_INTEGRATIONS` options as `packages`, `imports`, and `external_access_integrations`.
 - **Breaking:** a routine with no inline body, such as a staged handler, is now returned with status `HandlerStatus::Staged` instead of being skipped, so handler counts rise.
 - **Breaking:** a handler that cannot be analyzed reports `HandlerStatus::AnalysisFailed` and no longer fails the whole `analyze` call.
-- The `summary` feature adds `summary::summary`, which lists a SQL text's statement kinds, structure-query definitions, object names, and syntax errors; the `serde` feature makes the result serializable.
+- The `summary` feature adds `summary::summary`, which lists a SQL text's statement kinds, structure-query definitions with their decision counts, routines with their languages, decision points, object names (without column qualifiers or common table expression uses), and syntax errors; the `serde` feature makes the result serializable.
 - `Analyzer::with_limits` sets an optional maximum body size and parse timeout.
 - A decoded body's offset map stores only its escapes and doubled quotes, in place of a range for every byte.
 - **Breaking:** requires tree-sitter-snowflake 0.4. `Analysis::sql_tree` is a tree from that grammar, with new node kinds such as `object_constructor` and joins that may carry no condition.

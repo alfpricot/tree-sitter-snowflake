@@ -25,7 +25,7 @@ This crate requires Rust 1.90 and supports tree-sitter 0.26 and 0.27. Consumers 
 
 ## Source and measurement contract
 
-`Analyzer` reuses its compiled parsers and queries across files. `analyze(&str)` returns the SQL tree, SQL syntax-error ranges, extracted foreign-language bodies, and advisory findings. Each body includes its name, routine kind, execution rights, SQL ranges, decoded source, parse status, optional embedded tree, and mapped syntax errors. SQL-language bodies remain in the SQL tree and are not returned a second time. A routine with no inline body, such as one with a staged handler, is returned with status `Staged`, an empty `body_range` at the end of its statement, and no source or tree. A routine with syntax errors and no readable body is skipped. `handler` and `runtime_version` hold the `HANDLER` and `RUNTIME_VERSION` options without their quotes. No handler code is executed.
+`Analyzer` reuses its compiled parsers and queries across files. `analyze(&str)` returns the SQL tree, SQL syntax-error ranges, extracted foreign-language bodies, and advisory findings. Each body includes its name, routine kind, execution rights, SQL ranges, decoded source, parse status, optional embedded tree, and mapped syntax errors. SQL-language bodies remain in the SQL tree and are not returned a second time. A routine with no inline body, such as one with a staged handler, is returned with status `Staged`, an empty `body_range` at the end of its statement, and no source or tree. A routine with syntax errors and no readable body is skipped. `handler` and `runtime_version` hold the `HANDLER` and `RUNTIME_VERSION` options without their quotes. `packages`, `imports`, and `external_access_integrations` list the items of the `PACKAGES`, `IMPORTS`, and `EXTERNAL_ACCESS_INTEGRATIONS` options: strings without their quotes, names as written. No handler code is executed.
 
 `Error` says why construction or analysis failed: a grammar that would not load, a query that would not compile, or a canceled parse of the SQL text. A failure confined to one handler is its status instead, `AnalysisFailed`, and the other handlers are still analyzed. `Error`, `AnalysisFailure`, `HandlerStatus`, `Language`, `RoutineKind`, and `ExecutionRights` can gain variants, so a `match` on any of them needs a wildcard arm.
 
@@ -55,7 +55,7 @@ let analyzer = Analyzer::new()?.with_limits(limits);
 
 ## SQL summary
 
-With the `summary` feature, `snowflake_handlers::summary::summary(sql)` returns what a SQL text contains: the kind and range of each top-level statement, the definitions the grammar's structure query captures (procedures, functions, policies, and alerts), every name the SQL creates or refers to, and the syntax error ranges. A created name carries the kind of its `CREATE` node; references include the names of called functions. Foreign-language handler bodies are not read. The `serde` feature, which turns `summary` on, derives `Serialize` for these types.
+With the `summary` feature, `snowflake_handlers::summary::summary(sql)` returns what a SQL text contains: the kind and range of each top-level statement, the definitions the grammar's structure query captures (procedures, functions, policies, and alerts), every procedure and function with its language, the Snowflake Scripting decision points with a count for each definition, every name the SQL creates or refers to, and the syntax error ranges. A created name carries the kind of its `CREATE` node; references include the names of called functions, and leave out column qualifiers and the uses of a `WITH` clause's common table expressions. A routine's range matches its handler's `routine_range` from `Analyzer`. Foreign-language handler bodies are not read, and SQL inside a single-quoted body is not parsed. The `serde` feature, which turns `summary` on, derives `Serialize` for these types.
 
 ## Restriction catalog
 
@@ -87,6 +87,8 @@ cargo test --workspace
 cargo test -p snowflake-handlers --all-features
 cargo run -p snowflake-handlers --example summary -- /path/to/local/sql
 ```
+
+The example prints counts only. Add `--routines` before the path to also list each foreign-language routine with its entry point, which prints names from your files.
 
 CI also builds and tests both workspace members with tree-sitter pinned to 0.26. Synthetic tests cover decoding and location mapping, parse failures, disabled features, positive and negative rule cases, caller/owner rights, functions, and task context.
 

@@ -132,3 +132,23 @@ test('parseSummaryFromXml ignores marginalia when determining statement kind', (
   assert.equal(statements[0].start, 8);
   assert.equal(statements[0].end, 30);
 });
+
+test('parseSummaryFromXml names a WITH statement by what follows the clause', () => {
+  const xml = `
+    <program srow="0" scol="0" erow="0" ecol="50">
+      <statement srow="0" scol="0" erow="0" ecol="50">
+        <keyword_with srow="0" scol="0" erow="0" ecol="4">WITH</keyword_with>
+        <keyword_recursive srow="0" scol="5" erow="0" ecol="14">RECURSIVE</keyword_recursive>
+        <cte srow="0" scol="15" erow="0" ecol="30">
+          <identifier srow="0" scol="15" erow="0" ecol="16">c</identifier>
+        </cte>
+        <insert_statement srow="0" scol="31" erow="0" ecol="50">
+          <keyword_insert srow="0" scol="31" erow="0" ecol="37">INSERT</keyword_insert>
+        </insert_statement>
+      </statement>
+    </program>
+  `;
+  const { statements } = parseSummaryFromXml(xml, [0]);
+
+  assert.deepEqual(statements, [{ kind: 'insert_statement', start: 0, end: 50 }]);
+});
