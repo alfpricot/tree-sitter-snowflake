@@ -161,7 +161,8 @@ impl Analyzer {
             .parse(sql, None)
             .ok_or_else(|| Error("SQL parse cancelled".into()))?;
         let sql_errors = error_ranges(sql_tree.root_node());
-        let mut handlers = extract::handlers(sql, &sql_tree);
+        let statements = extract::Statements::collect(sql_tree.root_node());
+        let mut handlers = extract::handlers(sql, &statements.routines);
         for body in &mut handlers {
             let Some(source) = &body.source else { continue };
             let Some((parser, query)) = self.embedded.get_mut(&body.language) else {
@@ -186,7 +187,8 @@ impl Analyzer {
             }
             body.tree = Some(tree);
         }
-        let findings = checks::tasks(sql, &sql_tree, &handlers);
+        let findings = checks::tasks(sql, &statements, &handlers);
+        drop(statements);
         Ok(Analysis {
             sql_tree,
             sql_errors,
@@ -196,16 +198,28 @@ impl Analyzer {
     }
 }
 
-pub(crate) fn descendants(root: tree_sitter::Node<'_>) -> Vec<tree_sitter::Node<'_>> {
-    let mut nodes = Vec::new();
-    let mut stack = vec![root];
-    while let Some(node) = stack.pop() {
-        nodes.push(node);
-        let mut cursor = node.walk();
-        let children: Vec<_> = node.named_children(&mut cursor).collect();
-        stack.extend(children.into_iter().rev());
-    }
-    nodes
+/// `root` and every named node below it, in document order, walked with one
+/// cursor so a search can stop early without collecting the subtree.
+pub(crate) fn descendants(
+    root: tree_sitter::Node<'_>,
+) -> impl Iterator<Item = tree_sitter::Node<'_>> {
+    let mut cursor = root.walk();
+    let mut next = Some(root);
+    std::iter::from_fn(move || {
+        let node = next?;
+        // Only the root and named nodes are descended into and returned.
+        let mut moved = (node == root || node.is_named()) && cursor.goto_first_child();
+        while !moved {
+            if cursor.goto_next_sibling() {
+                moved = true;
+            } else if !cursor.goto_parent() {
+                break;
+            }
+        }
+        next = moved.then(|| cursor.node());
+        Some(node)
+    })
+    .filter(move |node| *node == root || node.is_named())
 }
 
 fn error_ranges(root: tree_sitter::Node<'_>) -> Vec<Range<usize>> {
@@ -221,4 +235,43 @@ fn error_ranges(root: tree_sitter::Node<'_>) -> Vec<Range<usize>> {
     }
     errors.sort_by_key(|r| r.start);
     errors
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tree_sitter::Node;
+
+    fn collect<'tree>(node: Node<'tree>, out: &mut Vec<Node<'tree>>) {
+        out.push(node);
+        let mut cursor = node.walk();
+        for child in node.named_children(&mut cursor) {
+            collect(child, out);
+        }
+    }
+
+    /// The cursor walk matches a recursive pre-order walk from any starting
+    /// node, and never leaves that node's subtree for its siblings.
+    #[test]
+    fn descendants_walks_one_subtree_in_document_order() {
+        let mut parser = Parser::new();
+        parser
+            .set_language(&tree_sitter_snowflake::LANGUAGE.into())
+            .unwrap();
+        let sql = "CREATE TASK t WAREHOUSE = w AS CALL p(1, 'a'); SELECT (1 + 2) FROM x;";
+        let tree = parser.parse(sql, None).unwrap();
+        let mut all = Vec::new();
+        collect(tree.root_node(), &mut all);
+        assert!(all.len() > 20);
+        for &start in &all {
+            let mut expected = Vec::new();
+            collect(start, &mut expected);
+            assert_eq!(
+                descendants(start).collect::<Vec<_>>(),
+                expected,
+                "{}",
+                start.kind()
+            );
+        }
+    }
 }

@@ -1,3 +1,4 @@
+use crate::extract::Statements;
 use crate::{Error, ExecutionRights, Handler, Language, RoutineKind, descendants};
 use std::ops::Range;
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
@@ -231,9 +232,7 @@ fn check_sql(
             } else if node.kind() == "get_statement" {
                 // GET's local destination is the only write path. PUT reads a
                 // local source, so a non-/tmp PUT source is not a write violation.
-                let local = descendants(node)
-                    .into_iter()
-                    .find(|n| n.kind() == "literal");
+                let local = descendants(node).find(|n| n.kind() == "literal");
                 if let Some(local) = local {
                     let path = sql[local.byte_range()].trim_matches('\'');
                     if !within_tmp(path) {
@@ -276,10 +275,7 @@ fn within_tmp(path: &str) -> bool {
 /// Decode a conservative subset of each embedded language's literal syntax.
 /// Dynamic/interpolated strings and unsupported escapes are deliberately skipped.
 fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
-    if descendants(node)
-        .iter()
-        .any(|n| matches!(n.kind(), "interpolation" | "template_substitution"))
-    {
+    if descendants(node).any(|n| matches!(n.kind(), "interpolation" | "template_substitution")) {
         return None;
     }
     let mut raw = &text[node.byte_range()];
@@ -331,7 +327,8 @@ fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
                 }
                 let count = if escaped == 'u' { 4 } else { 2 };
                 let digits: String = chars.by_ref().take(count).collect();
-                if digits.len() != count {
+                // `from_str_radix` alone would accept a leading `+`.
+                if digits.len() != count || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
                     return None;
                 }
                 char::from_u32(u32::from_str_radix(&digits, 16).ok()?)?
@@ -342,22 +339,20 @@ fn literal(node: Node<'_>, text: &str, language: Language) -> Option<String> {
     Some(result)
 }
 
-pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding> {
+pub(crate) fn tasks(sql: &str, statements: &Statements<'_>, handlers: &[Handler]) -> Vec<Finding> {
     let mut result = Vec::new();
-    let declarations: Vec<_> = descendants(tree.root_node())
-        .into_iter()
+    let declarations: Vec<_> = statements
+        .routines
+        .iter()
         .filter(|n| n.kind() == "create_procedure")
         .filter_map(|n| n.child_by_field_name("name"))
         .map(|n| canonical_name(&sql[n.byte_range()]))
         .collect();
-    for task in descendants(tree.root_node())
-        .into_iter()
-        .filter(|n| n.kind() == "create_task" && !n.has_error())
-    {
+    for &task in statements.tasks.iter().filter(|n| !n.has_error()) {
         let Some(task_body) = task.child_by_field_name("body") else {
             continue;
         };
-        let warehouse = descendants(task).iter().any(|n| {
+        let warehouse = descendants(task).any(|n| {
             n.kind() == "task_option"
                 && n.end_byte() < task_body.start_byte()
                 && n.child_by_field_name("warehouse").is_some()
@@ -365,13 +360,8 @@ pub(crate) fn tasks(sql: &str, tree: &Tree, handlers: &[Handler]) -> Vec<Finding
         if warehouse {
             continue;
         }
-        for call in descendants(task_body)
-            .into_iter()
-            .filter(|n| n.kind() == "call_statement")
-        {
-            let reference = descendants(call)
-                .into_iter()
-                .find(|n| n.kind() == "object_reference");
+        for call in descendants(task_body).filter(|n| n.kind() == "call_statement") {
+            let reference = descendants(call).find(|n| n.kind() == "object_reference");
             let Some(reference) = reference else { continue };
             let name = canonical_name(&sql[reference.byte_range()]);
             // Same-file exact qualification only. Multiple overloads are ambiguous.
@@ -410,4 +400,61 @@ fn canonical_name(name: &str) -> String {
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_paths_that_resolve_under_tmp_are_inside_it() {
+        for path in [
+            "/tmp",
+            "/tmp/out",
+            "//tmp//out",
+            "/./tmp/out",
+            "/var/../tmp/out",
+            "file:///tmp/out",
+        ] {
+            assert!(within_tmp(path), "{path}");
+        }
+        for path in [
+            "",
+            "tmp/out",
+            "/",
+            "/tmpx",
+            "/var/tmp",
+            "/tmp/../etc",
+            "/tmp/..",
+            "file://tmp/out",
+            "/tmp\\out",
+        ] {
+            assert!(!within_tmp(path), "{path}");
+        }
+    }
+
+    #[test]
+    fn literal_escapes_need_real_hex_digits() {
+        let mut parser = Parser::new();
+        parser
+            .set_language(&tree_sitter_python::LANGUAGE.into())
+            .unwrap();
+        for (source, expected) in [
+            (r#""\x41""#, Some("A")),
+            (r#""A""#, Some("A")),
+            (r#""\x+f""#, None),
+            (r#""\u+041""#, None),
+            (r#""\x4""#, None),
+        ] {
+            let tree = parser.parse(source, None).unwrap();
+            let node = descendants(tree.root_node())
+                .find(|n| n.kind() == "string")
+                .unwrap();
+            assert_eq!(
+                literal(node, source, Language::Python).as_deref(),
+                expected,
+                "{source}"
+            );
+        }
+    }
 }
