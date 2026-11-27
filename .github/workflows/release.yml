@@ -6,10 +6,12 @@
 #  Type                Entrypoint (runs in this repo only)
 #  Triggers            push (tags: v*)
 #                      workflow_dispatch (tag input)
-#  Purpose             Publishes the crate to crates.io, the npm package
-#                      to the public npm registry and to GitHub Packages,
-#                      and the Python package to PyPI for the given tag, then
-#                      creates the corresponding GitHub Release. The tag must point at a commit on main whose
+#  Purpose             Publishes the crate to crates.io and the npm package
+#                      to the public npm registry and to GitHub Packages for
+#                      the given tag, then creates the corresponding GitHub
+#                      Release. The Python distributions are built, but PyPI
+#                      publishing is off unless the repository variable
+#                      PUBLISH_PYPI is `true`. The tag must point at a commit on main whose
 #                      Cargo.toml, package.json, tree-sitter.json, and
 #                      pyproject.toml versions all match it; the release policy script
 #                      validates that before anything is published.
@@ -41,7 +43,7 @@
 #                      safe to repeat: it checks whether the version is
 #                      already live before publishing.
 #
-#                      crates.io, npm, and PyPI are published through trusted
+#                      crates.io and npm are published through trusted
 #                      publishing: each registry exchanges the job's OIDC
 #                      token for short-lived publish credentials, so no
 #                      registry token is stored. Both registries match the
@@ -448,11 +450,13 @@ jobs:
           path: wheelhouse/
           if-no-files-found: error
 
-  # PyPI trusted publishing, like the other registries: the project on PyPI
-  # names this repository, this workflow file, and the publish environment.
-  # The GitHub Release does not wait for this job.
+  # Disabled until a trusted publisher is registered on PyPI. To enable it,
+  # register the project there with this repository, this workflow file, and the
+  # publish environment, then set the repository variable PUBLISH_PYPI to
+  # `true`. The GitHub Release does not wait for this job.
   publish-pypi:
     name: Publish to PyPI
+    if: vars.PUBLISH_PYPI == 'true'
     needs: [verify, python-dist]
     environment: publish
     runs-on: ubuntu-latest
