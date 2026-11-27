@@ -184,13 +184,14 @@ if (isMain) {
     });
   }
 
-  const results = batchParse({
+  const parsed = batchParse({
     tool: 'parse-summary',
     cli,
     cwd: grammarDir,
     items: normalized,
     path: (f) => f.norm,
-  }).map(({ item, body }) => ({
+  });
+  const results = Array.from(parsed, ({ item, body }) => ({
     file: item.displayPath,
     ...parseSummaryFromXml(body, lineStarts(item.text)),
   }));

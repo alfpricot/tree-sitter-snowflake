@@ -1,6 +1,5 @@
-// The batched `tree-sitter parse -x` run shared by the parse summary, the
-// parse-rate tool, and the keyword probe: one process for many files,
-// because a process per file dominates the run time of all three.
+// The batched `tree-sitter parse -x` run the parse tools share: one process
+// for many files, because a process per file dominates their run time.
 
 import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
@@ -36,12 +35,13 @@ export function byteOffset(starts, row, col) {
   return (starts[row] ?? 0) + col;
 }
 
-// Parses `items` in batches and returns one { item, body } per item, where
+// Parses `items` in batches and yields one { item, body } per item, where
 // `body` is that file's slice of the XML. A parse error exits non-zero and
 // is expected; a batch that reports fewer files than it was given means the
-// CLI or the grammar failed to load, so it throws rather than passing.
-export function batchParse({ tool, cli, cwd, items, path, run = spawnSync }) {
-  const results = [];
+// CLI or the grammar failed to load, so it throws before yielding any of
+// that batch. A generator, so only one batch of XML is held at a time on a
+// large corpus.
+export function* batchParse({ tool, cli, cwd, items, path, run = spawnSync }) {
   for (let i = 0; i < items.length; i += BATCH) {
     const batch = items.slice(i, i + BATCH);
     const proc = run(cli, ['parse', '-x', ...batch.map(path)], {
@@ -55,6 +55,7 @@ export function batchParse({ tool, cli, cwd, items, path, run = spawnSync }) {
     }
     const chunks = stripAnsi(proc.stdout).split('<source name="');
     const matched = new Set();
+    const results = [];
     for (let c = 1; c < chunks.length; c++) {
       const nl = chunks[c].indexOf('\n');
       const name = chunks[c].slice(0, nl).replace(/"?>?$/, '');
@@ -72,6 +73,6 @@ export function batchParse({ tool, cli, cwd, items, path, run = spawnSync }) {
         `${tool}: parsed only ${matched.size}/${batch.length} files in the batch starting at index ${i} (exit code ${proc.status}); check the C compiler and the grammar build: ${proc.stderr}`,
       );
     }
+    yield* results;
   }
-  return results;
 }

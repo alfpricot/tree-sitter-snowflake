@@ -149,13 +149,14 @@ if (isMain) {
     normalized.push({ original: file, norm, text });
   }
 
-  const perFile = batchParse({
+  const parsed = batchParse({
     tool: 'parse-rate',
     cli,
     cwd: grammarDir,
     items: normalized,
     path: (f) => f.norm,
-  }).map(({ item, body }) => {
+  });
+  const perFile = Array.from(parsed, ({ item, body }) => {
     const ranges = errorRangesFromXml(body, lineStarts(item.text));
     return {
       file: item.original,

@@ -35,7 +35,10 @@ test('batchParse splits the items into batches and pairs each with its XML', () 
     sizes.push(files.length);
     return { stdout: files.map(source).join(''), stderr: '', status: 1 };
   };
-  const results = batchParse({ tool: 't', cli: 'ts', cwd: '.', items, path: (f) => f, run });
+  const parsed = batchParse({ tool: 't', cli: 'ts', cwd: '.', items, path: (f) => f, run });
+  const first = parsed.next().value;
+  assert.deepEqual(sizes, [40], 'the next batch runs only when it is reached');
+  const results = [first, ...parsed];
   assert.deepEqual(sizes, [40, 1]);
   assert.deepEqual(
     results.map(({ item }) => item),
@@ -46,20 +49,18 @@ test('batchParse splits the items into batches and pairs each with its XML', () 
 
 test('batchParse refuses a batch the CLI did not fully report', () => {
   const run = () => ({ stdout: source('/a.sql'), stderr: 'no compiler', status: 1 });
-  const parse = (items) =>
-    batchParse({ tool: 't', cli: 'ts', cwd: '.', items, path: (f) => f, run });
+  const parse = (items) => [
+    ...batchParse({ tool: 't', cli: 'ts', cwd: '.', items, path: (f) => f, run }),
+  ];
   assert.throws(() => parse(['/a.sql', '/b.sql']), /parsed only 1\/2.*no compiler/s);
   assert.throws(() => parse(['/b.sql']), /could not match/);
-  assert.throws(
-    () =>
-      batchParse({
-        tool: 't',
-        cli: 'ts',
-        cwd: '.',
-        items: ['/a.sql'],
-        path: (f) => f,
-        run: () => ({ error: new Error('ENOENT') }),
-      }),
-    /could not run ts: ENOENT/,
-  );
+  const missing = batchParse({
+    tool: 't',
+    cli: 'ts',
+    cwd: '.',
+    items: ['/a.sql'],
+    path: (f) => f,
+    run: () => ({ error: new Error('ENOENT') }),
+  });
+  assert.throws(() => missing.next(), /could not run ts: ENOENT/);
 });
